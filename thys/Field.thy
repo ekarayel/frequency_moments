@@ -9,6 +9,9 @@ factor ring @{term "ZFact (int p)"} with @{term "{m. m < p} :: nat set"}.\<close
 definition zfact_embed :: "nat \<Rightarrow> nat \<Rightarrow> int set" where
   "zfact_embed p k = Idl\<^bsub>\<Z>\<^esub> {int p} +>\<^bsub>\<Z>\<^esub> (int k)"
 
+definition zfact_embed_inv :: "nat \<Rightarrow> int set \<Rightarrow> nat" where
+  "zfact_embed_inv p = the_inv_into {m. m < p} (zfact_embed p)"
+
 lemma coset_elim:
   assumes "x \<in> a_rcosets\<^bsub>R\<^esub> I"
   shows "\<exists>y. x = I +>\<^bsub>R\<^esub> y"
@@ -76,6 +79,12 @@ proof
   thus "x = y" using d1 d2 
     by (metis diffs0_imp_equal dvd_0_right dvd_diff_commute gr_implies_not_zero int_ops(6) less_imp_diff_less mem_Collect_eq nat_dvd_not_less nat_neq_iff of_nat_dvd_iff) 
 qed
+
+lemma zfact_embed_bij:
+  assumes "p > 1"
+  shows "bij_betw (zfact_embed p) {m. m < p} (carrier (ZFact p))"
+  apply (rule bij_betw_imageI)
+  using zfact_embed_inj zfact_embed_ran assms by auto 
 
 lemma zfact_card:
   assumes "(p :: nat) > 1"

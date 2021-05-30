@@ -1,7 +1,7 @@
 theory scratch
   imports Main "HOL-Algebra.Polynomials" "HOL-Algebra.Polynomial_Divisibility" PolyCard
   "HOL-Analysis.Nonnegative_Lebesgue_Integration" "HOL-Probability.Probability_Measure"
-  "HOL-Probability.Independent_Family"
+  "HOL-Probability.Independent_Family" Field
 begin
 
 text \<open>In this section, we define the strongly k-universal hash families of Wegman and Carter and
@@ -20,16 +20,56 @@ are k-wise independent random variables.\<close>
 (*
   A random variable is a function from the probability space to a measure space
 
+  Assign each universe element a value {-1,1} randomly.
+
+  If its true for {0,..,m-1} then it is also true for U with card U < m.
+
+  Choose m = 2p - then we can 8-wise independent random variables.
+
+  X(am+b) = [X_1(a) xor X_2(b)] mod 2
+
+  X_1(a) \in {0,..,p-1}
+  X_2(b) \in {0,1}
+
+  Probability of their last bit being equal.
+  P(X_1(a) mod 2 == 0) = (p+1)/2p
+  P(X_1(a) mod 2 == 1) = (p-1)/2p
+
+  P(X_1(a) + X_2(b) mod 2 == 1) = [(p+1)/4p] + (p-1)/4p   = p/2p
+
+  {0,1,2,3,4} odd  2/5    p=5  
+
+  X_2 uses the last bit of the universe element as input.
+
+  X_2 is not 4-wise independent :(
+
+  [Not necessarily a problem]
+
+  X(u_1) in {0,..,p-1}
+  X(u_2) in {0,..,p-1}
+
+  Y : {0,..,p-1} \<rightarrow> {-1,1}
+
 
 *)
 
-definition strong_universal_hash_family :: "nat \<Rightarrow> nat \<Rightarrow> ('a \<Rightarrow> nat) set \<Rightarrow> 'a measure \<Rightarrow> bool" where
-  "strong_universal_hash_family m k H \<Omega> \<longleftrightarrow> 
+definition k_independent_universal_hash_family :: "nat \<Rightarrow> nat \<Rightarrow> ('a \<Rightarrow> nat) set \<Rightarrow> 'a measure \<Rightarrow> bool" where
+  "k_independent_universal_hash_family m k H \<Omega> \<longleftrightarrow> 
     (\<forall>h. \<forall>y. h ` {i. i < k} \<subseteq> H \<and> inj_on h {i. i < k} \<and> y ` {i. i < k} \<subseteq> {i. i < m} \<longrightarrow>
     prob_space.prob \<Omega> (\<Inter>i < k. h i -` {y i}) = (1/(m^k)) )"
 
 (* The space of polynomials of degree less than n (n > 0) forms a probability space *)
 definition poly_family where "poly_family F n = uniform_count_measure (P F n)"
+
+definition hash_function :: "nat \<Rightarrow> nat \<Rightarrow> (int set) list \<Rightarrow> nat"
+  where
+    "hash_function p x \<omega> = zfact_embed_inv p (ring.eval (ZFact p) \<omega> (zfact_embed p x))"
+
+theorem carter_wegman:
+  assumes "prime p"
+  assumes "n > 0"
+  shows "k_independent_universal_hash_family p n ((\<lambda>x. hash_function p x) ` {m. m < p}) (poly_family (ZFact p) n)"
+  sorry
 
 (* Carrier of a finite field as a measurable space *)
 definition field_space where "field_space F = uniform_count_measure (carrier F)" 
@@ -48,9 +88,6 @@ proof -
     by (metis empty_iff poly_family_def)
 qed
 
-definition "hash_function_on_field"
-  where
-    "hash_function_on_field F x \<omega> = ring.eval F \<omega> x"
   
 lemma hash_fun_is_random_var:
   assumes "ring F"
