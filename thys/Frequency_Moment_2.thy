@@ -7,21 +7,40 @@ section \<open>Frequency Moment 2\<close>
 
 subsection \<open>Partitions on Indexes\<close>
 
-text \<open>A partition on an index set I (for example I = {0,..,3}) can be represented using a
+text \<open>A partition on an index set {0,..,n-1}) can be represented using a
 mapping g that maps each element to its class number, which we define to be ordered by the index
 of its smallest element.
 
 For example the partition {{0,1},{2},{3}} would be represented by the mapping k -> [0,0,1,2] ! k.
 
 In the following we build an enumerator that returns all possible partitions of {0,..,n-1}, 
-represented using a list of pairs of inducing mappings and class count.\<close>
+represented using a list of pairs of inducing mappings and class count.
+
+Note: For technical reasons a canonical mapping maps all values larger or equal to n to the
+class count.\<close>
 
 fun enum_canonical_mapping
   where 
     "enum_canonical_mapping 0 = [(\<lambda>_. 0, 0)]" |
     "enum_canonical_mapping (Suc n) = [
-      (\<lambda>k. if k < n then x k else y, if y < c then c else Suc c). 
-      (x,c) \<leftarrow> enum_canonical_mapping n, y \<leftarrow> [0..<Suc c]]" 
+      (\<lambda>k. if k < n then x k else (if k = n then y else cc), cc). 
+      (x,c) \<leftarrow> enum_canonical_mapping n, y \<leftarrow> [0..<Suc c], cc \<leftarrow> [if y < c then c else Suc c]]" 
+
+definition is_identical_partition where
+  "is_identical_partition n f g = (\<forall>x \<in> {k. k < n}. \<forall>y \<in> {k. k < n}. (f x = f y) = (g x = g y))"
+
+fun is_canonical_mapping where
+  "is_canonical_mapping n (f,c) = ((f,c) \<in> set (enum_canonical_mapping n))" (* TODO *)
+
+lemma is_canonical_mapping:
+  assumes "x \<in> set (enum_canonical_mapping n)"
+  shows "is_canonical_mapping n x"
+  sorry
+
+lemma unique_canonical_mapping:
+  assumes "dom f = {k. k < n}"
+  shows "\<exists>g. is_identical_partition n f (fst g) \<and> g \<in> set (enum_canonical_mapping n)"
+  sorry
 
 subsection \<open>Sketch\<close>
 
@@ -128,6 +147,7 @@ lemma ran_restrict: "ran x \<subseteq> A \<Longrightarrow> ran (x |` B) \<subset
   apply (rule subsetI,simp add:ran_def) 
   by (metis (mono_tags, lifting) mem_Collect_eq option.simps(3) restrict_in restrict_out subsetD)
 
+
 lemma sum_unroll_1:
   "sum (f :: 'a \<Rightarrow> real) A = sum (\<lambda>x. f (the (x 0))) (fun_set (Suc 0) A)"
 proof -
@@ -161,23 +181,123 @@ lemma sum_unroll_2:
   apply (rule sum.reindex_cong[where ?l = "split_fun m n"])
   by (simp add: split_fun_inj split_fun_image add.commute)+
 
+lemma ran_circ_inv: "ran y \<subseteq> A \<Longrightarrow> ran (y \<circ> x) \<subseteq> A"
+  by (simp add:ran_def subset_iff, blast)
+
+lemma dom_circ_simp: "dom (y \<circ> x) = {k. x k \<in> dom y}"
+  by (simp add:dom_def)
+
+lemma ran_rule: "(\<And>x. x \<in> dom f \<Longrightarrow> the (f x) \<in> A) \<Longrightarrow> ran f \<subseteq> A"
+  by (simp add:ran_def dom_def, force)
+
+lemma card_1_rule: 
+  assumes "X \<noteq> {}"
+  assumes "\<And>x y. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x = y"
+  shows "card X = 1"
+proof -
+  obtain x where "x \<in> X" using assms by (meson all_not_in_conv)
+  then have "X = {x}"
+    using assms by blast
+  thus ?thesis by auto
+qed
+
+lemma eq_dom_circ: "range x \<supseteq> dom f \<Longrightarrow> range x \<supseteq> dom g \<Longrightarrow> f \<circ> x = g \<circ> x \<Longrightarrow> f = g"
+  apply (rule ext)
+  apply (simp add:dom_def subset_iff)
+  by (metis comp_eq_dest image_iff option.exhaust)
+
 lemma split_fun_set_sum_into_partitions:
-  "sum (f :: ((nat \<Rightarrow> 'a option) \<Rightarrow> real)) (fun_set n A) = sum_list (map (\<lambda>(x,c). sum (\<lambda>u. f (\<lambda>i. u (x i))) (fun_set_inj c A)) (enum_canonical_mapping n))"
-  sorry
+  "sum (f :: ((nat \<Rightarrow> 'a option) \<Rightarrow> real)) (fun_set n A) =
+  sum_list (map (\<lambda>(x,c). sum (\<lambda>u. f (\<lambda>i. u (x i))) (fun_set_inj c A)) (enum_canonical_mapping n))" (is "?A = ?B")
+proof -
+  define fun_set_part where
+    "fun_set_part = (\<lambda>(h :: nat \<Rightarrow> nat). {f. dom f = {k. k < n} \<and> ran f \<subseteq> A \<and> is_identical_partition n f h})"
 
-(*
-  [0,1,2,3] \<rightarrow> [0,1]
-  g
+  define intermediate_sum where "intermediate_sum = sum_list (map (\<lambda>(h,c). sum f (fun_set_part h)) (enum_canonical_mapping n))" 
+  have a:"?A = intermediate_sum" sorry
+    (* disjoint sum *)
+  have b:"\<And>x c. is_canonical_mapping n (x,c) \<Longrightarrow> sum f (fun_set_part x) = sum (\<lambda>u. f (\<lambda>i. u (x i))) (fun_set_inj c A)"
+  proof -
+    fix x c
+    assume "is_canonical_mapping n (x,c)"
+    have e:"x ` {k. k < n} = {k. k < c}" sorry  (* SHOULD follow from is_canonical_mapping by def *)
+    have e2:"\<And>k. k \<ge> n \<Longrightarrow> x k = c" sorry (* SHOULD follow from is_canonical_mapping by def *)
+    have c:"inj_on (\<lambda>g. g \<circ> x) (fun_set_inj c A)"
+      using e apply (simp add:inj_on_def fun_set_inj_def) 
+      by (metis eq_dom_circ image_subset_iff rangeI)
+    have "fun_set_part x \<supseteq> (\<lambda>g. g \<circ> x) ` fun_set_inj c A"
+    proof (rule image_subsetI)
+      fix y
+      assume f:"y \<in> fun_set_inj c A"
+      have "dom (y \<circ> x) = {k. k < n}" using e e2 f apply (simp add:fun_set_inj_def dom_circ_simp)
+         by (metis imageI less_irrefl_nat mem_Collect_eq not_less)
+      moreover have "ran (y \<circ> x) \<subseteq> A" using f by (simp add:fun_set_inj_def ran_circ_inv) 
+      moreover have "is_identical_partition n (y \<circ> x) x" using f e
+        apply (simp add:is_identical_partition_def fun_set_inj_def) 
+        using inj_onD by fastforce
+      ultimately have "y \<circ> x \<in> fun_set_part x" 
+        by (simp add:fun_set_part_def)
+      thus "(\<lambda>g. g \<circ> x) y \<in> fun_set_part x" by simp
+    qed
+    moreover have "fun_set_part x \<subseteq> (\<lambda>g. g \<circ> x) ` fun_set_inj c A"
+    proof 
+      fix y
+      assume h:"y \<in> fun_set_part x"
+      have g:"\<And>k. k < c \<Longrightarrow> card (y ` (x -` {k})) = 1"
+        apply (rule card_1_rule)
+        apply (metis empty_iff image_iff insertI1 mem_Collect_eq vimage_eq e)
+        using h apply (simp add:fun_set_part_def is_identical_partition_def)
+        by (metis (no_types, lifting) e2 imageE nat_neq_iff not_less vimage_singleton_eq)
+      have "\<exists>h. \<forall>k. (k < c \<longrightarrow> (y ` (x -` {k})) = {h k}) \<and> (k \<ge> c \<longrightarrow> h k = None)"
+        by (rule choice, metis card_1_singletonE g not_less)
+      then obtain h where h_def:"\<And>k. k < c \<Longrightarrow> y ` (x -` {k}) = {h k}" and h_dom: "\<And>k. k \<ge> c \<Longrightarrow> h k = None"
+        by blast
+      have "\<And>k. k < n \<Longrightarrow> y k = h (x k)" using e h_def by blast
+      moreover have "\<And>k. k \<ge> n \<Longrightarrow> y k = h (x k)" using e2 h_dom h apply (simp add:dom_def)
+        by (metis (mono_tags, lifting) domIff fun_set_part_def h mem_Collect_eq not_less)
+      ultimately have h1:"\<And>k. y k  = h (x k)" by (meson not_less)
+      hence f4: "y = h \<circ> x" by auto
+      have "\<And>a b. a < c \<Longrightarrow> b < c \<Longrightarrow> h a = h b \<Longrightarrow> a = b"
+      proof -
+        fix a b
+        assume "a < c"
+        hence "\<exists>a' < n. a = x a'" using e by auto
+        then obtain a' where a'_def: "a = x a'" and a'_ran: "a' < n" by blast
+        assume "b < c"
+        hence "\<exists>b' < n. b = x b'" using e by auto
+        then obtain b' where b'_def: "b = x b'" and b'_ran: "b' < n" by blast
+        assume "h a = h b"
+        then have "y a' = y b'" using a'_def b'_def h1 by auto
+        hence "x a' = x b'" using h a'_ran b'_ran by (simp add:fun_set_part_def is_identical_partition_def)
+        thus "a = b" using a'_def b'_def by auto
+      qed
+      hence f1:"inj_on h {k. k < c}" by (simp add:inj_on_def)
 
-  {0,1} \<rightarrow> A \<Rightarrow> {0,1,2,3} \<rightarrow> A
-  (\x k. x (g k))
+      have "dom h \<subseteq> {k. k < c}" by (metis (mono_tags, lifting) h_dom dom_def  mem_Collect_eq not_less subsetI)
 
-  f : ({0,1,2,3} \<rightarrow> A) \<rightarrow> R
+      moreover have "{k. k < c} \<subseteq> dom h" using h1 h 
+        by (metis (mono_tags, lifting) domIff e fun_set_part_def image_subset_iff mem_Collect_eq)
+      ultimately have h2: "dom h = {k. k < c}" by auto
 
-  f = (\u. f (\<lambda>i. u (g i)))
-  
-*)
-
+      have f3:"ran h \<subseteq> A"
+        apply (rule ran_rule) using h apply (simp add:fun_set_part_def dom_def ran_def subset_iff) 
+        by (metis (mono_tags, lifting) domI e h1 h2 imageE option.sel)
+      hence "h \<in> fun_set_inj c A" using f3 f1 h2 by (simp add:fun_set_inj_def)
+      thus "y \<in> (\<lambda>g. g \<circ> x) ` fun_set_inj c A" using f4 by blast
+    qed
+    ultimately have d:"fun_set_part x = (\<lambda>g. g \<circ> x) ` fun_set_inj c A" by auto
+    show "sum f (fun_set_part x) = sum (\<lambda>u. f (\<lambda>i. u (x i))) (fun_set_inj c A)"
+      apply (rule sum.reindex_cong[where ?l = "(\<lambda>g. g \<circ> x)"])
+        apply (simp add:c d)+
+      by (meson comp_apply)
+  qed
+  have "intermediate_sum = ?B"
+    apply (simp add:intermediate_sum_def)
+    apply (rule arg_cong [where f= "sum_list"])
+    apply (rule map_cong, simp)
+    by (simp add: prod.case_eq_if b is_canonical_mapping)
+  thus ?thesis using a by auto
+qed
 
 definition f2_tr
   where
