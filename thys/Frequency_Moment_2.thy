@@ -38,13 +38,95 @@ text \<open>Set of mappings with domain ${0,..,n-1}$ and Range A\<close>
 definition fun_set
   where "fun_set n A = {x. dom x = {k. k < n} \<and> ran x \<subseteq> A}"
 
+fun shift where "shift n k = k+(n::nat)"
+
+fun split_fun 
+  :: "nat \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> 'a option) \<Rightarrow> (nat \<Rightarrow> 'a option) \<times> (nat \<Rightarrow> 'a option)"  where 
+  "split_fun m n x = (x|`{k. k < m},(x \<circ> shift m)|`{k. k < n})"
+
+lemma
+  split_fun_image:
+  "fun_set m A \<times> fun_set n A = split_fun m n ` fun_set (m+n) A" (is ?A) and
+  split_fun_inj:
+  "inj_on (split_fun m n) (fun_set (m+n) A)" (is ?B)
+proof -
+  have "fun_set m A \<times> fun_set n A \<subseteq> split_fun m n ` fun_set (m+n) A"
+  proof (rule subsetI)
+    fix x 
+    assume a: "x \<in> fun_set m A \<times> fun_set n A"
+    define y where "y = (\<lambda>k. if k < m then (fst x) k else (snd x) (k - m))"
+    have b:"dom (fst x) = {k. k < m}" using a by (cases x, simp add:fun_set_def)
+    have c:"dom (snd x) = {k. k < n}" using a by (cases x, simp add:fun_set_def)
+    have "fst x = fst (split_fun m n y) "
+      by (rule ext, metis b domIff fst_conv mem_Collect_eq restrict_in restrict_out split_fun.simps y_def)
+    moreover have "snd x = snd (split_fun m n y)"
+      apply (rule ext, simp add:y_def restrict_map_def ) using c by blast 
+    ultimately have "x = split_fun m n y" by (cases x, simp)
+    moreover have "dom y = {k. k < m + n}"
+      apply (rule order_antisym, rule subsetI)
+      using y_def b c apply (simp add:dom_def set_eq_iff) 
+       apply (metis add.commute less_diff_conv2 not_less trans_less_add1) 
+      apply (rule subsetI)
+      using y_def b c apply (simp add:dom_def set_eq_iff) 
+      by (metis add.commute less_diff_conv2 not_less) 
+    moreover have "ran y \<subseteq> A" 
+      apply (rule subsetI)
+      using a apply(cases x, simp add:fun_set_def y_def ran_def) 
+      by (metis (mono_tags) fst_conv mem_Collect_eq snd_conv subset_iff)
+    ultimately show "x \<in> split_fun m n ` fun_set (m+n) A"
+      using fun_set_def by (simp del:split_fun.simps, blast)
+  qed
+  moreover have "fun_set m A \<times> fun_set n A \<supseteq> split_fun m n ` fun_set (m+n) A"
+  proof (rule subsetI)
+    fix x
+    assume "x \<in> split_fun m n ` fun_set (m+n) A"
+    then obtain y where y_mem: "y \<in> fun_set (m+n) A" and y_def: "x = split_fun m n y" by blast
+    have "dom (fst x) = {k. k < m}"
+      using y_def y_mem by (simp add:fun_set_def set_eq_iff dom_def subset_iff restrict_map_def) 
+    moreover have "dom (snd x) = {k. k < n}"
+      using y_def y_mem by (simp add:fun_set_def set_eq_iff dom_def subset_iff restrict_map_def) 
+    moreover have "ran (fst x) \<subseteq> A"
+      apply (rule subsetI)
+      using y_def y_mem apply (simp add:fun_set_def set_eq_iff ran_def restrict_map_def subset_iff)
+      by (metis option.simps(3)) 
+    moreover have "ran (snd x) \<subseteq> A"
+      apply (rule subsetI)
+      using y_def y_mem apply (simp add:fun_set_def set_eq_iff ran_def restrict_map_def subset_iff)
+      by (metis comp_apply option.simps(3))
+    ultimately show "x \<in> fun_set m A \<times> fun_set n A" by (cases x, simp add:fun_set_def)
+  qed
+  ultimately show ?A by auto
+
+  have shift_restrict_eq:
+    "\<And>x y. ((x \<circ> shift m) |` {k. k < n} = (y \<circ> shift m) |` {k. k < n}) = 
+    (x |` {k. k < (m+n) \<and> k \<ge> m} = y |` {k. k < (m+n) \<and> k \<ge> m})"
+    apply (rule order_antisym)
+    apply (simp add:restrict_map_def fun_eq_iff)
+    apply (metis add.commute nat_add_left_cancel_less nat_le_iff_add)
+    by (simp add:restrict_map_def fun_eq_iff)
+  show ?B 
+    apply (simp add:inj_on_def shift_restrict_eq) apply (rule ballI)+ 
+    apply (rule impI, rule ext)
+    apply (simp add:restrict_map_def fun_eq_iff fun_set_def set_eq_iff domIff del:not_None_eq) 
+    by (metis not_less)
+qed
+
 text \<open>Set of injective mappings with domain ${0,..,n-1}$ and Range A\<close>
 
 definition fun_set_inj
   where "fun_set_inj n A = 
     {x. dom x = {k. k < n} \<and> ran x \<subseteq> A \<and> inj_on x {k. k < n}}"
 
-fun shift where "shift n k = k+n"
+
+lemma dom_shift: "dom (x \<circ> shift m) = {k. (k :: nat) + m \<in> dom x}"
+  by (simp add:dom_def)
+
+lemma ran_shift: "ran x \<subseteq> A \<Longrightarrow> ran (x \<circ> shift m) \<subseteq> A"
+  by (rule subsetI,simp add:ran_def,blast)
+
+lemma ran_restrict: "ran x \<subseteq> A \<Longrightarrow> ran (x |` B) \<subseteq> A"
+  apply (rule subsetI,simp add:ran_def) 
+  by (metis (mono_tags, lifting) mem_Collect_eq option.simps(3) restrict_in restrict_out subsetD)
 
 lemma sum_unroll_1:
   "sum (f :: 'a \<Rightarrow> real) A = sum (\<lambda>x. f (the (x 0))) (fun_set (Suc 0) A)"
@@ -73,13 +155,11 @@ proof -
 qed
 
 lemma sum_unroll_2:
-  "sum (\<lambda>x. sum (\<lambda>y. f x y :: real) (fun_set n A)) (fun_set m A) = sum (\<lambda>x. f (x|`{k. k < m}) ((x \<circ> shift m)|`{k. k < n})) (fun_set (n+m) A)" sorry
-
-
-lemma factor_lint: 
-  (*assumes "\<And>a.  a \<in> A \<Longrightarrow> has_bochner_integral \<Omega> (f a) (z a)"*)
-  shows "LINT \<omega>|\<Omega>. sum (\<lambda>x. f x \<omega>) A = sum (\<lambda>x. LINT \<omega>|\<Omega>. (f x \<omega>)) A" sorry
-(*  by (metis Bochner_Integration.integral_sum assms integrable.simps) *)
+  "sum (\<lambda>x. sum (\<lambda>y. f x y :: real) (fun_set n A)) (fun_set (m::nat) (A :: 'a set)) = 
+   sum (\<lambda>x. f (x|`{k. k < m}) ((x \<circ> shift m)|`{k. k < n})) (fun_set (n+m) A)"
+  apply (simp add:sum.cartesian_product)
+  apply (rule sum.reindex_cong[where ?l = "split_fun m n"])
+  by (simp add: split_fun_inj split_fun_image add.commute)+
 
 lemma split_fun_set_sum_into_partitions:
   "sum (f :: ((nat \<Rightarrow> 'a option) \<Rightarrow> real)) (fun_set n A) = sum_list (map (\<lambda>(x,c). sum (\<lambda>u. f (\<lambda>i. u (x i))) (fun_set_inj c A)) (enum_canonical_mapping n))"
@@ -101,7 +181,7 @@ lemma split_fun_set_sum_into_partitions:
 
 definition f2_tr
   where
-    "f2_tr h xs n l \<omega> = prod_list (map (\<lambda>i. f2_sketch_summand h xs (the (n i)) \<omega>) l)"
+    "f2_tr h xs n l \<omega> = prod_list (map (\<lambda>i. f2_sketch_summand h xs (the (n i)) \<omega>) (l :: nat list))"
 
 definition f2_sketch_summand_pow
   where
@@ -120,6 +200,10 @@ lemma c4:
   assumes "x \<in> fun_set_inj n A"
   shows "integral\<^sup>L \<Omega> (f2_tr h xs x a) = prod_list (map (\<lambda>(i,j). (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x i)) j \<omega>))) (counts a))"
   sorry
+
+fun sm_l where
+  "sm_l [] _ = True" |
+  "sm_l (a#as) n = (if a < n then sm_l as n else False)"
 
 lemma
   assumes "prob_space \<Omega>"
@@ -141,20 +225,25 @@ proof -
   have d:"Sigma_Algebra.measure \<Omega> (space \<Omega>) = 1" using assms(1) 
     by (simp add: prob_space.prob_space)
 
+  have e: "\<And>x n a. x \<in> fun_set n (set xs) \<Longrightarrow> sm_l a n \<Longrightarrow> integrable \<Omega> (f2_tr h xs x a)" sorry
+
   show ?A
     apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square  )
     apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
-    apply (simp add: factor_lint sum_distrib_left sum_distrib_right sum_unroll_2 sum_subtractf[symmetric])
+    apply (simp add: c1 c2)
+    apply (simp add: Bochner_Integration.integral_sum e)
+    apply (simp add: f2_tr_def sum_distrib_left sum_distrib_right sum_unroll_2 sum_subtractf[symmetric])
     apply (simp add: split_fun_set_sum_into_partitions)
     apply (simp add: c1 c2)
     apply (simp add: c4 b c d)
     by (simp add: sum_distrib_left sum_nonneg)
 
   show ?B
-    apply (simp only: 
-        f2_sketch_def power4_eq_xxxx power2_eq_square factor_lint 
-        sum_distrib_left sum_distrib_right sum_subtractf[symmetric])
-    apply (simp add: sum_unroll_1[where A="set xs"] sum_unroll_2)
+    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square  )
+    apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
+    apply (simp add: c1 c2)
+    apply (simp add: Bochner_Integration.integral_sum e)
+    apply (simp add: f2_tr_def sum_distrib_left sum_distrib_right sum_unroll_2 sum_subtractf[symmetric])
     apply (simp add: split_fun_set_sum_into_partitions)
     apply (simp add: c1 c2)
     by (simp add: c4 b c d)
