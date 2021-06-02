@@ -29,8 +29,29 @@ fun enum_canonical_mapping
 definition is_identical_partition where
   "is_identical_partition n f g = (\<forall>x \<in> {k. k < n}. \<forall>y \<in> {k. k < n}. (f x = f y) = (g x = g y))"
 
-fun is_canonical_mapping where
-  "is_canonical_mapping n (f,c) = ((f,c) \<in> set (enum_canonical_mapping n))" (* TODO *)
+definition is_earlier_class where 
+  "is_earlier_class M N = (\<exists>m \<in> M. \<forall>n \<in> N. m < n)"
+
+fun is_canonical_mapping :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<times> nat \<Rightarrow> bool"where
+  "is_canonical_mapping n (f,c) = (
+    (\<forall>x. x \<ge> n \<longrightarrow> f x = c) \<and>
+    f ` {k. k < n} = {k. k < c} \<and>
+    (\<forall>i. \<forall>j.  i < j \<and> j < c \<longrightarrow> is_earlier_class (f -` {i}) (f -` {j})))"  
+
+lemma "distinct (enum_canonical_mapping n)"
+proof (induction n)
+  case 0
+  then show ?case by simp
+next
+  case (Suc n)
+
+  (* concat (map (\(x,c) map g [0..c]) enum n)
+    
+ *)
+
+  then show ?case sorry
+qed
+
 
 lemma is_canonical_mapping:
   assumes "x \<in> set (enum_canonical_mapping n)"
@@ -213,15 +234,20 @@ proof -
   define fun_set_part where
     "fun_set_part = (\<lambda>(h :: nat \<Rightarrow> nat). {f. dom f = {k. k < n} \<and> ran f \<subseteq> A \<and> is_identical_partition n f h})"
 
-  define intermediate_sum where "intermediate_sum = sum_list (map (\<lambda>(h,c). sum f (fun_set_part h)) (enum_canonical_mapping n))" 
-  have a:"?A = intermediate_sum" sorry
+  define intermediate_sum where "intermediate_sum = sum_list (map (\<lambda>x. sum f (fun_set_part (fst x))) (enum_canonical_mapping n))" 
+  have a1:"distinct (enum_canonical_mapping n)" sorry
+  have a2:"fun_set n A = \<Union> ((fun_set_part \<circ> fst) ` (set (enum_canonical_mapping n)))" sorry
+  have a:"?A = intermediate_sum"
+    apply (simp add:intermediate_sum_def sum_list_distinct_conv_sum_set a1 a2)
+    apply (rule sum.UNION_disjoint)
+    sorry
     (* disjoint sum *)
   have b:"\<And>x c. is_canonical_mapping n (x,c) \<Longrightarrow> sum f (fun_set_part x) = sum (\<lambda>u. f (\<lambda>i. u (x i))) (fun_set_inj c A)"
   proof -
     fix x c
-    assume "is_canonical_mapping n (x,c)"
-    have e:"x ` {k. k < n} = {k. k < c}" sorry  (* SHOULD follow from is_canonical_mapping by def *)
-    have e2:"\<And>k. k \<ge> n \<Longrightarrow> x k = c" sorry (* SHOULD follow from is_canonical_mapping by def *)
+    assume e3:"is_canonical_mapping n (x,c)"
+    have e:"x ` {k. k < n} = {k. k < c}" using e3 by auto
+    have e2:"\<And>k. k \<ge> n \<Longrightarrow> x k = c" using e3 by auto
     have c:"inj_on (\<lambda>g. g \<circ> x) (fun_set_inj c A)"
       using e apply (simp add:inj_on_def fun_set_inj_def) 
       by (metis eq_dom_circ image_subset_iff rangeI)
@@ -348,7 +374,7 @@ proof -
   have e: "\<And>x n a. x \<in> fun_set n (set xs) \<Longrightarrow> sm_l a n \<Longrightarrow> integrable \<Omega> (f2_tr h xs x a)" sorry
 
   show ?A
-    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square  )
+    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
     apply (simp add: c1 c2)
     apply (simp add: Bochner_Integration.integral_sum e)
@@ -359,7 +385,7 @@ proof -
     by (simp add: sum_distrib_left sum_nonneg)
 
   show ?B
-    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square  )
+    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
     apply (simp add: c1 c2)
     apply (simp add: Bochner_Integration.integral_sum e)
@@ -368,6 +394,5 @@ proof -
     apply (simp add: c1 c2)
     by (simp add: c4 b c d)
 qed
-
 
 end
