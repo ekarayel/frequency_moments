@@ -38,6 +38,7 @@ lemma c4:
     prod_list (map (\<lambda>(i,j). (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x i)) j \<omega>))) (counts a))"
   sorry
 
+
 lemma (in prob_space) indep_sets_reindex:
   assumes "inj_on f I"
   shows "indep_sets F (f ` I) = indep_sets (F \<circ> f) I"
@@ -49,20 +50,56 @@ proof -
   next
     fix A
     fix J
-    assume "indep_sets F (f ` I)"
-    assume "J \<subseteq> I"
+    assume a:"indep_sets F (f ` I)"
+    assume a1:"J \<subseteq> I"
     hence c1:"f ` J \<subseteq> f ` I" by blast
     assume "J \<noteq> {}"
     hence c2:"f ` J \<noteq> {}" by blast
     assume "finite J"
-    hence c3:"finite (f ` J)" sorry
+    hence c3:"finite (f ` J)" by auto
     assume "\<forall>j\<in>J. A j \<in> (F \<circ> f) j"
-    hence c4:"\<forall>j \<in> (f ` J). A (f j) \<in> F j" sorry
-    show "prob (\<Inter> (A ` J)) = (\<Prod>j\<in>J. prob (A j))" sorry
+    moreover have c5:"inj_on f J" using a1 inj_on_subset assms by blast
+    moreover define A' where "A' = (\<lambda>x. A (the_inv_into J f x))"
+    ultimately have c4:"\<forall>j \<in> (f ` J). A' j \<in> F j"
+      by (simp add:A'_def the_inv_into_f_f)
+    have "prob (\<Inter> (A' ` (f ` J))) = (\<Prod>j\<in>(f ` J). prob (A' j))"
+      using a indep_setsD c1 c2 c3 c4 by blast    
+    thus "prob (\<Inter> (A ` J)) = (\<Prod>j\<in>J. prob (A j))"
+      using c5 by (simp add:A'_def  prod.reindex_cong the_inv_into_f_f)
   qed
+  moreover have "indep_sets (F \<circ> f) I \<Longrightarrow> indep_sets F (f ` I)"
+  proof (rule indep_setsI)
+    show "\<And>i. indep_sets (F \<circ> f) I \<Longrightarrow> i \<in> f ` I \<Longrightarrow> F i \<subseteq> events"
+      apply (simp add:indep_sets_def) by blast
+  next
+    fix A
+    fix J
+    assume a:"indep_sets (F \<circ> f) I"
+    assume a1: "J \<subseteq> f ` I"
+    moreover define J' where "J' = (f -` J) \<inter> I"
+    ultimately have c1:"J' \<subseteq> I" by simp
+    assume "J \<noteq> {}"
+    hence c2:"J' \<noteq> {}" using J'_def a1 by blast
+    assume "finite J"
+    hence c3:"finite J'" using a1 J'_def assms by (simp add: finite_vimage_IntI)
+    assume "\<forall>j\<in>J. A j \<in> F j"
+    hence c4: "\<forall>j\<in>J'. (A \<circ> f) j \<in> (F \<circ> f) j"
+      using J'_def by fastforce
+    have "prob (\<Inter> ((A \<circ> f) ` J')) = (\<Prod>j\<in>J'. prob ((A \<circ> f) j))"
+      using a indep_setsD c1 c2 c3 c4 by blast    
+    moreover have c5:"inj_on f J'" using c1 assms inj_on_subset by blast
+    moreover have "J = f ` J'" using c5 apply (simp add:J'_def)
+      apply (rule order_antisym, rule subsetI)
+      using a1 apply auto[1]      
+      by force
+    ultimately show "prob (\<Inter> (A ` J)) = (\<Prod>j\<in>J. prob (A j))"
+      by (simp add: prod.reindex_cong)
+  qed
+  ultimately show ?thesis by auto
 qed
 
 lemma (in prob_space) indep_vars_reindex:
+  assumes "inj_on f I"
   assumes "indep_vars M' X1 (f ` I)"
   shows "indep_vars (M' \<circ> f) (X1 \<circ> f) I"
   using assms by (simp add: indep_vars_def2 indep_sets_reindex comp_def)
@@ -89,21 +126,23 @@ proof -
 
   have e: "\<And>x n a. x \<in> maps n (set xs) \<Longrightarrow> filter (\<lambda>i. i \<ge> n) a = [] \<Longrightarrow> integrable \<Omega> (f2_tr h xs x a)" sorry
 
-  have indep1:
+  have  "\<And>x n. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> ((\<lambda>_. borel) \<circ> (\<lambda>i. the (x i))) (h \<circ> (\<lambda>i. the (x i))) {k. k < n}"
+    apply (rule prob_space.indep_vars_reindex)
+    using assms(1) apply simp
+     apply (simp add:maps_inj_mem)
+    apply (rule assms(3))
+    apply (rule image_subsetI) apply(simp add:maps_inj_elim)
+     apply blast
+    by (metis card_Collect_less_nat card_image_le finite_Collect_less_nat le_neq_implies_less less_trans verit_comp_simplify1(3))
+  hence 
     "\<And>x n. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i. h (the (x i))) {k. k < n}"
-  proof -
-    fix x n
-    assume "x \<in> maps_inj n (set xs)"
-    assume "n \<le> 4"
-    show "prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i. h (the (x i))) {k. k < n}"
-      using assms(3)[where I="(\<lambda>i. the (x i)) ` {k. k < n}"]
-
-  qed
+    by (simp add:comp_def)
 
   have indep:
-    "\<And>x n j. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i. f2_sketch_summand_pow h xs (the (x i)) (j i)) {k. k < n}"   
+    "\<And>x n j. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i \<omega>. f2_sketch_summand_pow h xs (the (x i)) (j i) \<omega>) {k. k < n}"
+  
+    apply (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def)
     sorry
-
   show ?A
     apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)

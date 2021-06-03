@@ -249,6 +249,24 @@ text \<open>Set of injective mappings with domain ${0,..,n-1}$ and Range A\<clos
 definition maps_inj :: "nat \<Rightarrow> 'a set \<Rightarrow> (nat \<Rightarrow> 'a option) set" where 
   "maps_inj n A = {x. dom x = {k. k < n} \<and> ran x \<subseteq> A \<and> inj_on x {k. k < n}}"
 
+lemma maps_inj_mem:
+  assumes "x \<in> maps_inj n A"
+  shows "inj_on (\<lambda>i. the (x i)) {k. k < n}"
+proof -
+  have "dom x = {k. k < n}" using assms by (simp add:maps_inj_def)
+  hence "\<And>k l. k < n \<and> l < n \<Longrightarrow> the (x k) = the (x l) \<Longrightarrow> x k = x l"
+    by (metis \<open>dom x = {k. k < n}\<close> domIff mem_Collect_eq option.expand)
+  thus ?thesis
+    using assms by (simp add:maps_inj_def dom_def inj_on_def)
+qed
+
+lemma maps_inj_elim:
+  assumes "x \<in> maps_inj n A"
+  assumes "i < n"
+  shows "the (x i) \<in> A"
+  using assms apply (simp add:maps_inj_def ran_def) 
+  by (metis (mono_tags, lifting) domIff mem_Collect_eq option.collapse subsetD) 
+
 definition maps_like :: "nat \<Rightarrow> 'a set \<Rightarrow> (nat \<Rightarrow> 'b) \<Rightarrow> (nat \<Rightarrow> 'a option) set" where 
   "maps_like n A f = {x. dom x = {k. k < n} \<and> ran x \<subseteq> A \<and> is_same_partition n x f}"
 
