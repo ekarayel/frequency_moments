@@ -2,6 +2,20 @@ theory SumByPartitions
   imports Main
 begin
 
+subsection \<open>Partitions on Indexes\<close>
+
+text \<open>A partition on an index set {0,..,n-1}) can be represented using a
+mapping g that maps each element to its class number, which we define to be ordered by the index
+of its smallest element.
+
+For example the partition {{0,1},{2},{3}} would be represented by the mapping k -> [0,0,1,2] ! k.
+
+In the following we build an enumerator that returns all possible partitions of {0,..,n-1}, 
+represented using a list of pairs of inducing mappings and class count.
+
+Note: For technical reasons a canonical mapping maps all values larger or equal to n to the
+class count.\<close>
+
 definition is_same_partition :: "nat => (nat => 'a) => (nat => 'b) \<Rightarrow> bool" where
   "is_same_partition n f g = (\<forall>x y. x < n \<longrightarrow> y < n \<longrightarrow> (f x = f y) = (g x = g y))"
 
@@ -29,7 +43,20 @@ fun enum_canonical_mapping
       (x,c) \<leftarrow> enum_canonical_mapping n, y \<leftarrow> [0..<c]]@
       [(\<lambda>k. if k < n then x k else (if k = n then c else Suc c), Suc c). 
       (x,c) \<leftarrow> enum_canonical_mapping n]"
+(*
 
+
+definition is_earlier_class where 
+  "is_earlier_class M N = (\<exists>m \<in> M. \<forall>n \<in> N. m < n)"
+
+fun is_canonical_mapping :: "nat \<Rightarrow> (nat \<Rightarrow> nat) \<times> nat \<Rightarrow> bool"where
+  "is_canonical_mapping n (f,c) = (
+    (\<forall>x. x \<ge> n \<longrightarrow> f x = c) \<and>
+    f ` {k. k < n} = {k. k < c} \<and>
+    (\<forall>i. \<forall>j.  i < j \<and> j < c \<longrightarrow> is_earlier_class (f -` {i}) (f -` {j})))"  
+
+
+*)
 lemma is_canonical:
   "p \<in> set (enum_canonical_mapping n) \<Longrightarrow> (fst p) ` {k. k < n} = {k. k < (snd p)} \<and> (fst p) ` {k. k \<ge> n} = {snd p}" 
 proof (induction n arbitrary: p)
@@ -77,13 +104,14 @@ next
 qed
 
 lemma canonincal_mapping_split:
-  assumes "n = 4"
+  assumes "n \<le> 4"
   shows "length (filter (\<lambda>g. is_same_partition n f (fst g)) (enum_canonical_mapping n)) = 1"
-  apply (case_tac [!] "f 0 = f 1")
+  sorry
+(*  apply (case_tac [!] "f 0 = f 1")
   apply (case_tac [!] "f 2 = f 3")
   apply (case_tac [!] "f 0 = f 3")
   apply (case_tac [!] "f 1 = f 2")
-  by (simp add:assms numeral_eq_Suc is_same_partition_simp_1 is_same_partition_simp_2)+
+  by (simp add:assms numeral_eq_Suc is_same_partition_simp_1 is_same_partition_simp_2)+*)
 
 lemma sum_split_list:
   assumes "\<And>x. x \<in> A \<Longrightarrow> length (filter (\<lambda>i. x \<in> B i) I) = 1"
@@ -137,6 +165,8 @@ proof -
     apply (simp add:I'_def)
     by (metis (mono_tags, lifting) sum.empty sum_list_map_filter)
 qed
+
+text \<open>Set of mappings with domain ${0,..,n-1}$ and Range A\<close>
 
 definition maps :: "nat \<Rightarrow> 'a set \<Rightarrow> (nat \<Rightarrow> 'a option) set" where 
   "maps n A = {x. dom x = {k. k < n} \<and> ran x \<subseteq> A}"
@@ -214,6 +244,8 @@ proof -
     by (metis not_less)
 qed
 
+text \<open>Set of injective mappings with domain ${0,..,n-1}$ and Range A\<close>
+
 definition maps_inj :: "nat \<Rightarrow> 'a set \<Rightarrow> (nat \<Rightarrow> 'a option) set" where 
   "maps_inj n A = {x. dom x = {k. k < n} \<and> ran x \<subseteq> A \<and> inj_on x {k. k < n}}"
 
@@ -232,7 +264,7 @@ proof -
 qed
 
 lemma split_sum_maps_aux:
-  assumes "n = 4"
+  assumes "n \<le> 4"
   assumes "finite A"
   shows "sum f (maps n A) 
     = sum_list (map (\<lambda>(p,c). sum f (maps_like n A p)) (enum_canonical_mapping n))"
@@ -346,8 +378,8 @@ proof -
     by (meson comp_apply)
 qed
 
-lemma split_sum_maps:
-  assumes "n = 4"
+lemma split_fun_set_sum_into_partitions:
+  assumes "n \<le> 4"
   assumes "finite A"
   shows "sum f (maps n A) 
     = sum_list (map (\<lambda>(p,c). sum (\<lambda>u. f (\<lambda>i. u (p i))) (maps_inj c A)) (enum_canonical_mapping n))"
@@ -466,7 +498,7 @@ proof -
 qed
 
 lemma sum_unroll_2:
-  "sum (\<lambda>x. sum (\<lambda>y. f x y :: 'a :: comm_monoid_add) (maps n A)) (maps (m::nat) (A :: 'a set)) = 
+  "sum (\<lambda>x. sum (\<lambda>y. f x y) (maps n A)) (maps (m::nat) (A :: 'a set)) = 
    sum (\<lambda>x. f (x|`{k. k < m}) ((x \<circ> shift m)|`{k. k < n})) (maps (n+m) A)"
   apply (simp add:sum.cartesian_product)
   apply (rule sum.reindex_cong[where ?l = "split_fun m n"])
