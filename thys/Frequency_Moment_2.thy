@@ -9,7 +9,7 @@ subsection \<open>Sketch\<close>
 
 definition f2_sketch_summand
   where
-    "f2_sketch_summand f xs x \<omega> = real (count_list xs x) * f x \<omega>"
+    "f2_sketch_summand f xs x \<omega> = (real (count_list xs x) * f x \<omega> :: real)"
 
 definition f2_sketch
   where
@@ -17,11 +17,7 @@ definition f2_sketch
 
 definition f2_tr
   where
-    "f2_tr h xs n l \<omega> = prod_list (map (\<lambda>i. f2_sketch_summand h xs (the (n i)) \<omega>) (l :: nat list))"
-
-definition f2_sketch_summand_pow
-  where
-    "f2_sketch_summand_pow h xs x n \<omega> = ((f2_sketch_summand h xs x \<omega>) ^ n)"
+    "f2_tr h xs n l \<omega> = prod_mset (image_mset (\<lambda>i. f2_sketch_summand h xs (the (n i)) \<omega>) (mset (l :: nat list)))"
 
 lemma c1: "f2_sketch_summand h xs (the (n k)) \<omega> = f2_tr h xs n [k] \<omega>"
   by (simp add:f2_tr_def)
@@ -32,12 +28,57 @@ lemma c2: "f2_tr h xs n a \<omega> * f2_tr h xs n b \<omega> = f2_tr h xs n (a@b
 fun counts where
   "counts xs = map (\<lambda>x. (x,count_list xs x)) (remdups xs)" 
 
-lemma c4: 
-  assumes "x \<in> maps_inj n A"
-  shows "integral\<^sup>L \<Omega> (f2_tr h xs x a) =
-    prod_list (map (\<lambda>(i,j). (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x i)) j \<omega>))) (counts a))"
-  sorry
+lemma disj_induct_mset:
+  assumes "P {#}"
+  assumes "\<And>n M x. P M \<Longrightarrow> \<not>(x \<in># M) \<Longrightarrow> n > 0 \<Longrightarrow> P (M + replicate_mset n x)"
+  shows "P M"
+proof (induction "size M" arbitrary: M rule:nat_less_induct)
+  case 1
+  show ?case
+  proof (cases "M = {#}")
+    case True
+    then show ?thesis using assms by simp
+  next
+    case False
+    then obtain x where x_def: "x \<in># M" using multiset_nonemptyE by auto
+    define M1 where "M1 = M - replicate_mset (count M x) x"
+    then have M_def: "M = M1 + replicate_mset (count M x) x"
+      by (metis count_le_replicate_mset_subset_eq dual_order.refl subset_mset.diff_add)
+    have "size M1 < size M"
+      by (metis M_def x_def count_greater_zero_iff less_add_same_cancel1 size_replicate_mset size_union)
+    hence s:"P M1" using 1 by blast
+    show "P M" 
+      apply (subst M_def, rule assms(2))
+        apply (simp add:s)
+      using M1_def apply (simp add:count_eq_zero_iff[symmetric])
+      using x_def by simp
+  qed
+qed
 
+lemma prod_mset_conv: "prod_mset (image_mset f A) = prod (\<lambda>x. (f x :: real)^(count A x)) (set_mset A)"
+proof (induction A rule: disj_induct_mset)
+  case 1
+  then show ?case by simp
+next
+  case (2 n M x)
+  moreover have "count M x = 0" using 2 by (simp add: count_eq_zero_iff)
+  moreover have "\<And>y. y \<in> set_mset M \<Longrightarrow> y \<noteq> x" using 2 by blast
+  ultimately show ?case by simp
+qed
+
+definition f2_sketch_summand_pow
+  where
+    "f2_sketch_summand_pow h xs x n \<omega> = ((f2_sketch_summand h xs x \<omega>) ^ n)"
+
+lemma countsI: "prod (\<lambda>i. f i (count (mset a) i)) (set a) = prod_list (map (\<lambda>(i,j). f i j) (counts a))"
+proof -
+  define b where "b = remdups a"
+  have a:"set a = set b" using b_def by simp
+  have b:"\<And>x. count (mset a) x = count_list a x" by (induction a, simp, simp)
+  show ?thesis 
+    apply (simp add:comp_def b_def[symmetric] a b) 
+    using b_def prod.distinct_set_conv_list by blast
+qed
 
 lemma (in prob_space) indep_sets_reindex:
   assumes "inj_on f I"
@@ -124,6 +165,9 @@ proof -
   have d:"Sigma_Algebra.measure \<Omega> (space \<Omega>) = 1" using assms(1) 
     by (simp add: prob_space.prob_space)
 
+  have e1:"\<And>x n j m. x \<in> maps_inj n (set xs) \<Longrightarrow> j < n \<Longrightarrow>
+    integrable \<Omega> (f2_sketch_summand_pow h xs (the (x j)) m)"
+    sorry
   have e: "\<And>x n a. x \<in> maps n (set xs) \<Longrightarrow> filter (\<lambda>i. i \<ge> n) a = [] \<Longrightarrow> integrable \<Omega> (f2_tr h xs x a)" sorry
 
   have  "\<And>x n. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> ((\<lambda>_. borel) \<circ> (\<lambda>i. the (x i))) (h \<circ> (\<lambda>i. the (x i))) {k. k < n}"
@@ -134,15 +178,48 @@ proof -
     apply (rule image_subsetI) apply(simp add:maps_inj_elim)
      apply blast
     by (metis card_Collect_less_nat card_image_le finite_Collect_less_nat le_neq_implies_less less_trans verit_comp_simplify1(3))
-  hence 
+  hence indep_1:
     "\<And>x n. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i. h (the (x i))) {k. k < n}"
     by (simp add:comp_def)
 
   have indep:
-    "\<And>x n j. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i \<omega>. f2_sketch_summand_pow h xs (the (x i)) (j i) \<omega>) {k. k < n}"
-  
-    apply (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def)
-    sorry
+    "\<And>x n j. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow>
+    prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i. f2_sketch_summand_pow h xs (the (x i)) (j i)) {k. k < n}"
+  proof -
+    fix x n j
+    assume a1: "x \<in> maps_inj n (set xs)"
+    assume a2: "n \<le> 4"
+    have "prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i. h (the (x i))) {k. k < n}"
+      using a1 a2 indep_1 by auto
+    moreover define Y where "Y = (\<lambda>k t. (real (count_list xs (the (x k))) * t)^ (j k))"
+    moreover have "\<And>k. k < n \<Longrightarrow> Y k \<in> measurable borel borel" sorry
+    ultimately have "prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i. Y i \<circ> h (the (x i))) {k. k < n}"
+      using prob_space.indep_vars_compose assms(1) by fast
+    thus "prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i \<omega>. f2_sketch_summand_pow h xs (the (x i)) (j i) \<omega>) {k. k < n}"
+      by (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def Y_def comp_def) 
+  qed
+
+  have c4: "\<And>x n a. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> set a \<subseteq> {k. k < n} \<Longrightarrow> integral\<^sup>L \<Omega> (f2_tr h xs x a) =
+    prod_list (map (\<lambda>(i,j). (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x i)) j \<omega>))) (counts a))"
+  proof -
+    fix x n a
+    assume a1:"x \<in> maps_inj n (set xs)"
+    assume a2:"n \<le> 4"
+    assume a3:"set a \<subseteq> {k. k < n}"
+
+    have "(LINT \<omega>|\<Omega>. f2_tr h xs x a \<omega>) =
+      prod (\<lambda>i. (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x i)) (count (mset a) i) \<omega>))) (set a)"
+      apply (simp add:f2_tr_def prod_mset_conv f2_sketch_summand_pow_def[symmetric])
+      apply (rule prob_space.indep_vars_lebesgue_integral)
+         apply (simp add:assms(1))+
+      using indep a2 a1 a3 assms(1) prob_space.indep_vars_subset apply blast
+      using e1 a1 a3 by blast
+
+    thus "integral\<^sup>L \<Omega> (f2_tr h xs x a) =
+    prod_list (map (\<lambda>(i,j). (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x i)) j \<omega>))) (counts a))"
+      using countsI by fastforce
+  qed
+
   show ?A
     apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
