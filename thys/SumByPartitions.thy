@@ -103,15 +103,32 @@ next
   qed
 qed
 
+(*
+  TODO: Note this is actually true for arbitrary n.
+  Show this using induction. 
+*)
 lemma canonincal_mapping_split:
   assumes "n \<le> 4"
   shows "length (filter (\<lambda>g. is_same_partition n f (fst g)) (enum_canonical_mapping n)) = 1"
-  sorry
-(*  apply (case_tac [!] "f 0 = f 1")
-  apply (case_tac [!] "f 2 = f 3")
-  apply (case_tac [!] "f 0 = f 3")
-  apply (case_tac [!] "f 1 = f 2")
-  by (simp add:assms numeral_eq_Suc is_same_partition_simp_1 is_same_partition_simp_2)+*)
+proof -
+  have e:"length (filter (\<lambda>g. is_same_partition 0 f (fst g)) (enum_canonical_mapping 0)) = 1"
+    by (simp add: numeral_eq_Suc is_same_partition_simp_1 is_same_partition_simp_2)
+  have a:"length (filter (\<lambda>g. is_same_partition 1 f (fst g)) (enum_canonical_mapping 1)) = 1"
+    by (simp add: numeral_eq_Suc is_same_partition_simp_1 is_same_partition_simp_2)
+  have b:"length (filter (\<lambda>g. is_same_partition 2 f (fst g)) (enum_canonical_mapping 2)) = 1"
+    by (simp add: numeral_eq_Suc is_same_partition_simp_1 is_same_partition_simp_2)
+  have c:"length (filter (\<lambda>g. is_same_partition 3 f (fst g)) (enum_canonical_mapping 3)) = 1"
+    by (simp add: numeral_eq_Suc is_same_partition_simp_1 is_same_partition_simp_2)
+  have d:"length (filter (\<lambda>g. is_same_partition 4 f (fst g)) (enum_canonical_mapping 4)) = 1"
+    apply (case_tac [!] "f 0 = f 1")
+    apply (case_tac [!] "f 2 = f 3")
+    apply (case_tac [!] "f 0 = f 3")
+    apply (case_tac [!] "f 1 = f 2")
+    by (simp add: numeral_eq_Suc is_same_partition_simp_1 is_same_partition_simp_2)+
+  have "n = 0 \<or> n = 1 \<or> n = 2 \<or> n = 3 \<or> n = 4" using assms apply (simp add:numeral_eq_Suc) 
+    by (meson bot_nat_0.extremum_uniqueI le_SucE)
+  then show ?thesis using  a b c d e by blast
+qed
 
 lemma sum_split_list:
   assumes "\<And>x. x \<in> A \<Longrightarrow> length (filter (\<lambda>i. x \<in> B i) I) = 1"

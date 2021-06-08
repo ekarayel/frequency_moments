@@ -22,19 +22,6 @@ definition f2_sketch
   where
     "f2_sketch f xs \<omega> = (\<Sum> x \<in> set xs. f2_sketch_summand f xs x \<omega>)"
 
-definition f2_tr
-  where
-    "f2_tr h xs n l \<omega> = prod_mset (image_mset (\<lambda>i. f2_sketch_summand h xs (the (n i)) \<omega>) (mset (l :: nat list)))"
-
-lemma c1: "f2_sketch_summand h xs (the (n k)) \<omega> = f2_tr h xs n [k] \<omega>"
-  by (simp add:f2_tr_def)
-
-lemma c2: "f2_tr h xs n a \<omega> * f2_tr h xs n b \<omega> = f2_tr h xs n (a@b) \<omega>"
-  by (simp add:f2_tr_def)
-
-fun counts where
-  "counts xs = map (\<lambda>x. (x,count_list xs x)) (remdups xs)" 
-
 text \<open>This is a disjoint induction scheme for multisets: We can represent each multiset as
 a sum like: replicate_mset n x_1 + replicate_mset n x_2 + .. + replicate_mset n x_n where the 
 x_i are distinct.\<close>
@@ -80,6 +67,9 @@ qed
 definition f2_sketch_summand_pow
   where
     "f2_sketch_summand_pow h xs x n \<omega> = (f2_sketch_summand h xs x \<omega>) ^ n"
+
+fun counts where
+  "counts xs = map (\<lambda>x. (x,count_list xs x)) (remdups xs)" 
 
 lemma countsI: "prod (\<lambda>i. f i (count (mset a) i)) (set a) = prod_list (map (\<lambda>i. f (fst i) (snd i)) (counts a))"
 proof -
@@ -270,17 +260,26 @@ proof -
     thus "prob_space.indep_vars \<Omega> (\<lambda>_. borel) (\<lambda>i \<omega>. f2_sketch_summand_pow h xs (the (x i)) (j i) \<omega>) {k. k < n}"
       by (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def Y_def comp_def) 
   qed
+  define f2_tr
+    where
+      "f2_tr =(\<lambda>n l \<omega>. prod_mset (image_mset (\<lambda>i. f2_sketch_summand h xs (the (n i)) \<omega>) (mset (l :: nat list))))"
+  
+  have c1: "\<And>n k \<omega>. f2_sketch_summand h xs (the (n k)) \<omega> = f2_tr n [k] \<omega>"
+    by (simp add:f2_tr_def)
+  
+  have c2: "\<And>n a b \<omega>. f2_tr n a \<omega> * f2_tr n b \<omega> = f2_tr n (a@b) \<omega>"
+    by (simp add:f2_tr_def)
 
   have indep2:
     "\<And> x n a. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4  \<Longrightarrow>  set a \<subseteq> {k. k < n} \<Longrightarrow>
-      integrable \<Omega> (f2_tr h xs x a)"
+      integrable \<Omega> (f2_tr x a)"
   proof -
     fix x n a
     assume a1:"x \<in> maps_inj n (set xs)"
     assume a2:"n \<le> 4"
     assume a3:"set a \<subseteq> {k. k < n}"
 
-    show "integrable \<Omega> (\<lambda>\<omega>. f2_tr h xs x a \<omega>) "
+    show "integrable \<Omega> (\<lambda>\<omega>. f2_tr x a \<omega>) "
       apply (simp add:f2_tr_def prod_mset_conv f2_sketch_summand_pow_def[symmetric])
       apply (rule prob_space.indep_vars_integrable)
          apply (simp add:assms(1))+
@@ -290,7 +289,7 @@ proof -
 
   have indep1:
     "\<And> x n a. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4  \<Longrightarrow>  set a \<subseteq> {k. k < n} \<Longrightarrow>
-      integral\<^sup>L \<Omega> (f2_tr h xs x a) = (prod_list (map (\<lambda>i. (if odd (snd i) then 0 else real (count_list xs (the (x (fst i))) ^ (snd i)))) (counts a)))"
+      integral\<^sup>L \<Omega> (f2_tr x a) = (prod_list (map (\<lambda>i. (if odd (snd i) then 0 else real (count_list xs (the (x (fst i))) ^ (snd i)))) (counts a)))"
   proof -
     fix x n a
     assume a1:"x \<in> maps_inj n (set xs)"
@@ -299,7 +298,7 @@ proof -
 
     have c4: "\<And> i. i \<in> set (counts a) \<Longrightarrow> fst i < n" using a3 by auto
 
-    have "(LINT \<omega>|\<Omega>. f2_tr h xs x a \<omega>) =
+    have "(LINT \<omega>|\<Omega>. f2_tr x a \<omega>) =
       prod (\<lambda>i. (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x i)) (count (mset a) i) \<omega>))) (set a)"
       apply (simp add:f2_tr_def prod_mset_conv f2_sketch_summand_pow_def[symmetric])
       apply (rule prob_space.indep_vars_lebesgue_integral)
@@ -307,14 +306,14 @@ proof -
       using indep a2 a1 a3 assms(1) prob_space.indep_vars_subset apply blast
       using c a1 a3 has_bochner_integral_iff by blast
     
-    hence "integral\<^sup>L \<Omega> (f2_tr h xs x a) =
+    hence "integral\<^sup>L \<Omega> (f2_tr x a) =
       prod_list (map (\<lambda>i. (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x (fst i))) (snd i) \<omega>))) (counts a))"
       using countsI by fastforce
     also have "... = prod_list (map (\<lambda>i. (if odd (snd i) then 0 else real ( count_list xs (the (x (fst i))) ^ (snd i)))) (counts a))"
       apply (rule arg_cong [where f="prod_list"])
       apply (rule map_cong, simp)
       using a1 c4 by (simp add:d1)
-    finally show "integral\<^sup>L \<Omega> (f2_tr h xs x a) = prod_list (map (\<lambda>i. (if odd (snd i) then 0 else real (count_list xs (the (x (fst i))) ^ (snd i)))) (counts a))"
+    finally show "integral\<^sup>L \<Omega> (f2_tr x a) = prod_list (map (\<lambda>i. (if odd (snd i) then 0 else real (count_list xs (the (x (fst i))) ^ (snd i)))) (counts a))"
       by simp
   qed
 
