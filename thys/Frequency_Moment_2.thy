@@ -148,88 +148,49 @@ lemma (in prob_space) indep_vars_reindex:
 
 lemma
   assumes "prob_space \<Omega>"
-  assumes "\<And>I. I \<subseteq> set xs \<Longrightarrow> finite I \<Longrightarrow> card I \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> (\<lambda>_. borel) h I" 
-  assumes "\<And>i \<sigma>. i \<in> set xs \<Longrightarrow> \<sigma> \<in> {-1,1::real} \<Longrightarrow> prob_space.prob \<Omega> ((h i -` {\<sigma>}) \<inter> space \<Omega>) = 1/2"
-  shows var_f2:"(prob_space.expectation \<Omega> (\<lambda>\<omega>. (f2_sketch h xs \<omega>)^4))
-       - (prob_space.expectation \<Omega> (\<lambda>\<omega>. (f2_sketch h xs \<omega>)^2))^2 \<le> 2*(sum (\<lambda>i. (count_list xs i)^2) (set xs))^2" (is "?A - ?B \<le> ?C")
+  assumes "\<And>I. I \<subseteq> set xs \<Longrightarrow> finite I \<Longrightarrow> card I \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> (\<lambda>_. borel) h I"
+  assumes "\<And>i (m :: nat). i \<in> set xs \<Longrightarrow> integrable \<Omega> (\<lambda>\<omega>. (h i \<omega>)^m)"
+  assumes "\<And>i. i \<in> set xs \<Longrightarrow> prob_space.expectation \<Omega> (h i) = 0"
+  assumes "\<And>i. i \<in> set xs \<Longrightarrow> prob_space.expectation \<Omega> (\<lambda>\<omega>. (h i \<omega>)^2) = 1"
+  assumes "\<And>i. i \<in> set xs \<Longrightarrow> prob_space.expectation \<Omega> (\<lambda>\<omega>. (h i \<omega>)^4) \<le> 3"
+  shows var_f2:"prob_space.variance \<Omega> (\<lambda>\<omega>. (f2_sketch h xs \<omega>)^2)
+        \<le> (2*(sum (\<lambda>i. (count_list xs i)^2) (set xs))^2)" (is "?A \<le> ?B")
   and exp_f2:"prob_space.expectation \<Omega> (\<lambda>\<omega>. (f2_sketch h xs \<omega>)^2) = sum (\<lambda>i. (count_list xs i)^2) (set xs)" (is ?D)
   and int_exp_f2:"integrable \<Omega> (\<lambda>\<omega>. (f2_sketch h xs \<omega>)^2)" (is ?E)
-  and int_var_f2:"integrable \<Omega> (\<lambda>\<omega>. (f2_sketch h xs \<omega>)^4)" (is ?F)
+  and int_var_f2:"integrable \<Omega> (\<lambda>\<omega>. ((f2_sketch h xs \<omega>)^2)^2)" (is ?F)
 proof -
   have "\<And>i. i \<in> set xs \<Longrightarrow> prob_space.indep_vars \<Omega> (\<lambda>_. borel) h {i}" using assms(2) by simp
   hence meas:"\<And>i. i \<in> set xs \<Longrightarrow> h i \<in> measurable \<Omega> borel" using assms(1) by (simp add:prob_space.indep_vars_def2) 
 
+  define exp' where "exp' = (\<lambda>i m. prob_space.expectation \<Omega> (\<lambda>\<omega>. (h i \<omega>)^m))"
+  define exp where "exp = (\<lambda>i m. if m = 1 then 0 else (if m = 2 then 1 else exp' i m))"
+  define g where "g = (\<lambda>i. exp' i 4 - 3)"
+  have exp_4: "\<And>x. x \<in> set xs \<Longrightarrow> exp' x (Suc (Suc (Suc (Suc 0)))) = 3 + g x" using assms(6) 
+    by (simp add: numeral_eq_Suc exp'_def g_def) 
+  have g_4: "\<And>x. x \<in> set xs \<Longrightarrow> g x \<le> 0" using assms(6) by (simp add:exp'_def g_def)
+
   have "\<And>x m. x \<in> set xs  \<Longrightarrow>
-    has_bochner_integral \<Omega> (f2_sketch_summand_pow h xs x m) (if odd m then 0 else count_list xs x ^ m)"
+    has_bochner_integral \<Omega> (f2_sketch_summand_pow h xs x m) (exp x m * (count_list xs x ^ m))"
   proof -
     fix x
     fix m
     assume a:"x \<in> set xs"
 
-    define f where "f = (\<lambda>\<omega>. indicator (h x -` {-1} \<inter> space \<Omega>) \<omega> + ((indicator (h x -` {1} \<inter> space \<Omega>) \<omega>) :: real))"
-
-    define t where "t = (1:: real)"
-    have b:"t = prob_space.prob \<Omega> ((h x -` {-1}) \<inter> space \<Omega>) + prob_space.prob \<Omega> ((h x -` {1}) \<inter> space \<Omega>)"
-      using a by (simp add:assms(3) t_def)
-    have d:"h x -` {-1,1}  \<inter> space \<Omega> = (h x -` {-1}  \<inter> space \<Omega>) \<union> (h x -` {1}  \<inter> space \<Omega>)" by blast
-    have c:"prob_space.prob \<Omega> ((h x -` {-1,1}) \<inter> space \<Omega>) = t" apply (simp add: b d)
-      apply (rule measure_Union)
-      using finite_measure.emeasure_finite prob_space_def assms(1) apply auto[1]
-      using finite_measure.emeasure_finite prob_space_def assms(1) apply auto[1]
-      using a meas apply measurable[1]
-      using a meas apply measurable[1]
-      by fastforce
-    hence "prob_space.prob \<Omega> (h x -` {-1,1} \<inter> space \<Omega>) = 1" by (simp add:t_def)
-
-    hence "AE \<omega> in \<Omega>. h x \<omega> \<in> {-1, 1}"
-      using assms(1)  prob_space.AE_prob_1 by force
-    hence f_eval: "AE x in \<Omega>. f x = 1" apply (simp add:f_def split:split_indicator) by linarith
-    have f_meas: "f \<in> measurable \<Omega> borel" using a meas by (simp add:f_def, measurable)
-  
-    have eval_neg: "\<And>\<omega>.
-      f2_sketch_summand_pow h xs x m \<omega> * indicator (h x -` {-1} \<inter> space \<Omega>) \<omega> = 
-      (-(real (count_list xs x)))^m  * indicator (h x -` {-1} \<inter> space \<Omega>) \<omega>"
-      by (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def split:split_indicator)
-  
-    have eval_pos: "\<And>\<omega>. 
-      f2_sketch_summand_pow h xs x m \<omega> * indicat_real (h x -` {1} \<inter> space \<Omega>) \<omega> = 
-      (real (count_list xs x))^m  * indicat_real (h x -` {1} \<inter> space \<Omega>) \<omega>"
-      by (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def split:split_indicator)
-
-    have "\<And>\<sigma>. \<sigma> \<in> {-1,1} \<Longrightarrow> emeasure \<Omega> (h x -` {\<sigma>} \<inter> space \<Omega>) < \<infinity>"
-      using a assms(3) apply (simp add:measure_def) 
-      using top.not_eq_extremum by fastforce 
-    moreover have "\<And>\<sigma>. \<sigma> \<in> {-1,1} \<Longrightarrow> (h x -` {\<sigma>} \<inter> space \<Omega>) \<in> sets \<Omega>" 
-      by (meson borel_measurable_vimage a meas)
-    ultimately have integrable_pos: "\<And>\<sigma>. \<sigma> \<in> {-1,1} \<Longrightarrow>
-      integrable \<Omega> (\<lambda>\<omega>. (real (count_list xs x))^m  * indicat_real (h x -` {\<sigma>} \<inter> space \<Omega>) \<omega>)"
-      by simp
-    
-    have "integral\<^sup>L \<Omega> (\<lambda>\<omega>. f2_sketch_summand_pow h xs x m \<omega> * f \<omega>) = (if odd m then 0 else count_list xs x ^ m)"
-      apply (simp add:f_def algebra_simps(18) eval_pos eval_neg)
-      using  integrable_pos apply (simp add: integral_add integral_diff)
-      apply (cases "odd m") using a by (simp add:assms(3))+
-    moreover have "integrable \<Omega> (\<lambda>\<omega>. f2_sketch_summand_pow h xs x m \<omega> * f \<omega>)" 
-      apply (simp add:f_def algebra_simps(18) eval_pos eval_neg)
-      apply (cases "odd m") using  integrable_pos integrable_neg by simp+ 
-    ultimately have "has_bochner_integral \<Omega> (\<lambda>\<omega>. f2_sketch_summand_pow h xs x m \<omega> * f \<omega>) (if odd m then 0 else count_list xs x ^ m)"
-      by (simp add: has_bochner_integral_iff)
-    moreover have "has_bochner_integral \<Omega> (\<lambda>\<omega>. f2_sketch_summand_pow h xs x m \<omega> * f \<omega>) (if odd m then 0 else count_list xs x ^ m) = (
-          has_bochner_integral \<Omega> (\<lambda>\<omega>. f2_sketch_summand_pow h xs x m \<omega>) (if odd m then 0 else count_list xs x ^ m))"
-      apply (rule has_bochner_integral_cong_AE)
-        apply (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def) using a meas f_meas apply measurable
-        apply (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def) using a meas f_meas apply measurable
-      apply (simp add:f2_sketch_summand_pow_def) using f_eval by force
-    ultimately show "has_bochner_integral \<Omega> (f2_sketch_summand_pow h xs x m) (if odd m then 0 else count_list xs x ^ m)"
-      by auto
+    show "has_bochner_integral \<Omega> (\<lambda>\<omega>. f2_sketch_summand_pow h xs x m \<omega>) (exp x m * (count_list xs x ^ m))"
+      apply (simp add:f2_sketch_summand_pow_def f2_sketch_summand_def has_bochner_integral_iff)
+      apply (rule conjI)
+      using a assms(3) apply (simp add:algebra_simps)
+      apply (cases "m=1", simp add:exp_def assms(4) a)
+      apply (cases "m=2", simp add:algebra_simps exp_def assms(5) a)
+      by (simp add:exp_def exp'_def algebra_simps)
   qed
 
   hence c:"\<And>x n j m. x \<in> maps_inj  n (set xs) \<Longrightarrow> j < n \<Longrightarrow>
-    has_bochner_integral \<Omega> (f2_sketch_summand_pow h xs (the (x j)) m) (if odd m then 0 else  count_list xs (the (x j)) ^ m)"
+    has_bochner_integral \<Omega> (f2_sketch_summand_pow h xs (the (x j)) m) (exp (the (x j)) m * (count_list xs (the (x j)) ^ m))"
     by (meson maps_inj_elim)
 
   hence d1:"\<And>x n j m. x \<in> maps_inj  n (set xs) \<Longrightarrow> j < n \<Longrightarrow>
-    integral\<^sup>L \<Omega> (f2_sketch_summand_pow h xs (the (x j)) m) = (if odd m then 0 else  count_list xs (the (x j)) ^ m)"
+    integral\<^sup>L \<Omega> (f2_sketch_summand_pow h xs (the (x j)) m) = (exp (the (x j)) m) *  (count_list xs (the (x j)) ^ m)"
     using has_bochner_integral_iff by blast
 
   have  "\<And>x n. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4 \<Longrightarrow> prob_space.indep_vars \<Omega> ((\<lambda>_. borel) \<circ> (\<lambda>i. the (x i))) (h \<circ> (\<lambda>i. the (x i))) {k. k < n}"
@@ -289,7 +250,7 @@ proof -
 
   have indep1:
     "\<And> x n a. x \<in> maps_inj n (set xs) \<Longrightarrow> n \<le> 4  \<Longrightarrow>  set a \<subseteq> {k. k < n} \<Longrightarrow>
-      integral\<^sup>L \<Omega> (f2_tr x a) = (prod_list (map (\<lambda>i. (if odd (snd i) then 0 else real (count_list xs (the (x (fst i))) ^ (snd i)))) (counts a)))"
+      integral\<^sup>L \<Omega> (f2_tr x a) = (prod_list (map (\<lambda>i. exp (the (x (fst i))) (snd i) * real (count_list xs (the (x (fst i))) ^ (snd i))) (counts a)))"
   proof -
     fix x n a
     assume a1:"x \<in> maps_inj n (set xs)"
@@ -309,44 +270,48 @@ proof -
     hence "integral\<^sup>L \<Omega> (f2_tr x a) =
       prod_list (map (\<lambda>i. (LINT \<omega>|\<Omega>. (f2_sketch_summand_pow h xs (the (x (fst i))) (snd i) \<omega>))) (counts a))"
       using countsI by fastforce
-    also have "... = prod_list (map (\<lambda>i. (if odd (snd i) then 0 else real ( count_list xs (the (x (fst i))) ^ (snd i)))) (counts a))"
+    also have "... = prod_list (map (\<lambda>i. (exp (the (x (fst i))) (snd i) * real ( count_list xs (the (x (fst i))) ^ (snd i)))) (counts a))"
       apply (rule arg_cong [where f="prod_list"])
       apply (rule map_cong, simp)
       using a1 c4 by (simp add:d1)
-    finally show "integral\<^sup>L \<Omega> (f2_tr x a) = prod_list (map (\<lambda>i. (if odd (snd i) then 0 else real (count_list xs (the (x (fst i))) ^ (snd i)))) (counts a))"
+    finally show "integral\<^sup>L \<Omega> (f2_tr x a) = prod_list (map (\<lambda>i. (exp (the (x (fst i))) (snd i) * real (count_list xs (the (x (fst i))) ^ (snd i)))) (counts a))"
       by simp
   qed
+
+  show int_exp_f2:?E
+    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
+    apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
+    apply (simp add: split_fun_set_sum_into_partitions)
+    by (simp add: c1 c2 indep1 indep2)
+
+  show int_var_f2:?F
+    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
+    apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
+    apply (simp add: split_fun_set_sum_into_partitions)
+    by (simp add: c1 c2 indep1 indep2)
 
   have exp_2: "?D"
     apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
     apply (simp add: split_fun_set_sum_into_partitions)
     apply (simp add: c1 c2)
-    by (simp add: Bochner_Integration.integral_sum indep1 indep2)
+    by (simp add: Bochner_Integration.integral_sum indep1 indep2 exp_def)
   thus ?D by auto
 
-  have "?A \<le> ?B + ?C"
+  show "?A \<le> ?B"
+    using  int_exp_f2 int_var_f2 assms(1)
+    apply (simp add:prob_space.variance_eq)
     apply (simp add:exp_2)
     apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
     apply (simp add: split_fun_set_sum_into_partitions)
     apply (simp add: c1 c2)
     apply (simp add: Bochner_Integration.integral_sum indep1 indep2)
-    apply (simp add: sum_distrib_left sum_distrib_right)
-    by (simp add: sum_mono)
-  thus "?A - ?B \<le> ?C" by auto
-
-  show ?E
-    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
-    apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
-    apply (simp add: split_fun_set_sum_into_partitions)
-    by (simp add: c1 c2 indep1 indep2)
-
-  show ?F
-    apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
-    apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
-    apply (simp add: split_fun_set_sum_into_partitions)
-    by (simp add: c1 c2 indep1 indep2)
+    apply (simp add: exp_def)
+    apply (simp add: sum_distrib_left distrib_left distrib_right ac_simps)
+    apply (rule sum_mono)
+    apply (simp add:exp_4 maps_inj_elim algebra_simps)
+    by (simp add: maps_inj_elim g_4 mult_nonneg_nonpos2)
 qed
 
 end
