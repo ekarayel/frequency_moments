@@ -3,23 +3,22 @@ theory PolyCard
 begin
 
 (* Set of polynomials with a maximal degree *)
-definition P where "P F n = {x. x \<in> carrier (poly_ring F) \<and> degree x < n}"
+definition bounded_degree_polynomials where "bounded_degree_polynomials F n = {x. x \<in> carrier (poly_ring F) \<and> degree x < n}"
 
 lemma fin_degree_bounded:
   assumes "ring F"
   assumes "finite (carrier F)"
-  shows "finite {p. p \<in> carrier (poly_ring F) \<and> degree p < n}"
+  shows "finite (bounded_degree_polynomials F n)"
 proof -
-  define A where "A = {p. p \<in> carrier (poly_ring F) \<and> degree p < n}"
-  have b: "A = {p. polynomial \<^bsub>F\<^esub> (carrier F) p \<and> degree p < n}"
+  have b: "bounded_degree_polynomials F n = {p. polynomial \<^bsub>F\<^esub> (carrier F) p \<and> degree p < n}"
     apply(rule order_antisym, rule subsetI)
-    using A_def assms(1) by (simp add: univ_poly_carrier)+
-  have c: "A \<subseteq> {[]} \<union> {p. set p \<subseteq> carrier F \<and> length p -1 < n}"
+    using assms(1) by (simp add: bounded_degree_polynomials_def univ_poly_carrier)+
+  have c: "bounded_degree_polynomials F n \<subseteq> {[]} \<union> {p. set p \<subseteq> carrier F \<and> length p -1 < n}"
     apply (simp add: b polynomial_def subset_eq)
     by meson
-  have d: "A \<subseteq> {[]} \<union> {p. set p \<subseteq> carrier F \<and> length p \<le> n}"
+  have d: "bounded_degree_polynomials F n \<subseteq> {[]} \<union> {p. set p \<subseteq> carrier F \<and> length p \<le> n}"
     using c  Suc_diff_Suc by auto
-  thus "finite A" apply (rule finite_subset)
+  thus "finite (bounded_degree_polynomials F n)" apply (rule finite_subset)
     apply (rule finite_UnI)
     using assms(2) finite_lists_length_le by auto
 qed
@@ -29,13 +28,13 @@ lemma fin_fixed_degree:
   assumes "finite (carrier F)"
   shows "finite {p. p \<in> carrier (poly_ring F) \<and> degree p = n}"
 proof -
-  have "{p. p \<in> carrier (poly_ring F) \<and> degree p = n} \<subseteq> {p. p \<in> carrier (poly_ring F) \<and> degree p < Suc n}"
-    by (rule subsetI, simp)
+  have "{p. p \<in> carrier (poly_ring F) \<and> degree p = n} \<subseteq> bounded_degree_polynomials F (Suc n)"
+    by (rule subsetI, simp add:bounded_degree_polynomials_def)
   then show ?thesis
   using fin_degree_bounded assms rev_finite_subset by blast
 qed
 
-lemma p_card_zero:
+lemma zero_degree_polynomials_count:
   assumes "ring F"
   assumes "finite (carrier F)"
   shows "card {p. p \<in> carrier (poly_ring F) \<and> degree p = 0} = card (carrier F)"
@@ -73,7 +72,7 @@ proof -
   thus ?thesis by (simp add: A_def) 
 qed
 
-lemma p_card_non_zero:
+lemma fixed_degree_polynomials_count_gr_0:
   assumes "ring F"
   assumes "n \<ge> 1"
   assumes "finite (carrier F)"
@@ -111,8 +110,7 @@ proof -
   ultimately show "card ({p. p \<in> carrier (poly_ring F) \<and> degree p = n}) = (card (carrier F) - 1) * (card (carrier F) ^ n)" using A_def by simp
 qed
 
-
-lemma p_card_any:
+lemma fixed_degree_polynomials_count:
   assumes "ring F"
   assumes "finite (carrier F)"
   shows "card ({p. p \<in> carrier (poly_ring F) \<and> degree p = n}) = (
@@ -121,25 +119,25 @@ proof -
   have a:"\<not> 1 \<le> n \<Longrightarrow> n = 0" by linarith
   show ?thesis 
     apply (cases "n\<ge>1")
-    using p_card_non_zero assms apply auto[1]
-    using p_card_zero assms a by fastforce
+    using fixed_degree_polynomials_count_gr_0 assms apply auto[1]
+    using zero_degree_polynomials_count assms a by fastforce
 qed
 
-lemma p_card:
+lemma bounded_degree_polynomials_count:
   assumes "ring F"
   assumes "finite (carrier F)"
-  shows "card (P F (Suc n)) = card (carrier F) ^ (Suc n)"
+  shows "card (bounded_degree_polynomials F (Suc n)) = card (carrier F) ^ (Suc n)"
 proof -
-  have a: "P F (Suc n) = (\<Union> m < (Suc n). {p.  p \<in> carrier (poly_ring F) \<and> degree p = m})"
-    apply (simp only: P_def) by blast
-  have "card (P F (Suc n)) = (\<Sum> m < (Suc n). card {p.  p \<in> carrier (poly_ring F) \<and> degree p = m})"
+  have a: "bounded_degree_polynomials F (Suc n) = (\<Union> m < (Suc n). {p.  p \<in> carrier (poly_ring F) \<and> degree p = m})"
+    apply (simp only: bounded_degree_polynomials_def) by blast
+  have "card (bounded_degree_polynomials F (Suc n)) = (\<Sum> m < (Suc n). card {p.  p \<in> carrier (poly_ring F) \<and> degree p = m})"
     apply (simp only:a)
     apply(rule card_UN_disjoint)
       apply blast
     using fin_fixed_degree assms apply blast
     by blast
-  hence "card (P F (Suc n)) = (\<Sum> m < (Suc n). if m \<ge> 1 then (card (carrier F) - 1) * (card (carrier F) ^ m) else card (carrier F))"
-    using p_card_any assms by fastforce
+  hence "card (bounded_degree_polynomials F (Suc n)) = (\<Sum> m < (Suc n). if m \<ge> 1 then (card (carrier F) - 1) * (card (carrier F) ^ m) else card (carrier F))"
+    using fixed_degree_polynomials_count assms by fastforce
   moreover have "(\<Sum> m < (Suc n). if m \<ge> 1 then (card (carrier F) - 1) * (card (carrier F) ^ m) else card (carrier F)) = (card (carrier F) ^ (Suc n))"
     by (induction n, simp, simp add:mult_eq_if) 
   ultimately show ?thesis by auto
