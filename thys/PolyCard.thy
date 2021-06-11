@@ -148,5 +148,5 @@ lemma bounded_degree_polynomials_count_1:
   assumes "finite (carrier F)"
   assumes "n > 0"
   shows "card (bounded_degree_polynomials F n) = card (carrier F) ^ n"
-  sorryc
+  sorry
 end

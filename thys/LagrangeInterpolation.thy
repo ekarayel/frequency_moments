@@ -1,4 +1,4 @@
-theory LangrangePolynomial
+theory LagrangeInterpolation
   imports Main "HOL-Algebra.Polynomial_Divisibility" "HOL-Algebra.Polynomials"
 begin
 
@@ -256,7 +256,7 @@ lemma interpolate_l:
   assumes "distinct s"
   assumes "length s \<ge> 1"
   assumes "set s \<subseteq> carrier F"
-  assumes "\<forall>x \<in> set s. f x \<in> carrier F"
+  assumes "\<And>x. x \<in> set s \<Longrightarrow> f x \<in> carrier F"
   shows "interpolate F f s \<in> carrier (poly_ring F) \<and>
          degree (interpolate F f s) < length s \<and>
     (\<forall>x' \<in> set s. ring.eval F (interpolate F f s) x' = f x')"

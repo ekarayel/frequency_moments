@@ -39,26 +39,6 @@ qed
 text \<open>A hash function is just polynomial evaluation.\<close>
 definition hash_function where "hash_function F x \<omega> = ring.eval F \<omega> x"
 
-(*
-  given y and coefficients we can find a bounded_degree_poly F n
-
-  bounded_degree_poly F n [values at K and coeff ]
-    is surj hence bij
-
-  embed K :: bounded_degree_poly F n \<Rightarrow> (K \<Rightarrow> (c F)) x ([card K,..,n-1] \<rightarrow> (c F))
-
-  embed K is surj
-  embed K is bij
-
-  {poly with fst (embed K) = .. }  = embed K ^ [-1] {y} x 
-
-
-*)
-
-
-
-
-
 lemma poly_cards:
   assumes "field F"
   assumes "0 < n"
