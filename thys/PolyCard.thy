@@ -3,14 +3,14 @@ theory PolyCard
 begin
 
 (* Set of polynomials with a maximal degree *)
-definition bounded_degree_polynomials where "bounded_degree_polynomials F n = {x. x \<in> carrier (poly_ring F) \<and> degree x < n}"
+definition bounded_degree_polynomials where "bounded_degree_polynomials F n = {x. x \<in> carrier (poly_ring F) \<and> (degree x < n \<or> x = [])}"
 
 lemma fin_degree_bounded:
   assumes "ring F"
   assumes "finite (carrier F)"
   shows "finite (bounded_degree_polynomials F n)"
 proof -
-  have b: "bounded_degree_polynomials F n = {p. polynomial \<^bsub>F\<^esub> (carrier F) p \<and> degree p < n}"
+  have b: "bounded_degree_polynomials F n = {p. polynomial \<^bsub>F\<^esub> (carrier F) p \<and> (degree p < n \<or> p = [])}"
     apply(rule order_antisym, rule subsetI)
     using assms(1) by (simp add: bounded_degree_polynomials_def univ_poly_carrier)+
   have c: "bounded_degree_polynomials F n \<subseteq> {[]} \<union> {p. set p \<subseteq> carrier F \<and> length p -1 < n}"
@@ -123,12 +123,13 @@ proof -
     using zero_degree_polynomials_count assms a by fastforce
 qed
 
-lemma bounded_degree_polynomials_count:
+lemma bounded_degree_polynomials_count_1:
   assumes "ring F"
   assumes "finite (carrier F)"
   shows "card (bounded_degree_polynomials F (Suc n)) = card (carrier F) ^ (Suc n)"
 proof -
-  have a: "bounded_degree_polynomials F (Suc n) = (\<Union> m < (Suc n). {p.  p \<in> carrier (poly_ring F) \<and> degree p = m})"
+  have "\<And>x. x = [] \<Longrightarrow> degree x < Suc n" by simp
+  hence a: "bounded_degree_polynomials F (Suc n) = (\<Union> m < (Suc n). {p.  p \<in> carrier (poly_ring F) \<and> degree p = m})"
     apply (simp only: bounded_degree_polynomials_def) by blast
   have "card (bounded_degree_polynomials F (Suc n)) = (\<Sum> m < (Suc n). card {p.  p \<in> carrier (poly_ring F) \<and> degree p = m})"
     apply (simp only:a)
@@ -143,10 +144,19 @@ proof -
   ultimately show ?thesis by auto
 qed
 
-lemma bounded_degree_polynomials_count_1:
+lemma bounded_degree_polynomials_count:
   assumes "ring F"
   assumes "finite (carrier F)"
-  assumes "n > 0"
   shows "card (bounded_degree_polynomials F n) = card (carrier F) ^ n"
-  sorry
+proof (cases n)
+  case 0
+  have "[] \<in> carrier (poly_ring F)" 
+    by (simp add: univ_poly_zero_closed) 
+  then show ?thesis apply (simp add:bounded_degree_polynomials_def 0) 
+    using Collect_cong card_1_singleton_iff by force
+next
+  case (Suc nat)
+  then show ?thesis using assms bounded_degree_polynomials_count_1 by blast
+qed
+
 end

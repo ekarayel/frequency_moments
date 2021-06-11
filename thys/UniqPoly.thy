@@ -88,7 +88,7 @@ proof -
     hence "ring.eval R h x = ring.eval R p x \<ominus>\<^bsub>R\<^esub> ring.eval R q x" using f2 f3
       f4 f5 assms(1) domain.neg_hom field_def
       by (metis a_minus_def assms(3) domain.univ_poly_is_ring h_def mem_Collect_eq partial_object.select_convs(1) ring.carrier_is_subring ring.eval_poly_add ring.polynomial_incl ring.ring_simprules(3) univ_poly_add univ_poly_def)
-    thus "ring.eval R h x = \<zero>\<^bsub>R\<^esub>" 
+    thus "ring.eval R h x = \<zero>\<^bsub>R\<^esub>"
     using assms(8) h_def 
     by (metis f1 f2 f4 f5 ring.eval_in_carrier ring.r_right_minus_eq)
   qed

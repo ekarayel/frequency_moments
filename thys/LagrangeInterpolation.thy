@@ -299,4 +299,26 @@ proof -
   thus ?thesis using b e1 e2 e3 by blast
 qed
 
+lemma interpolate_len:
+  assumes "field F"
+  assumes "distinct s"
+  assumes "set s \<subseteq> carrier F"
+  assumes "\<And>x. x \<in> set s \<Longrightarrow> f x \<in> carrier F"
+  shows "interpolate F f s \<in> carrier (poly_ring F) \<and>
+         length (interpolate F f s) \<le> length s \<and>
+    (\<forall>x' \<in> set s. ring.eval F (interpolate F f s) x' = f x')"
+proof (cases "s")
+  case Nil
+  then show ?thesis   by (simp add: univ_poly_zero univ_poly_zero_closed)
+next
+  case (Cons a list)
+  hence "length s \<ge> 1" by simp
+  hence "interpolate F f s \<in> carrier (poly_ring F) \<and>
+         degree (interpolate F f s) < length s \<and>
+    (\<forall>x' \<in> set s. ring.eval F (interpolate F f s) x' = f x')"
+    using assms interpolate_l by blast  
+  thus ?thesis by linarith
+qed
+
+
 end
