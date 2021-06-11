@@ -1,6 +1,5 @@
 theory LangrangePolynomial
   imports Main "HOL-Algebra.Polynomial_Divisibility" "HOL-Algebra.Polynomials"
-  "HOL-Algebra.IntRing"
 begin
 
 lemma eval_simp:

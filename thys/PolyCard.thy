@@ -143,4 +143,10 @@ proof -
   ultimately show ?thesis by auto
 qed
 
+lemma bounded_degree_polynomials_count_1:
+  assumes "ring F"
+  assumes "finite (carrier F)"
+  assumes "n > 0"
+  shows "card (bounded_degree_polynomials F n) = card (carrier F) ^ n"
+  sorryc
 end
