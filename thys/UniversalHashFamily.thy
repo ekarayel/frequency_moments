@@ -1,5 +1,5 @@
 theory UniversalHashFamily
-  imports Main "HOL-Algebra.Polynomials" "HOL-Algebra.Polynomial_Divisibility" PolyCard
+  imports Main "HOL-Algebra.Polynomials" "HOL-Algebra.Polynomial_Divisibility" PolynomialCounting
   "HOL-Analysis.Nonnegative_Lebesgue_Integration" "HOL-Probability.Probability_Measure"
   "HOL-Probability.Independent_Family" Field "HOL-Probability.Stream_Space"
 begin
@@ -18,20 +18,18 @@ definition (in prob_space) k_wise_indep_vars where
 
 text \<open>The space of polynomials of degree less than n (n > 0) forms a probability space.\<close>
 definition poly_hash_family where
-  "poly_hash_family F n = uniform_count_measure (bounded_degree_polynomials F n)"
+  "poly_hash_family F n = uniform_count_measure (bounded_len_polynomials F n)"
 
 lemma prob_space_poly_family:
-  assumes "ring F"
-  assumes "n > 0"
+  assumes "field F"
   assumes "finite (carrier F)"
   shows "prob_space (poly_hash_family F n)"
 proof -
-  obtain m where m_def: "n = Suc m" using assms(2) gr0_implies_Suc by blast
-  have "finite (bounded_degree_polynomials F n)"
-    apply (simp only:m_def) using fin_degree_bounded assms(1) assms(3) by blast
-  moreover have "\<zero>\<^bsub>poly_ring F\<^esub> \<in> bounded_degree_polynomials F n"
-    using assms(1) assms(2) bounded_degree_polynomials_def 
-    by (simp add: bounded_degree_polynomials_def univ_poly_zero univ_poly_zero_closed)
+  have "finite (bounded_len_polynomials F n)"
+     using finite_poly_count assms(1) assms(2) by blast
+  moreover have "\<zero>\<^bsub>poly_ring F\<^esub> \<in> bounded_len_polynomials F n"
+    using assms(1) assms(2)
+    by (simp add: bounded_len_polynomials_def univ_poly_zero univ_poly_zero_closed)
   ultimately show ?thesis using prob_space_uniform_count_measure 
     by (metis empty_iff poly_hash_family_def)
 qed
@@ -41,17 +39,17 @@ definition hash_function where "hash_function F x \<omega> = ring.eval F \<omega
 
 lemma poly_cards:
   assumes "field F"
-  assumes "0 < n"
   assumes "finite (carrier F)"
   assumes "K \<subseteq> carrier F"
   assumes "card K \<le> n"
   assumes "y ` K \<subseteq> (carrier F)"
-  shows "card {\<omega> \<in> bounded_degree_polynomials F n. (\<forall>k \<in> K. ring.eval F \<omega> k = y k)} = card (carrier F)^(n-card K)"
-  sorry
+  shows "card {\<omega> \<in> bounded_len_polynomials F n. (\<forall>k \<in> K. ring.eval F \<omega> k = y k)} = 
+         card (carrier F)^(n-card K)"
+  using interpolating_polynomials_count[where n="n-card K" and f="y" and F="F" and K="K"]  assms 
+  by fastforce
 
 lemma poly_probabilities:
   assumes "field F"
-  assumes "n > 0"
   assumes "finite (carrier F)"
   assumes "K \<subseteq> carrier F"
   assumes "card K \<le> n"
@@ -60,18 +58,17 @@ lemma poly_probabilities:
     {\<omega>. \<omega> \<in> space (poly_hash_family F n) \<and> (\<forall>k \<in> K. hash_function F k \<omega> = y k)} = 1/(real (card (carrier F))^ card K)"
     (is "prob_space.prob (poly_hash_family F n) ?T = ?B")
 proof -
-  interpret prob_space "(poly_hash_family F n)"
-    using prob_space_poly_family assms field_def domain_def cring_def by metis
+  interpret prob_space "(poly_hash_family F n)" using prob_space_poly_family assms by metis
 
   have "\<zero>\<^bsub>F\<^esub> \<in> carrier F"
     using assms(1) by (simp add: cring.cring_simprules(2) fieldE(1))
   hence non_zero_den: "carrier F \<noteq> {}" by blast
-  have "card {\<omega> \<in> bounded_degree_polynomials F n. (\<forall>k \<in> {}. hash_function F k \<omega> = y k)} = card (carrier F)^(n-card {})"
+  have "card {\<omega> \<in> bounded_len_polynomials F n. (\<forall>k \<in> {}. hash_function F k \<omega> = y k)} = card (carrier F)^(n-card {})"
     using poly_cards[where K="{}"] assms by auto
-  hence "card (bounded_degree_polynomials  F n) = card (carrier F)^n" by simp
-  moreover have "finite (bounded_degree_polynomials F n)"
-    using fin_degree_bounded assms(1) assms(3) field_def domain_def cring_def by blast
-  moreover have "?T \<subseteq> bounded_degree_polynomials F n"
+  hence "card (bounded_len_polynomials  F n) = card (carrier F)^n" by simp
+  moreover have "finite (bounded_len_polynomials F n)"
+    using finite_poly_count assms(1) assms(2) by blast
+  moreover have "?T \<subseteq> bounded_len_polynomials F n"
     by (simp add:poly_hash_family_def space_uniform_count_measure)
   ultimately show ?thesis
     apply (simp add:measure_uniform_count_measure poly_hash_family_def hash_function_def)
@@ -111,8 +108,7 @@ lemma indep:
   shows 
      "prob_space.k_wise_indep_vars (poly_hash_family F n) n (\<lambda>_. uniform_count_measure (carrier F)) (hash_function F) (carrier F)" (is ?B)
 proof -
-  interpret prob_space "(poly_hash_family F n)"
-    using prob_space_poly_family assms field_def domain_def cring_def by metis
+  interpret prob_space "(poly_hash_family F n)" using prob_space_poly_family assms by metis
 
   have a1:"ring F" using assms(1) by (simp add:domain_def field_def cring_def)
 
@@ -125,7 +121,7 @@ proof -
     assume d3:"finite J"
     have b:"\<And>i. i \<in> J \<Longrightarrow> random_variable (uniform_count_measure (carrier F)) (\<lambda>\<omega>. hash_function F i \<omega>)" 
       apply (simp add:hash_function_def)
-      apply (simp add:poly_hash_family_def uniform_count_measure_def point_measure_def Pi_def bounded_degree_polynomials_def)
+      apply (simp add:poly_hash_family_def uniform_count_measure_def point_measure_def Pi_def bounded_len_polynomials_def)
       by (meson a1 d ring.carrier_is_subring ring.eval_in_carrier ring.polynomial_in_carrier subsetD univ_poly_carrier)
 
     define M where "M = (\<lambda>k. {k}) ` carrier F \<union> {{}}"
@@ -134,7 +130,7 @@ proof -
     have e:"\<And>i. i \<in> J \<Longrightarrow> hash_function F i \<in> space (poly_hash_family F n) \<rightarrow> space (uniform_count_measure (carrier F))"
       apply (simp add:Pi_def poly_hash_family_def space_uniform_count_measure hash_function_def)
       using a1 d 
-      by (metis (no_types, lifting) bounded_degree_polynomials_def mem_Collect_eq ring.carrier_is_subring ring.eval_poly_in_carrier subsetD univ_poly_carrier)
+      by (metis (no_types, lifting) bounded_len_polynomials_def mem_Collect_eq ring.carrier_is_subring ring.eval_poly_in_carrier subsetD univ_poly_carrier)
     have f:"sigma_sets (space (uniform_count_measure (carrier F))) M = sets (uniform_count_measure (carrier F))"
       apply (simp add: space_uniform_count_measure M_def sets_uniform_count_measure)
       using sigma_sets_singletons_and_empty assms(3) by auto
@@ -244,7 +240,5 @@ proof -
   qed
   thus ?B using k_wise_indep_vars_def by blast
 qed
-
-
 
 end
