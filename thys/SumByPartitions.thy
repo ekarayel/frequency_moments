@@ -43,6 +43,24 @@ fun enum_canonical_mapping
       (x,c) \<leftarrow> enum_canonical_mapping n, y \<leftarrow> [0..<c]]@
       [(\<lambda>k. if k < n then x k else (if k = n then c else Suc c), Suc c). 
       (x,c) \<leftarrow> enum_canonical_mapping n]"
+
+fun enum_partitions :: "nat \<Rightarrow> (nat \<times> nat list) list"
+  where
+    "enum_partitions 0 = [(0, [])]" |
+    "enum_partitions (Suc n) = 
+      [(c+1, c#x). (c,x) \<leftarrow> enum_partitions n]@
+      [(c, y#x). (c,x) \<leftarrow> enum_partitions n,  y \<leftarrow> [0..<c]]"
+
+value "(enum_partitions 4)"
+(*
+  xs
+  new elem distinct
+  or belongs to a previous class
+
+
+*)
+
+
 (*
 
 
@@ -427,13 +445,9 @@ lemma split_fun_set_sum_into_partitions:
 lemma dom_shift: "dom (x \<circ> shift m) = {k. (k :: nat) + m \<in> dom x}"
   by (simp add:dom_def)
 
-lemma ran_shift: "ran x \<subseteq> A \<Longrightarrow> ran (x \<circ> shift m) \<subseteq> A"
-  by (rule subsetI,simp add:ran_def,blast)
-
 lemma ran_restrict: "ran x \<subseteq> A \<Longrightarrow> ran (x |` B) \<subseteq> A"
   apply (rule subsetI,simp add:ran_def) 
   by (metis (mono_tags, lifting) mem_Collect_eq option.simps(3) restrict_in restrict_out subsetD)
-
 
 lemma sum_unroll_1:
   "sum (f :: 'a \<Rightarrow> 'b :: comm_monoid_add) A = sum (\<lambda>x. f (the (x 0))) (maps (Suc 0) A)"

@@ -1,0 +1,15 @@
+session StreamingAlgorithms = HOL +
+  options [document = pdf, document_output = "output", document_variants="document:outline=/proof"]
+  sessions
+    "HOL-Algebra"
+    "HOL-Probability"
+  theories
+    Field
+    PolyCard
+    CountMaps
+    PolynomialCounting
+    UniversalHashFamily (*
+    SumByPartitions
+    Frequency_Moment_2 *)
+  document_files
+    "root.tex"

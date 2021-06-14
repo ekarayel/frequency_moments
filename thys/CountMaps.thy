@@ -1,3 +1,5 @@
+section \<open>Counting Maps between Finite Sets\<close>
+
 theory CountMaps
   imports Main
 begin
