@@ -3,7 +3,7 @@ section \<open>$k$-independent Hash Families\<close>
 theory UniversalHashFamily
   imports Main "HOL-Algebra.Polynomials" "HOL-Algebra.Polynomial_Divisibility" PolynomialCounting
   "HOL-Analysis.Nonnegative_Lebesgue_Integration" "HOL-Probability.Probability_Measure"
-  "HOL-Probability.Independent_Family" Field "HOL-Probability.Stream_Space"
+  "HOL-Probability.Independent_Family" "HOL-Probability.Stream_Space" "HOL-Probability.Distributions"
 begin
 
 text \<open>A k-independent hash family $\mathcal H$ is probability space, whose elements are hash functions 
@@ -19,26 +19,20 @@ with domain $U$ and range ${i. i < m}$ such that:
 In this section, we construct $k$-independent hash families following the approach outlined
 by Wegman and Carter using the polynomials of degree less than $k$ over a finite field.\<close>
 
-text \<open>We first introduce k-wise independent random variables using the existing definition of
-independent random variables.\<close>
-
-definition (in prob_space) k_wise_indep_vars where
-  "k_wise_indep_vars k M' X' I = (\<forall>J \<subseteq> I. card J \<le> k \<longrightarrow> finite J \<longrightarrow> indep_vars M' X' J)" 
-
 text \<open>The space of polynomials of degree less than $k$ forms a probability space.\<close>
 definition poly_hash_family where
-  "poly_hash_family F k = uniform_count_measure (bounded_len_polynomials F k)"
+  "poly_hash_family F k = uniform_count_measure (bounded_degree_polynomials F k)"
 
 lemma prob_space_poly_family:
   assumes "field F"
   assumes "finite (carrier F)"
   shows "prob_space (poly_hash_family F k)"
 proof -
-  have "finite (bounded_len_polynomials F k)"
+  have "finite (bounded_degree_polynomials F k)"
      using finite_poly_count assms(1) assms(2) by blast
-  moreover have "\<zero>\<^bsub>poly_ring F\<^esub> \<in> bounded_len_polynomials F k"
+  moreover have "\<zero>\<^bsub>poly_ring F\<^esub> \<in> bounded_degree_polynomials F k"
     using assms(1) assms(2)
-    by (simp add: bounded_len_polynomials_def univ_poly_zero univ_poly_zero_closed)
+    by (simp add: bounded_degree_polynomials_def univ_poly_zero univ_poly_zero_closed)
   ultimately show ?thesis using prob_space_uniform_count_measure 
     by (metis empty_iff poly_hash_family_def)
 qed
@@ -46,19 +40,30 @@ qed
 text \<open>A hash function is just polynomial evaluation.\<close>
 definition hash_function where "hash_function F x \<omega> = ring.eval F \<omega> x"
 
+lemma hash_functions_are_random_variables:
+  assumes "field F"
+  assumes "finite (carrier F)"
+  assumes "i \<in> (carrier F)"
+  shows "prob_space.random_variable (poly_hash_family F n) (uniform_count_measure (carrier F)) (hash_function F i)"
+proof -
+  interpret ring "F" using assms(1) by (simp add:domain_def field_def cring_def)
+  have "\<And>x. x \<in> carrier (poly_ring F) \<Longrightarrow> set x \<subseteq> carrier F"
+    using polynomial_incl univ_poly_carrier by blast
+  thus ?thesis 
+    apply (simp add:poly_hash_family_def uniform_count_measure_def point_measure_def Pi_def bounded_degree_polynomials_length hash_function_def)
+    using assms(3) eval_in_carrier by presburger
+qed
+
 lemma poly_cards:
   assumes "field F"
   assumes "finite (carrier F)"
   assumes "K \<subseteq> carrier F"
   assumes "card K \<le> n"
   assumes "y ` K \<subseteq> (carrier F)"
-  shows "card {\<omega> \<in> bounded_len_polynomials F n. (\<forall>k \<in> K. ring.eval F \<omega> k = y k)} = 
+  shows "card {\<omega> \<in> bounded_degree_polynomials F n. (\<forall>k \<in> K. ring.eval F \<omega> k = y k)} = 
          card (carrier F)^(n-card K)"
   using interpolating_polynomials_count[where n="n-card K" and f="y" and F="F" and K="K"]  assms 
   by fastforce
-
-text \<open>The following shows that the hash functions are themselves uniform measures over the carrier
-of the field.\<close>
 
 lemma poly_probabilities:
   assumes "field F"
@@ -75,12 +80,12 @@ proof -
   have "\<zero>\<^bsub>F\<^esub> \<in> carrier F"
     using assms(1) by (simp add: cring.cring_simprules(2) fieldE(1))
   hence non_zero_den: "carrier F \<noteq> {}" by blast
-  have "card {\<omega> \<in> bounded_len_polynomials F n. (\<forall>k \<in> {}. hash_function F k \<omega> = y k)} = card (carrier F)^(n-card {})"
+  have "card {\<omega> \<in> bounded_degree_polynomials F n. (\<forall>k \<in> {}. hash_function F k \<omega> = y k)} = card (carrier F)^(n-card {})"
     using poly_cards[where K="{}"] assms by auto
-  hence "card (bounded_len_polynomials  F n) = card (carrier F)^n" by simp
-  moreover have "finite (bounded_len_polynomials F n)"
+  hence "card (bounded_degree_polynomials  F n) = card (carrier F)^n" by simp
+  moreover have "finite (bounded_degree_polynomials F n)"
     using finite_poly_count assms(1) assms(2) by blast
-  moreover have "?T \<subseteq> bounded_len_polynomials F n"
+  moreover have "?T \<subseteq> bounded_degree_polynomials F n"
     by (simp add:poly_hash_family_def space_uniform_count_measure)
   ultimately show ?thesis
     apply (simp add:measure_uniform_count_measure poly_hash_family_def hash_function_def)
@@ -105,13 +110,65 @@ proof -
     by (meson sigma_algebra.sigma_sets_subset sigma_algebra_Pow)
   ultimately show ?thesis by force
 qed
-
+(*
+lemma distrib:
+  assumes "field F"
+  assumes "finite (carrier F)"
+  assumes "i \<in> carrier F"
+  shows "distributed (poly_hash_family F n) (uniform_count_measure (carrier F)) (hash_function F i) (\<lambda>_. 1)"
+proof -
+  have a1:"ring F" using assms(1) by (simp add:domain_def field_def cring_def)
+  have b:" card (carrier F) \<noteq> 0" sorry
+  have "distr (poly_hash_family F n) (uniform_count_measure (carrier F)) (hash_function F i) = 
+        uniform_measure (uniform_count_measure (carrier F)) (carrier F)"
+    apply (rule uniform_distrI)
+    using hash_functions_are_random_variables assms apply metis
+       apply (simp add:sets_uniform_count_measure)
+      apply (simp add:assms(2) emeasure_uniform_count_measure)+
+    using assms(3) apply force
+    apply (subst emeasure_uniform_count_measure, simp add:assms(2), simp)
+    apply (simp add:poly_hash_family_def)
+    apply (subst emeasure_uniform_count_measure)
+      apply (simp add:fin_degree_bounded a1 assms)
+    apply (simp add:space_uniform_count_measure)
+    apply (subst emeasure_uniform_count_measure, simp add:assms(2), simp)
+    apply (simp add:space_uniform_count_measure sets_uniform_count_measure b)
+    using assms(2) assms(3) emeasure_uniform_count_measure fin_degree_bounded a1
+  apply (simp add:poly_hash_family_def space_uniform_count_measure emeasure_uniform_count_measure)
+*)
 text \<open>The main result of this section is that
 \begin{itemize}
 \item Each hash function has uniform distribution over the finite fields.
-\item A subset of k hash functions is independent. 
+\item The hash functions are k-wise independent random variables. 
 \end{itemize}
 \<close>
+
+lemma uniform_distribution:
+  assumes "field F"
+  assumes "finite (carrier F)"
+  assumes "n > 0"
+  assumes "k \<in> carrier F"
+  assumes "v \<in> carrier F"
+  shows "\<P>(\<omega> in poly_hash_family F n. hash_function F k \<omega> = v) = 1/(real (card (carrier F)))"
+proof -
+  have "{k} \<subseteq> carrier F" using assms(4) by simp
+  moreover have "card {k} \<le> n" using assms(3) by simp
+  moreover have "(\<lambda>_. v) ` {k} \<subseteq> carrier F" apply (rule subsetI) using assms(5) by simp 
+  ultimately show ?thesis
+    using assms(1) assms(2) poly_probabilities[where F="F" and K="{k}" and y="(\<lambda>_. v)"] by simp
+qed
+
+text \<open>I'm not yet sure about the form of the above statement. An alternative could be to state:
+  @{text "distributed (poly_hash_family F n) (uniform_count_measure (carrier F)) (hash_function F i) (\<lambda>_. 1)"}
+\<close>
+
+text \<open>We introduce k-wise independent random variables using the existing definition of
+independent random variables.\<close>
+
+definition (in prob_space) k_wise_indep_vars where
+  "k_wise_indep_vars k M' X' I = (\<forall>J \<subseteq> I. card J \<le> k \<longrightarrow> finite J \<longrightarrow> indep_vars M' X' J)" 
+
+text \<open>Key result hash functions are k-wise independent random variables.\<close>
 
 lemma indep:
   assumes "field F"
@@ -132,7 +189,7 @@ proof -
     assume d3:"finite J"
     have b:"\<And>i. i \<in> J \<Longrightarrow> random_variable (uniform_count_measure (carrier F)) (\<lambda>\<omega>. hash_function F i \<omega>)" 
       apply (simp add:hash_function_def)
-      apply (simp add:poly_hash_family_def uniform_count_measure_def point_measure_def Pi_def bounded_len_polynomials_def)
+      apply (simp add:poly_hash_family_def uniform_count_measure_def point_measure_def Pi_def bounded_degree_polynomials_def)
       by (meson a1 d ring.carrier_is_subring ring.eval_in_carrier ring.polynomial_in_carrier subsetD univ_poly_carrier)
 
     define M where "M = (\<lambda>k. {k}) ` carrier F \<union> {{}}"
@@ -141,7 +198,7 @@ proof -
     have e:"\<And>i. i \<in> J \<Longrightarrow> hash_function F i \<in> space (poly_hash_family F n) \<rightarrow> space (uniform_count_measure (carrier F))"
       apply (simp add:Pi_def poly_hash_family_def space_uniform_count_measure hash_function_def)
       using a1 d 
-      by (metis (no_types, lifting) bounded_len_polynomials_def mem_Collect_eq ring.carrier_is_subring ring.eval_poly_in_carrier subsetD univ_poly_carrier)
+      by (metis (no_types, lifting) bounded_degree_polynomials_def mem_Collect_eq ring.carrier_is_subring ring.eval_poly_in_carrier subsetD univ_poly_carrier)
     have f:"sigma_sets (space (uniform_count_measure (carrier F))) M = sets (uniform_count_measure (carrier F))"
       apply (simp add: space_uniform_count_measure M_def sets_uniform_count_measure)
       using sigma_sets_singletons_and_empty assms(2) by auto

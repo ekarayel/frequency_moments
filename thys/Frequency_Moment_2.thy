@@ -330,6 +330,9 @@ definition four_canonical_maps where
     [0,1,1,0],
     [0,0,0,0]]"
 
+definition two_canonical_maps where
+   "two_canonical_maps = [[0,0],[0,1]]"
+
 definition same_partition :: "(nat \<Rightarrow> nat) \<Rightarrow> 'b list \<Rightarrow> bool"  where "same_partition f ys = 
   (\<forall>k l. k < length ys \<and> l < length ys \<longrightarrow> (f k = f l) = (ys ! k = ys ! l))"
 
@@ -459,6 +462,8 @@ proof -
 
   have c3 :"\<And>x. length x = 4 \<Longrightarrow> f2_tr x = (\<lambda>\<omega>. sum_list (map (\<lambda>p. f2_tr' x p \<omega>) four_canonical_maps))"
     sorry
+  have c31 :"\<And>x. length x = 2 \<Longrightarrow> f2_tr x = (\<lambda>\<omega>. sum_list (map (\<lambda>p. f2_tr' x p \<omega>) two_canonical_maps))"
+    sorry
 
   have indep2:
     "\<And> x p. set x \<subseteq> set xs  \<Longrightarrow> length x \<le> 4  \<Longrightarrow> 
@@ -498,19 +503,20 @@ proof -
 
   show int_exp_f2:?E
     apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
-    apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
-    apply (simp add: split_fun_set_sum_into_partitions) sorry
+    apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
+    by (simp add: c31 indep1 indep2 exp_def sum.distrib two_canonical_maps_def)
 
   show int_var_f2:?F
     apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
-    apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
-    apply (simp add: split_fun_set_sum_into_partitions) sorry
+    apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
+    by (simp add: c3 indep1 indep2 exp_def sum.distrib four_canonical_maps_def)
 
   have exp_2: "?D"
     apply (simp add: f2_sketch_def power4_eq_xxxx power2_eq_square)
-    apply (simp add: sum_distrib_left sum_distrib_right sum_unroll_1[where A="set xs"] sum_unroll_2)
-    apply (simp add: split_fun_set_sum_into_partitions)
-    apply (simp add: c1 c2) sorry
+    apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
+    apply (simp add: c31 indep1 indep2 exp_def sum.distrib two_canonical_maps_def)
+    apply (simp add: same_partition_elim same_partition_elim_2)
+    by (simp add: sum_collapse  rev_ineq )
   thus ?D by auto
 
   show "?A \<le> ?B"
