@@ -22,6 +22,10 @@ definition f2_sketch
   where
     "f2_sketch f xs \<omega> = (\<Sum> x \<in> set xs. f2_sketch_summand f xs x \<omega>)"
 
+definition f2_value
+  where
+    "f2_value xs = (\<Sum> x \<in> set xs. (real (count_list xs x)^2))"
+
 text \<open>This is a disjoint induction scheme for multisets: We can represent each multiset as
 a sum like: replicate_mset n x_1 + replicate_mset n x_2 + .. + replicate_mset n x_n where the 
 x_i are distinct.\<close>
@@ -472,7 +476,7 @@ proof -
 
   have indep1:
     "\<And> x p. set x \<subseteq> set xs \<Longrightarrow> length x \<le> 4  \<Longrightarrow>  
-      integral\<^sup>L M (f2_tr' x p) = (if same_partition (\<lambda>i. p !i) x then 1 else 0) * 
+      integral\<^sup>L M (f2_tr' x p) = (if same_partition (\<lambda>i. p ! i) x then 1 else 0) * 
       prod_list (map (\<lambda>i. exp (x ! fst i) (snd i) * real (count_list xs (x ! fst i) ^ snd i)) (counts p))"
     sorry (*  proof -
     fix x n a
