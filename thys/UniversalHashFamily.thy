@@ -65,6 +65,63 @@ lemma poly_cards:
   using interpolating_polynomials_count[where n="n-card K" and f="y" and F="F" and K="K"]  assms 
   by fastforce
 
+lemma poly_card_set:
+  assumes "field F"
+  assumes "finite (carrier F)"
+  assumes "k \<in> carrier F"
+  assumes "n \<ge> 1" 
+  assumes "A \<subseteq> (carrier F)"
+  shows "card {\<omega> \<in> bounded_degree_polynomials F n. ring.eval F \<omega> k \<in> A} = 
+         card A * card (carrier F)^(n-1)" (is "card ?A = ?B")
+proof -
+  have b:"Suc 0 \<le> n" using assms(4) by linarith
+  define P where "P = (\<lambda>x. {\<omega> \<in> bounded_degree_polynomials F n. ring.eval F \<omega> k = x})"
+  have d1: "\<And>x. x \<in> carrier F \<Longrightarrow> card (P x) = (card (carrier F)^(n-1))"
+  proof -
+    fix x
+    assume a:"x \<in> carrier F"
+    show "card (P x) = (card (carrier F)^(n-1))"
+      using assms a b poly_cards[where K="{k}" and y="(\<lambda>_.x)"]
+      by (simp add:P_def) 
+  qed
+  hence d:"\<And>x. x \<in> P ` A \<Longrightarrow> card x = card (carrier F)^(n-1)"
+    using assms(5)
+    by blast
+  have c:"?A = (\<Union>x \<in> A. P x)"
+    apply (simp add:P_def)
+    apply (rule order_antisym)
+    by (rule subsetI, simp)+ 
+  have e:"inj_on P A"
+  proof (rule inj_onI)
+    fix x y
+    assume "y \<in> A"
+    assume "P x = P y"
+    moreover 
+    have "carrier F \<noteq> {}" using assms(3) by fastforce
+    moreover  assume "x \<in> A"
+    hence "P x \<noteq> {}" using b d1 
+      by (metis assms(2) assms(5) calculation(2) card_eq_0_iff in_mono power_not_zero)
+    then obtain z where "z \<in> P x" by blast
+    ultimately have "z \<in> P x \<inter> P y"
+      by (simp add:P_def)
+    then show "x = y" 
+      by (simp add:P_def, force)
+  qed
+  have "disjoint (P ` A)" apply (rule disjointI)
+    apply (simp add:P_def) 
+    apply (rule order_antisym)
+    by (rule subsetI, simp, fastforce, simp) 
+  moreover have "\<And>B. B \<in> P ` A \<Longrightarrow> finite B"
+    apply (simp add:P_def)
+    apply (subgoal_tac "ring F")
+    using fin_degree_bounded assms(2) apply fastforce
+    using assms(1)  field.is_ring by blast
+  ultimately show "card ?A = ?B"
+    apply (simp add:c card_Union_disjoint)
+    apply (simp add:d)
+    using e card_image by blast
+qed
+
 lemma poly_probabilities:
   assumes "field F"
   assumes "finite (carrier F)"

@@ -2,6 +2,13 @@ theory Partitions_2
   imports Main  "HOL-Library.Multiset"
 begin
 
+subsection \<open>Combinatorics\<close>
+
+text \<open>In this section, we build combinatorial tools to be able to split powers of sums into summands
+that can be evaluated using the same term structure. For example $\left(\Sigma_{i \in I} x_i\right)^2 = 
+\Sigma_{i \in I} x_i^2 + \Sigma_{i,j \in I, i \neq j} x_i x_j$. In each summand the indices range
+over distinct values. In the case of powers of 4 we end up with 5 distinct groups.\<close>
+
 fun enum_partitions_aux :: "nat \<Rightarrow> (nat \<times> nat list) list"
   where
     "enum_partitions_aux 0 = [(0, [])]" |
