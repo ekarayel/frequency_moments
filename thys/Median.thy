@@ -203,6 +203,8 @@ lemma (in prob_space) hoeffding_count:
   assumes "n \<ge> -32/9 * ln \<epsilon>"
   assumes "\<And>i \<omega>. i < n \<Longrightarrow> \<omega> \<in> space M \<Longrightarrow> X i \<omega> \<in> {0,1::real}"
   assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> = 1) \<le> 1/8"
+  assumes "\<epsilon> > 0"
+  assumes "\<epsilon> < 1"
   shows "\<P>(\<omega> in M. 2*card {k. X k \<omega> = 1 \<and> k < n} \<ge> n) \<le> \<epsilon>"
 proof -
   have "\<And>\<omega>. \<omega> \<in> space M \<Longrightarrow> (\<And>i. i<n \<Longrightarrow> X i \<omega> \<in> {0,1}) \<Longrightarrow> (\<Sum>i \<in> {0..<n}. X i \<omega>) = (card {k. X k \<omega> = 1 \<and> k < n})"
@@ -220,7 +222,17 @@ proof -
   qed
   hence y_elim: "\<And>\<omega>. \<omega> \<in> space M \<Longrightarrow> (\<Sum>i = 0..<n. X i \<omega>) = (card {k. X k \<omega> = 1 \<and> k < n})"
     using assms(3) by blast
-  have a:"n > 0" sorry
+  have a:"n > 0" 
+  proof (rule ccontr)
+    assume "\<not> (n > 0)"
+    hence "n = 0"
+      by auto
+    hence "ln \<epsilon> \<ge> 0" 
+      using assms(2) by linarith
+    hence "\<epsilon> \<ge> 1" 
+      using assms(5) ln_ge_zero_iff by blast
+    thus "False" using  assms(6) by auto
+  qed
   have b1:"\<And>i \<omega>. i < n \<Longrightarrow> \<omega> \<in> space M \<Longrightarrow> X i \<omega> = indicat_real {\<omega> \<in> space M. X i \<omega> = 1} \<omega>" 
     using assms(3) apply (simp split:split_indicator) by blast
   have b2:"\<And>i. i  < n \<Longrightarrow> {\<omega> \<in> space M. X i \<omega> = 1} \<inter> space M = {\<omega> \<in> space M. X i \<omega> = 1}" 
@@ -260,13 +272,16 @@ proof -
   ultimately have "prob ?C \<le> ?B" by force
   moreover have "?C = {\<omega> \<in> space M. 2*card {k. X k \<omega> = 1 \<and> k < n} \<ge> n}"
     by (auto simp add:y_elim)
-  moreover have "?B \<le> \<epsilon>" using assms(2)
-    sorry
+  moreover 
+  have "ln \<epsilon> \<ge> -9/32 * real n" using assms(2) by linarith
+  hence "?B \<le> \<epsilon>" 
+    by (metis assms(5) ln_ge_iff minus_divide_left mult_minus_right mult_of_nat_commute times_divide_eq_right)
   ultimately show ?thesis by simp
 qed
 
 lemma (in prob_space) median_bound:
   assumes "\<epsilon> > 0"
+  assumes "\<epsilon> < 1"
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> -32/9 * ln \<epsilon>"
   assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - (\<mu>::real)) \<ge> (\<delta>::real)) \<le> 1/8" 
@@ -295,16 +310,27 @@ proof -
   have "(\<And>i. i \<in> {0..<n} \<Longrightarrow> (\<lambda>v. if \<bar>v - \<mu>\<bar> \<ge> \<delta> then 1 else 0) \<in> borel_measurable borel)" 
     by measurable
   have E_indep: "indep_vars (\<lambda>_. borel) E {0..<n}"
-    using assms(2) 
+    using assms(3) 
      indep_vars_compose[where Y = "(\<lambda>i v. if abs (v - \<mu>) \<ge> \<delta> then 1 else 0::real)" and X="X"] 
     by (simp add:comp_def E_def)
   have b:"\<P>(\<omega> in M. 2*card {k. E k \<omega> = 1 \<and> k < n} \<ge> n) \<le> \<epsilon>"  (is "\<P>(\<omega> in M. ?B \<omega>) \<le> ?C")
     apply (rule hoeffding_count)
     apply (simp add:E_indep)
-    using assms(3) apply (simp, simp add:E_def)
-    using assms(4) apply (simp add:E_def) 
-    by (metis (mono_tags, lifting) Collect_cong)
-  have n_min: "n > 0" sorry
+    using assms(4) apply (simp, simp add:E_def)
+    using assms(5) apply (simp add:E_def) 
+      apply (metis (mono_tags, lifting) Collect_cong)
+    using assms by auto
+  have n_min: "n > 0" 
+  proof (rule ccontr)
+    assume "\<not> (n > 0)"
+    hence "n = 0"
+      by auto
+    hence "ln \<epsilon> \<ge> 0" 
+      using assms(4) by linarith
+    hence "\<epsilon> \<ge> 1" 
+      using assms(1) ln_ge_zero_iff by blast
+    thus "False" using  assms(2) by auto
+  qed
   have a:"\<And>x. x \<in> space M \<and> \<delta> \<le> \<bar>median (\<lambda>i. X i x) n - \<mu>\<bar> \<Longrightarrow> n \<le> 2 * card {k. \<delta> \<le> \<bar>X k x - \<mu>\<bar> \<and> k < n}"
   proof -
     fix x
@@ -321,7 +347,7 @@ proof -
     apply (rule finite_measure_mono)
     apply (simp only:E_elim)
     apply measurable
-    using assms(2) apply (simp add:indep_vars_def)
+    using assms(3) apply (simp add:indep_vars_def)
     by measurable
   thus ?thesis using b by linarith
 qed  
@@ -355,10 +381,43 @@ proof  -
     by (simp add:i_off j_off space_PiM PiE_def extensional_def)
 qed
 
+lemma bubblesort_measurable:
+  assumes "n > 0"
+  shows "(\<lambda>x. bubblesort x n) \<in> measurable (Pi\<^sub>M {0..<n} (\<lambda>_. borel :: real measure)) (Pi\<^sub>M {0..<n} (\<lambda>_. borel :: real measure))" (is "_ \<in> ?M")
+proof -
+  define is_swap where "is_swap = (\<lambda>(ts :: ((nat \<Rightarrow> real) \<Rightarrow> nat \<Rightarrow> real)). \<exists>i < n. \<exists>j < n. ts = swap i j)"
+  define t :: "((nat \<Rightarrow> real) \<Rightarrow> nat \<Rightarrow> real) list" 
+    where "t = [swap j i. i <- [0..<n], j <- [0..<i]]" 
+  have a:"\<And>x. is_swap x \<Longrightarrow> x \<in> ?M"
+  proof -
+    fix x
+    assume "is_swap x"
+    then obtain i j where "i < n" and "j < n" and "x = swap i j"
+      using is_swap_def 
+      by blast
+    thus "x \<in> ?M" using swap_measurable  assms by blast
+  qed
+  have "(\<And>x. x \<in> set t \<Longrightarrow> is_swap x) \<Longrightarrow> fold id t \<in> ?M" 
+    apply (induction t, simp, simp)
+    using a by (metis measurable_comp)
+  moreover have "\<And>x. x \<in> set t \<Longrightarrow> is_swap x" 
+    apply (simp add:t_def is_swap_def) 
+    by (meson atLeastLessThan_iff imageE less_imp_le less_le_trans)  
+  ultimately show ?thesis
+    by (simp add:t_def)
+qed
 
 lemma median_measurable:
   assumes "n > 0"
-  shows "(\<lambda>x. median x n) \<in> borel_measurable (Pi\<^sub>M {0..<n} (\<lambda>_. borel))"
-  apply (simp ) sorry
+  shows "(\<lambda>x. median x n) \<in> borel_measurable (Pi\<^sub>M {0..<n} (\<lambda>_. borel :: real measure))"
+proof -
+  have a:"n div 2 < n" using assms by simp
+  have "(\<lambda>x. x (n div 2)) \<in> borel_measurable (Pi\<^sub>M {0..<n} (\<lambda>_. borel :: real measure))"
+     apply (measurable) using a by auto
+  thus ?thesis
+    apply (simp del:bubblesort.simps)
+    using assms bubblesort_measurable apply measurable
+    using a by auto
+qed
 
 end

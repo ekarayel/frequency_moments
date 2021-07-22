@@ -167,32 +167,7 @@ proof -
     by (meson sigma_algebra.sigma_sets_subset sigma_algebra_Pow)
   ultimately show ?thesis by force
 qed
-(*
-lemma distrib:
-  assumes "field F"
-  assumes "finite (carrier F)"
-  assumes "i \<in> carrier F"
-  shows "distributed (poly_hash_family F n) (uniform_count_measure (carrier F)) (hash_function F i) (\<lambda>_. 1)"
-proof -
-  have a1:"ring F" using assms(1) by (simp add:domain_def field_def cring_def)
-  have b:" card (carrier F) \<noteq> 0" sorry
-  have "distr (poly_hash_family F n) (uniform_count_measure (carrier F)) (hash_function F i) = 
-        uniform_measure (uniform_count_measure (carrier F)) (carrier F)"
-    apply (rule uniform_distrI)
-    using hash_functions_are_random_variables assms apply metis
-       apply (simp add:sets_uniform_count_measure)
-      apply (simp add:assms(2) emeasure_uniform_count_measure)+
-    using assms(3) apply force
-    apply (subst emeasure_uniform_count_measure, simp add:assms(2), simp)
-    apply (simp add:poly_hash_family_def)
-    apply (subst emeasure_uniform_count_measure)
-      apply (simp add:fin_degree_bounded a1 assms)
-    apply (simp add:space_uniform_count_measure)
-    apply (subst emeasure_uniform_count_measure, simp add:assms(2), simp)
-    apply (simp add:space_uniform_count_measure sets_uniform_count_measure b)
-    using assms(2) assms(3) emeasure_uniform_count_measure fin_degree_bounded a1
-  apply (simp add:poly_hash_family_def space_uniform_count_measure emeasure_uniform_count_measure)
-*)
+
 text \<open>The main result of this section is that
 \begin{itemize}
 \item Each hash function has uniform distribution over the finite fields.
@@ -214,10 +189,6 @@ proof -
   ultimately show ?thesis
     using assms(1) assms(2) poly_probabilities[where F="F" and K="{k}" and y="(\<lambda>_. v)"] by simp
 qed
-
-text \<open>I'm not yet sure about the form of the above statement. An alternative could be to state:
-  @{text "distributed (poly_hash_family F n) (uniform_count_measure (carrier F)) (hash_function F i) (\<lambda>_. 1)"}
-\<close>
 
 text \<open>We introduce k-wise independent random variables using the existing definition of
 independent random variables.\<close>
