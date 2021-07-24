@@ -383,4 +383,68 @@ proof -
     by (simp add:lift_pos_bochner_integral_PiM f_split)
 qed
 
+lemma (in prob_space) var_sum:
+  assumes "finite I"
+  assumes "indep_vars (\<lambda>_. borel ::real measure) X' I" 
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. X' i \<omega>)" 
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. X' i \<omega>^2)" 
+  shows "variance (\<lambda>\<omega>. \<Sum>i\<in> I. X' i \<omega>) = (\<Sum> i \<in> I. variance (\<lambda>\<omega>. X' i \<omega>))" 
+proof -
+  have a:"\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> i \<noteq> j \<Longrightarrow> expectation (\<lambda>\<omega>. (X' i \<omega>) * (X' j \<omega>)) = 
+     expectation (X' i) * expectation (X' j) \<and> integrable M (\<lambda>\<omega>. (X' i \<omega>) * (X' j \<omega>))"
+    (is "\<And>i j. _ \<Longrightarrow> _ \<Longrightarrow> _ \<Longrightarrow> ?ths1 i j \<and> ?ths2 i j")
+  proof -
+    fix i j
+    assume a1:"i \<in> I"
+    assume a2:"j \<in> I"
+    assume a3:"i \<noteq> j"
+    have "{i,j} \<subseteq> I" using a1 a2 by simp
+    hence "indep_vars (\<lambda>_. borel) X' {i, j}" 
+      using indep_vars_subset assms(2) by blast
+    moreover have "\<And>i'. i' \<in> {i,j} \<Longrightarrow> integrable M (X' i')" 
+      using a1 a2 assms(3) by blast
+    ultimately show "?ths1 i j \<and> ?ths2 i j"
+      using a3 indep_vars_lebesgue_integral[where I="{i,j}" and X="X'"] indep_vars_integrable[where I="{i,j}" and X="X'"]
+      by simp
+  qed
+
+  have b:"\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> expectation (\<lambda>\<omega>. (X' i \<omega>) * (X' j \<omega>)) =
+    (if i \<noteq> j then 0 else expectation (\<lambda>\<omega>. (X' i \<omega>)^2) - expectation (X' i) * expectation (X' j)) +  expectation (X' i) * expectation (X' j)"
+    (is "\<And>i j. _ \<Longrightarrow> _ \<Longrightarrow> ?lhs i j = ?rhs i j")
+  proof -
+    fix i j
+    assume "i \<in> I"
+    moreover assume "j \<in> I"
+    ultimately show "?lhs i j = ?rhs i j"
+      apply (cases "i = j")
+       apply (simp add:power2_eq_square)
+      by (simp add:a)
+  qed
+  have c:"\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. (X' i \<omega>) * (X' j \<omega>))" (is "\<And>i j. _ \<Longrightarrow> _ \<Longrightarrow> ?ths i j")
+  proof -
+    fix i j
+    assume "i \<in> I"
+    moreover assume "j \<in> I"
+    ultimately show "?ths i j"
+      apply (cases "i = j")
+       using assms(4) apply (simp add: power2_eq_square)
+      by (simp add:a)
+  qed
+  have d:"integrable M (\<lambda>\<omega>. (\<Sum>i \<in> I. X' i \<omega>)\<^sup>2)" 
+    by (simp add:c sum_distrib_left sum_distrib_right power2_eq_square)
+  show ?thesis 
+    apply (subst variance_eq)
+    apply (simp add: assms)
+    apply (simp add: d)
+    apply (simp add: variance_eq assms)
+    apply (subst (1 2) power2_eq_square)
+    apply (simp add: sum_distrib_left sum_distrib_right)
+    apply (simp add: c Bochner_Integration.integral_sum)
+    apply (simp add: sum_subtractf[symmetric])
+    apply (simp add: b assms(1) sum_collapse)
+    by (simp add:power2_eq_square)
+qed
+
+
+
 end
