@@ -95,7 +95,6 @@ lemma enn2real_prod:
   using assms apply (induction J rule:finite_induct)
   by (simp add:enn2real_mult)+
 
-
 lemma lift_rv:
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (\<Omega> i)"
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space.random_variable (\<Omega> i) (M' i) (X' i)"
@@ -171,7 +170,6 @@ proof -
   show ?thesis by simp
 qed
 
-
 lemma indep_pointwise:
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
   assumes "\<And>i. i \<in> J \<Longrightarrow> X' i \<in> measurable (PiM I M) (M' i)"
@@ -209,5 +207,180 @@ proof -
   thus ?thesis
     using c by (simp add:b cong:prob_space.indep_vars_cong)
 qed 
+
+lemma make_ext: 
+  assumes "\<And>x.  P x = P (restrict x I)" 
+  shows "(\<forall>x \<in> Pi I A. P x) = (\<forall>x \<in> PiE I A. P x)"
+  apply (simp add:PiE_def Pi_def)
+  apply (rule order_antisym)
+   apply (simp add:Pi_def)
+  using assms by fastforce
+
+lemma PiE_reindex:
+  assumes "inj_on f I"
+  shows "PiE I (A \<circ> f) = (\<lambda>a. restrict (a \<circ> f) I) ` PiE (f ` I) A" (is "?lhs = ?f ` ?rhs")
+proof -
+  have "?lhs \<subseteq> ?f` ?rhs"
+  proof (rule subsetI)
+    fix x
+    assume a:"x \<in> Pi\<^sub>E I (A \<circ> f)"
+    define y where y_def: "y = (\<lambda>k. if k \<in> f ` I then x (the_inv_into I f k) else undefined)"
+    have b:"y \<in> PiE (f ` I) A" 
+      apply (rule PiE_I)
+      using a apply (simp add:y_def PiE_iff)
+       apply (metis imageE assms the_inv_into_f_eq)
+      using a by (simp add:y_def PiE_iff extensional_def)
+    have c: "x = (\<lambda>a. restrict (a \<circ> f) I) y" 
+      apply (rule ext)
+      using a apply (simp add:y_def PiE_iff)
+      apply (rule conjI)
+      using assms the_inv_into_f_eq 
+      apply (simp add: the_inv_into_f_eq)
+      by (meson extensional_arb)
+    show "x \<in> ?f ` ?rhs" using b c by blast
+  qed
+  moreover have "?f ` ?rhs \<subseteq> ?lhs"
+    apply (rule image_subsetI)
+    by (simp add:Pi_def PiE_def)
+  ultimately show ?thesis by blast
+qed
+
+lemma (in prob_space) indep_sets_reindex:
+  assumes "inj_on f I"
+  shows "indep_sets A (f ` I) = indep_sets (\<lambda>i. A (f i)) I"
+proof -
+  have a:"\<And>J g. J \<subseteq> I \<Longrightarrow> (\<Prod>j \<in> f ` J. g j) = (\<Prod>j \<in> J. g (f j))"
+    by (metis assms prod.reindex_cong subset_inj_on)
+
+  have "\<And>J. J \<subseteq> I \<Longrightarrow> (\<Pi>\<^sub>E i \<in> J. A (f i)) = (\<lambda>a. restrict (a \<circ> f) J) ` PiE (f ` J) A"
+    apply (subst PiE_reindex[symmetric])
+    using assms inj_on_subset apply blast
+    by (simp add: comp_def)
+
+  hence b:"\<And>P J. J \<subseteq> I \<Longrightarrow>  (\<And>x. P x = P (restrict x J)) \<Longrightarrow> (\<forall>A'\<in>PiE (f ` J) A. P (A' \<circ> f)) = (\<forall>A' \<in> \<Pi>\<^sub>E i \<in> J. A (f i). P A')"
+    by (simp)
+
+  have c:"\<And>J. J \<subseteq> I \<Longrightarrow> finite (f ` J) = finite J" 
+    by (meson assms finite_image_iff inj_on_subset)
+
+  show ?thesis
+    apply (simp add:indep_sets_def all_subset_image a c)
+    apply (subst make_ext) apply (simp cong:restrict_cong)
+    apply (subst make_ext) apply (simp cong:restrict_cong)
+    by (simp add:b[symmetric])
+qed
+
+lemma (in prob_space) indep_vars_reindex:
+  assumes "inj_on f I"
+  assumes "indep_vars M' X' (f ` I)"
+  shows "indep_vars (M' \<circ> f) (\<lambda>k \<omega>. X' (f k) \<omega>) I"
+  using assms by (simp add:indep_vars_def2 indep_sets_reindex)
+
+lemma lift_nn_integral_PiM:
+  assumes "i \<in> I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
+  assumes "\<And>x. x \<in> space (M i) \<Longrightarrow> f x \<ge> 0"
+  assumes "(f :: 'a \<Rightarrow> real) \<in> borel_measurable (M i)"
+  assumes "finite I"
+  shows  "integral\<^sup>N (PiM I M) (\<lambda>\<omega>. f (\<omega> i)) = integral\<^sup>N (M i) f"
+proof -
+  define M' where "M' = (\<lambda>i. if i \<in> I then M i else count_space {undefined})"
+  have "\<And>i. sigma_finite_measure (M' i)"
+    using M'_def assms(2) 
+    by (simp add: prob_space_imp_sigma_finite sigma_finite_measure_count_space_finite)
+  hence a: "product_sigma_finite M'"    
+    by (simp add: product_sigma_finite_def)
+  have b:"PiM I M = PiM I M'"
+    by (simp add:M'_def cong:PiM_cong)
+
+  define g where "g = (\<lambda>k \<omega>. ennreal (if k = i then f \<omega> else 1))"
+  have c:"\<And>\<omega>. \<omega> \<in> space (PiM I M') \<Longrightarrow> f (\<omega> i) =  (\<Prod>k \<in> I. g k (\<omega> k))"
+    apply (simp add:g_def)
+    apply (subst prod_ennreal)
+    using assms(3) apply (simp add:M'_def space_PiM, force)
+    apply (rule arg_cong[where f="ennreal"])
+    using assms(5) assms(1) by (induction I rule:finite_induct, simp, simp)
+
+  have d:"\<And>j. j \<in> I \<Longrightarrow> j\<noteq> i \<Longrightarrow> g j \<in> borel_measurable (M' j)"
+    by (simp add:g_def M'_def)
+  moreover have "g i \<in> borel_measurable (M' i)"
+    using assms(1) apply (simp add:g_def M'_def)
+    apply measurable
+    using assms(4) by auto
+  ultimately have d:"\<And>i. i \<in> I \<Longrightarrow> g i \<in> borel_measurable (M' i)"
+    by blast
+
+  have e:"\<And>j. j \<in> I \<Longrightarrow> integral\<^sup>N (M' j) (g j) = (if j = i then  integral\<^sup>N (M i) f else 1)"
+    apply (simp add:M'_def g_def)
+    using assms(2) prob_space.emeasure_space_1 by blast
+  show ?thesis 
+    apply (simp add:b)
+    apply (simp add:c cong:nn_integral_cong)
+    apply (subst product_sigma_finite.product_nn_integral_prod)
+    apply (simp add:a)
+      apply (simp add:assms(5))
+     apply (simp add:d)
+    apply (simp add:e)
+    using assms(5) assms(1) by (induction I, simp, simp)
+qed
+
+lemma lift_pos_bochner_integral_PiM:
+  assumes "i \<in> I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
+  assumes "integrable (M i) (f :: 'a \<Rightarrow> real)"
+  assumes "\<And>x. x \<in> space (M i) \<Longrightarrow> f x \<ge> 0"
+  assumes "finite I"
+  shows "integral\<^sup>L (PiM I M) (\<lambda>\<omega>. f (\<omega> i)) = integral\<^sup>L (M i) f" (is ?A)
+  and "integrable (PiM I M) (\<lambda>\<omega>. f (\<omega> i))" (is ?B)
+proof -
+  have f_meas:"f \<in> borel_measurable (M i)" using borel_measurable_integrable assms(3) by auto
+
+  define f_int where "f_int = integral\<^sup>L (M i) f"
+
+  have f_pos_ae: "AE x in M i. f x \<ge> 0" apply (rule AE_I2) using assms(4) by simp
+  hence f_pos :"f_int \<ge> 0" apply (simp add:f_int_def) using integral_nonneg_AE by blast
+ 
+  have "integrable (M i) f" using assms(3) nn_integral_eq_integrable by simp 
+  hence "(\<integral>\<^sup>+x. f (x i) \<partial>(PiM I M)) = ennreal (f_int)"
+    using assms f_meas apply (simp add:lift_nn_integral_PiM)
+    using f_meas f_pos f_pos_ae f_int_def nn_integral_eq_integrable by metis
+  moreover have "(\<lambda>\<omega>. f (\<omega> i)) \<in> borel_measurable (PiM I M)" using f_meas assms by measurable
+  moreover have "AE x in PiM I M. f (x i) \<ge> 0"
+    apply (rule AE_I2, simp add:space_PiM PiE_def Pi_def)
+    using assms(4) assms(1) by blast
+  ultimately have r1: "integral\<^sup>L (PiM I M) (\<lambda>\<omega>. f (\<omega> i)) = f_int" and r2: "integrable (PiM I M) (\<lambda>\<omega>. f (\<omega> i))"
+    using nn_integral_eq_integrable f_pos by blast+
+
+  show ?A using r1 by (simp add:f_int_def)
+  show ?B using r2 by auto
+qed
+
+lemma lift_bochner_integral_PiM:
+  assumes "i \<in> I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
+  assumes "integrable (M i) (f :: 'a \<Rightarrow> real)"
+  assumes "finite I"
+  shows integral_prod_space: 
+    "integral\<^sup>L (PiM I M) (\<lambda>\<omega>. f (\<omega> i)) = integral\<^sup>L (M i) f" (is ?A)
+  and integral_prod_space_int:
+    "integrable (PiM I M) (\<lambda>\<omega>. f (\<omega> i))" (is ?B)
+proof -
+  define f_p where "f_p = (\<lambda>\<omega>. max (f \<omega>) 0)"
+  define f_n where "f_n = (\<lambda>\<omega>. max (-(f \<omega>)) 0)"
+  have f_int: "integrable (M i) f_p" "integrable (M i) f_n"
+        using assms(3) by (simp add:f_p_def f_n_def)+
+  have f_pos_ptw: 
+    "\<And> x. x \<in> space (M i) \<Longrightarrow> f_p x \<ge> 0" 
+    "\<And> x. x \<in> space (M i) \<Longrightarrow> f_n x \<ge> 0" by (simp add:f_p_def f_n_def)+
+  have f_split: "f = (\<lambda>\<omega>. f_p \<omega> - f_n \<omega>)"
+    by (rule ext, simp add:f_p_def f_n_def max_def) 
+
+  show ?A
+    using assms f_int f_pos_ptw 
+    by (simp add:lift_pos_bochner_integral_PiM f_split)
+  show ?B
+    using assms f_int f_pos_ptw 
+    by (simp add:lift_pos_bochner_integral_PiM f_split)
+qed
 
 end

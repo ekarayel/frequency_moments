@@ -1,11 +1,10 @@
 theory F2_Algorithm
   imports Main "HOL-Probability.Giry_Monad" UniversalHashFamily Field Frequency_Moment_2
-    Median Independent_Family_Ext
+    Median Independent_Family_Ext "HOL-Library.Multiset"
 begin
 
 definition \<alpha> :: "nat \<Rightarrow> real" where "\<alpha> p = sqrt((p-1)/(p+1))"
 definition \<beta> :: "nat \<Rightarrow> real" where "\<beta> p = -sqrt((p+1)/(p-1))"
-
 
 fun eval_hash_function where
   "eval_hash_function p h k = (
@@ -118,7 +117,6 @@ proof -
   ultimately have r1:"has_bochner_integral (poly_hash_family (ZFact p) 4) f (real (p+1)/ real(2*p) * \<alpha> p^m)"
     apply (subst f_def) using has_bochner_integral_mult_left by metis
 
-
   have "B \<in> sets (poly_hash_family (ZFact p) 4)"
     by (simp add:poly_hash_family_def sets_uniform_count_measure B_def) 
   moreover have "emeasure (poly_hash_family (ZFact p) 4) B < \<infinity>" 
@@ -144,7 +142,7 @@ proof -
   have r4: "has_bochner_integral (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k^m) ?C"
     apply (subst has_bochner_integral_cong [where f="(\<lambda>\<omega>. eval_hash_function p \<omega> k^m)" and
       g ="(\<lambda>\<omega>. f \<omega> + g \<omega>)" and M =" (poly_hash_family (ZFact p) 4)" and N=" (poly_hash_family (ZFact p) 4)"
-      and y="?C"])  
+      and y="?C"])
     apply simp
       apply (simp add:r3 del:eval_hash_function.simps)
      apply simp
@@ -157,6 +155,53 @@ qed
 
 lemma eval_exp_1_aux: "a > 0 \<Longrightarrow> a * sqrt(x) = sqrt(a^2*x)" 
   by (simp add: real_sqrt_mult)
+
+lemma eval_4_indep:
+  assumes "prime p"
+  assumes "p > 2"
+  shows "prob_space.k_wise_indep_vars 
+    (poly_hash_family (ZFact p) 4) 4 (\<lambda>_. borel)
+    (\<lambda>k \<omega>. eval_hash_function p \<omega> k) {0..<p}"
+proof -
+  have a1:"p > 1" using assms(2) by auto
+  have a:"prob_space (poly_hash_family (ZFact p) 4)" 
+    apply (rule prob_space_poly_family)
+    using assms zfact_prime_is_field apply simp
+    using a1 zfact_finite by auto
+  have a2:"\<And>J. J\<subseteq>carrier (ZFact (int p)) \<Longrightarrow> finite J \<Longrightarrow> card J \<le> 4 \<Longrightarrow>
+    prob_space.indep_vars (poly_hash_family (ZFact (int p)) 4) 
+    (\<lambda>_. uniform_count_measure (carrier (ZFact (int p)))) (hash_function (ZFact (int p))) 
+    J"
+    using a1 indep[where F="ZFact (int p)" and n="4"] zfact_prime_is_field assms(1) a zfact_finite 
+    by (simp add:prob_space.k_wise_indep_vars_def)
+
+  have c1:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> zfact_embed p ` J \<subseteq> carrier (ZFact (int p))"
+    using zfact_embed_ran a1 by fastforce
+  have c2:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow> card (zfact_embed p ` J) \<le> 4"
+    by (meson card_image_le le_trans)
+  have c3:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> finite J \<Longrightarrow> finite (zfact_embed p ` J)"
+    by simp
+  have b_aux:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> finite J \<Longrightarrow> card J \<le> 4 \<Longrightarrow>
+    prob_space.indep_vars (poly_hash_family (ZFact (int p)) 4) 
+    ((\<lambda>_. uniform_count_measure (carrier (ZFact (int p)))) \<circ> zfact_embed p) (\<lambda>k \<omega>. hash_function (ZFact (int p)) (zfact_embed p k) \<omega>) 
+    J"
+    apply (subst prob_space.indep_vars_reindex [where f="zfact_embed p" and X'="hash_function (ZFact (int p))"])
+       apply (simp add:a)
+      apply (metis zfact_embed_inj a1 inj_on_subset atLeastLessThan_iff mem_Collect_eq subset_eq)
+     using a2 c1 c2 c3 apply presburger
+    by simp
+  have b:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow>
+    prob_space.indep_vars (poly_hash_family (ZFact (int p)) 4) (\<lambda>_. borel) (\<lambda>k \<omega>. eval_hash_function p \<omega> k) J"
+    apply simp
+    apply (rule prob_space.indep_vars_compose2 [where X="(\<lambda>k \<omega>. hash_function (ZFact (int p)) (zfact_embed p k) \<omega>)"
+            and M'=" (\<lambda>_. uniform_count_measure (carrier (ZFact (int p))))"])
+      apply (simp add:a)
+     using b_aux apply (simp)
+    by measurable
+  
+  show ?thesis
+    by (simp add: a b prob_space.k_wise_indep_vars_def del:eval_hash_function.simps)
+qed
 
 lemma eval_exp_1:
   assumes "prime p"
@@ -210,7 +255,7 @@ lemma eval_exp_4:
   assumes "prime p"
   assumes "k < p"
   assumes "p > 2"
-  shows "prob_space.expectation (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k^4) < 3"
+  shows "prob_space.expectation (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k^4) \<le> 3"
 proof -
   have a:" (2 * real p) > 0" 
     using assms by force
@@ -231,22 +276,99 @@ proof -
     apply (subst power_strict_mono)
     using assms by simp+
 
-  have d:"(real p - 1)\<^sup>2 / (real p + 1) + (real p + 1)\<^sup>2 / (real p - 1) < 6 * real p"
+  have d:"(real p - 1)\<^sup>2 / (real p + 1) + (real p + 1)\<^sup>2 / (real p - 1) \<le> 6 * real p"
     apply (subst add_frac_eq)
     using assms apply force
     using assms apply force
-    apply (subst pos_divide_less_eq)
+    apply (subst pos_divide_le_eq)
     using assms apply force
     apply (simp add:power2_eq_square power3_eq_cube algebra_simps)
-    apply (subst mult_less_cancel_left_pos)
+    apply (subst mult_le_cancel_left_pos)
     using assms apply force
     using e by (simp add:power2_eq_square)
   show ?thesis
     using assms eval_hash_exp[where m="4"] apply (simp del:eval_hash_function.simps)
-    apply (simp add:\<alpha>_def \<beta>_def a add_divide_distrib[symmetric] pos_divide_less_eq sq_power_4_elim)
+    apply (simp add:\<alpha>_def \<beta>_def a add_divide_distrib[symmetric] pos_divide_le_eq sq_power_4_elim)
     by (simp add:b c d)
 qed
 
+text \<open>There is a version @{thm [source] sum_list_map_eq_sum_count} but it doesn't work
+if the function maps into the reals.\<close>
+
+lemma sum_list_eval:
+  fixes f :: "'a \<Rightarrow> real"
+  shows "sum_list (map f xs) = (\<Sum>x \<in> set xs. (count_list xs x) * f x)"
+proof -
+  define M where "M = mset xs"
+  have "sum_mset (image_mset f M) = (\<Sum>x \<in> set_mset M. (count M x) * f x)"
+  proof (induction "M" rule:disj_induct_mset)
+    case 1
+    then show ?case by simp
+  next
+    case (2 n M x)
+    have a:"\<And>y. y \<in> set_mset M \<Longrightarrow> y \<noteq> x" using 2(2) by blast
+    show ?case using 2 by (simp add:a count_eq_zero_iff)
+  qed
+  moreover have "\<And>x. count_list xs x = count (mset xs) x" 
+    by (induction xs, simp, simp)
+  ultimately show ?thesis
+    by (simp add:M_def sum_mset_sum_list[symmetric])
+qed
+
+lemma
+  assumes "p > 2"
+  assumes "prime p"
+  assumes "\<And>i. i \<in> set xs \<Longrightarrow> i < p" 
+  shows var_f2':
+    "prob_space.variance
+        (poly_hash_family (ZFact p) 4)
+        (\<lambda>\<omega>. sum_list (map (eval_hash_function p \<omega>) xs)^2) \<le> 2*(f2_value xs)^2" (is "?A")
+  and exp_f2':
+    "prob_space.expectation
+        (poly_hash_family (ZFact p) 4)
+        (\<lambda>\<omega>. sum_list (map (eval_hash_function p \<omega>) xs)^2) = f2_value xs" (is "?B")
+
+  and int_exp_f2':
+    "integrable
+        (poly_hash_family (ZFact p) 4)
+        (\<lambda>\<omega>. sum_list (map (eval_hash_function p \<omega>) xs)^2)" (is "?C")
+  and int_var_f2':
+    "integrable
+        (poly_hash_family (ZFact p) 4)
+        (\<lambda>\<omega>. (sum_list (map (eval_hash_function p \<omega>) xs)^2)^2)" (is "?D")
+proof -
+  have f2_sketch_elim: "\<And>\<omega>. f2_sketch (\<lambda>k \<omega>. eval_hash_function p \<omega> k) xs \<omega> = sum_list (map (eval_hash_function p \<omega>) xs)"
+    by (simp add:sum_list_eval f2_sketch_def f2_sketch_summand_def del:eval_hash_function.simps)
+
+  have set_xs: "\<And>I. I \<subseteq> set xs \<Longrightarrow> I \<subseteq> {0..<p}"
+    using assms(3)  atLeastLessThan_iff by blast
+  have a1:"p > 1" using assms(1) by auto
+  have a:"prob_space (poly_hash_family (ZFact p) 4)" 
+    apply (rule prob_space_poly_family)
+    using assms zfact_prime_is_field apply simp
+    using a1 zfact_finite by auto
+
+  show ?A
+    using prob_space.var_f2[where M="poly_hash_family (ZFact p) 4" and h="\<lambda>k \<omega>. eval_hash_function p \<omega> k" and xs="xs"]
+    apply (simp only:f2_sketch_elim)
+    using set_xs eval_4_indep[where p="p"] assms a1 a
+    eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
+  show ?B 
+    using prob_space.exp_f2[where M="poly_hash_family (ZFact p) 4" and h="\<lambda>k \<omega>. eval_hash_function p \<omega> k" and xs="xs"]
+    apply (simp only:f2_sketch_elim)
+    using set_xs eval_4_indep[where p="p"] assms a1 a
+    eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
+  show ?C 
+    using prob_space.int_exp_f2[where M="poly_hash_family (ZFact p) 4" and h="\<lambda>k \<omega>. eval_hash_function p \<omega> k" and xs="xs"]
+    apply (simp only:f2_sketch_elim)
+    using set_xs eval_4_indep[where p="p"] assms a1 a
+    eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
+  show ?D 
+    using prob_space.int_var_f2[where M="poly_hash_family (ZFact p) 4" and h="\<lambda>k \<omega>. eval_hash_function p \<omega> k" and xs="xs"]
+    apply (simp only:f2_sketch_elim)
+    using set_xs eval_4_indep[where p="p"] assms a1 a
+    eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
+qed
 
 lemma (in prob_space) var_sum:
   assumes "finite I"
@@ -408,13 +530,12 @@ proof -
   have f2_meas: "f2 \<in> measurable \<Omega>\<^sub>1 \<Omega>\<^sub>2"
     by (simp add:f2_def \<Omega>\<^sub>1_def \<Omega>\<^sub>2_def, measurable)
   have f3_meas: "f3 \<in> measurable \<Omega>\<^sub>0 \<Omega>\<^sub>1"
-    apply (simp add:f3_def \<Omega>\<^sub>0_def \<Omega>\<^sub>1_def, measurable)
+    apply (simp add:f3_def \<Omega>\<^sub>0_def \<Omega>\<^sub>1_def, measurable, simp)
     sorry
   have f23_meas: "(f2 \<circ> f3) \<in> measurable \<Omega>\<^sub>0 \<Omega>\<^sub>2"
     using f2_meas f3_meas by measurable
   have f1_meas: "f1 \<in> measurable \<Omega>\<^sub>2 \<Omega>\<^sub>3"
-    using s2_nonzero median_measurable apply (simp add:f1_def \<Omega>\<^sub>2_def \<Omega>\<^sub>3_def del:median.simps)
-    by blast
+    using s2_nonzero median_measurable by (simp add:f1_def \<Omega>\<^sub>2_def \<Omega>\<^sub>3_def del:median.simps)
   have f123_meas: "(f1 \<circ> f2 \<circ> f3) \<in> measurable \<Omega>\<^sub>0 \<Omega>\<^sub>3"
     using f1_meas f2_meas f3_meas by measurable
   have dist_23: "distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3) = distr (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) \<Omega>\<^sub>2 f2"
@@ -425,6 +546,11 @@ proof -
 
   have exp_3: "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> prob_space.expectation (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. (\<omega> (i, j))^2)
     = f2_value xs"
+    apply (subst integral_distr)
+      apply (simp add:f3_meas)
+     apply (simp add:\<Omega>\<^sub>1_def, measurable)
+    apply (simp add:f3_def \<Omega>\<^sub>0_def)
+    apply (subst lift_bochner_integral_PiM, simp)
     sorry
 
   have int_3: "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> integrable (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. (\<omega> (i, j))^2)"
@@ -466,7 +592,7 @@ proof -
         apply measurable
        apply (simp add: \<Omega>\<^sub>0_def f3_def comp_def cong:restrict_cong)
        apply (rule indep_pointwise [where f="(\<lambda>j. (j,i))"])
-      defer
+         using prob_space_0 defer
       using a apply (simp cong:restrict_cong) defer
              apply simp
              apply (rule image_subsetI, simp add:a)
