@@ -3,7 +3,7 @@ section \<open>Frequency Moment 2\<close>
 theory Frequency_Moment_2
   imports 
     Main "HOL-Probability.Probability_Measure" "HOL-Probability.Independent_Family"
-    Partitions Partitions_2
+    Multiset_Ext Partitions
 begin
 
 text \<open>This algorithm estimates the second frequency moment F_2, it was introduced by Alon et. al.:

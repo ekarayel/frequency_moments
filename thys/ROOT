@@ -8,8 +8,12 @@ session StreamingAlgorithms = HOL +
     PolyCard
     CountMaps
     PolynomialCounting
-    UniversalHashFamily (*
-    SumByPartitions
-    Frequency_Moment_2 *)
+    UniversalHashFamily
+    Partitions
+    Multiset_Ext
+    Frequency_Moment_2
+    F2_Algorithm
+    Median
+    Probability_Ext
   document_files
     "root.tex"

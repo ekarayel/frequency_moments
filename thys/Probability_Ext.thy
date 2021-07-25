@@ -1,5 +1,5 @@
-theory Independent_Family_Ext
-  imports Main "HOL-Probability.Independent_Family"
+theory Probability_Ext
+  imports Main "HOL-Probability.Independent_Family" Multiset_Ext
 begin
 
 lemma set_comp_subsetI: "(\<And>x. P x \<Longrightarrow> f x \<in> B) \<Longrightarrow> {f x|x. P x} \<subseteq> B"
@@ -170,6 +170,36 @@ proof -
   show ?thesis by simp
 qed
 
+lemma indep_pim:
+  assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
+  assumes "\<And>i. i \<in> J \<Longrightarrow> X' i \<in> measurable (PiM (f i) M) (M' i)"
+  assumes "\<And>\<omega> i. i \<in> J \<Longrightarrow>  X' i \<omega> = X' i (restrict \<omega> (f i))"
+  assumes "disjoint_family_on f J"
+  assumes "J \<noteq> {}"
+  assumes "\<And>i. i \<in> J \<Longrightarrow> f i \<subseteq> I"
+  assumes "I \<noteq> {}"
+  shows "prob_space.indep_vars (PiM I M) M' X' J"
+proof -
+  interpret prob_space "(PiM I M)" using assms(1) by (simp add:prob_space_PiM)
+
+  have "I \<noteq> {}" by (simp add:assms)
+  hence "indep_vars M (\<lambda>i \<omega>. (\<omega> i)) I"
+    using assms(1) indep_vars_product_space[where f="id" and J="I" and I="I" and \<Omega>="M"]
+    by simp
+
+  hence b:"indep_vars (\<lambda>j. PiM (f j) M) (\<lambda>j \<omega>. restrict \<omega> (f j)) J" 
+    using assms indep_vars_restrict[where X="(\<lambda>i \<omega>. \<omega> i)"] by blast
+
+  define Y' where "Y' = X'"
+  have d:"\<And>i. i \<in> J \<Longrightarrow> X' i = (\<lambda>\<omega>. Y' i (restrict \<omega> (f i)))"
+    apply (rule ext) using assms(3) Y'_def by blast
+  show ?thesis 
+    apply (simp add: d cong:indep_vars_cong)
+    apply (rule indep_vars_compose2[where X="(\<lambda>i \<omega>. restrict \<omega> (f i))" and M'="(\<lambda>j. PiM (f j) M)"])
+     apply(simp add:b)
+    by (simp add:Y'_def assms(2))
+qed
+
 lemma indep_pointwise:
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
   assumes "\<And>i. i \<in> J \<Longrightarrow> X' i \<in> measurable (PiM I M) (M' i)"
@@ -275,7 +305,7 @@ lemma (in prob_space) indep_vars_reindex:
   assumes "indep_vars M' X' (f ` I)"
   shows "indep_vars (M' \<circ> f) (\<lambda>k \<omega>. X' (f k) \<omega>) I"
   using assms by (simp add:indep_vars_def2 indep_sets_reindex)
-
+ 
 lemma lift_nn_integral_PiM:
   assumes "i \<in> I"
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
@@ -383,12 +413,13 @@ proof -
     by (simp add:lift_pos_bochner_integral_PiM f_split)
 qed
 
-lemma (in prob_space) var_sum:
+lemma (in prob_space)
   assumes "finite I"
   assumes "indep_vars (\<lambda>_. borel ::real measure) X' I" 
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. X' i \<omega>)" 
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. X' i \<omega>^2)" 
-  shows "variance (\<lambda>\<omega>. \<Sum>i\<in> I. X' i \<omega>) = (\<Sum> i \<in> I. variance (\<lambda>\<omega>. X' i \<omega>))" 
+  shows var_sum:"variance (\<lambda>\<omega>. \<Sum>i\<in> I. X' i \<omega>) = (\<Sum> i \<in> I. variance (\<lambda>\<omega>. X' i \<omega>))"  (is ?A) and
+    var_sum_int:"integrable M (\<lambda>\<omega>. (\<Sum>i \<in> I. X' i \<omega>)\<^sup>2)" (is ?B)
 proof -
   have a:"\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> i \<noteq> j \<Longrightarrow> expectation (\<lambda>\<omega>. (X' i \<omega>) * (X' j \<omega>)) = 
      expectation (X' i) * expectation (X' j) \<and> integrable M (\<lambda>\<omega>. (X' i \<omega>) * (X' j \<omega>))"
@@ -432,7 +463,8 @@ proof -
   qed
   have d:"integrable M (\<lambda>\<omega>. (\<Sum>i \<in> I. X' i \<omega>)\<^sup>2)" 
     by (simp add:c sum_distrib_left sum_distrib_right power2_eq_square)
-  show ?thesis 
+  thus ?B by auto
+  show ?A
     apply (subst variance_eq)
     apply (simp add: assms)
     apply (simp add: d)
@@ -444,7 +476,5 @@ proof -
     apply (simp add: b assms(1) sum_collapse)
     by (simp add:power2_eq_square)
 qed
-
-
 
 end

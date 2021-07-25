@@ -178,10 +178,10 @@ proof
   moreover have "\<And>k. k \<in> K \<Longrightarrow> ring.eval F x k = ring.eval F y k"
     using a3 apply (simp add:split_poly_def) by (meson option.inject)
   hence "\<And>k. k \<in> K \<Longrightarrow> ring.eval F x k \<ominus>\<^bsub>F\<^esub> ring.eval F y k = \<zero>\<^bsub>F\<^esub>"
-    by (metis (no_types, hide_lams) a2 assms(3) ring.eval_in_carrier ring.polynomial_incl 
+    by (metis (no_types, opaque_lifting) a2 assms(3) ring.eval_in_carrier ring.polynomial_incl 
         ring.r_right_minus_eq ring_F subsetD univ_poly_carrier)
   hence "\<And>k. k \<in> K \<Longrightarrow> ring.eval F (x \<ominus>\<^bsub>poly_ring F\<^esub> y) k =  \<zero>\<^bsub>F\<^esub>"
-    using domain_F a1 a2 assms(3) poly_substract_eval by (metis (no_types, hide_lams) subsetD)
+    using domain_F a1 a2 assms(3) poly_substract_eval by (metis (no_types, opaque_lifting) subsetD)
   ultimately have "x \<ominus>\<^bsub>poly_ring F\<^esub> y = \<zero>\<^bsub>poly_ring F\<^esub>"
     using max_roots x_y_carrier assms by blast
   then show "x = y"
