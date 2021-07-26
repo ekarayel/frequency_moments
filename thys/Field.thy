@@ -14,12 +14,8 @@ multiplication by a non-zero element is an injective map between the elements of
 domain. But an injective map between sets of the same non-finite cardinality is also surjective.
 Hence we can find the unit element in the image of such a map.
 
-We need the fact that @{term "ZFact p"} is finite for another reason: We are planning to show
-bounds on the space complexity of the data streaming algorithms, for that we need to know how many
-bits are needed to represent an element of the factorial ring.\<close>
-
-text \<open>We start establish a canonical bijection between the elements of the factor ring 
-@{term "ZFact p"} with @{term "{m. m < p} :: nat set"}.\<close>
+We also introduce a bijection between @{term "ZFact p"} and @{term "{0..<(p::nat)}"} which will 
+be useful to hash natural numbers.\<close>
 
 definition zfact_embed :: "nat \<Rightarrow> nat \<Rightarrow> int set" where
   "zfact_embed p k = Idl\<^bsub>\<Z>\<^esub> {int p} +>\<^bsub>\<Z>\<^esub> (int k)"

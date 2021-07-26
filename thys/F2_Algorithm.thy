@@ -1,7 +1,190 @@
+section \<open>Frequency Moment 2\<close>
+
 theory F2_Algorithm
-  imports Main "HOL-Probability.Giry_Monad" UniversalHashFamily Field Frequency_Moment_2
-    Median Probability_Ext "HOL-Library.Multiset"
+  imports Main "HOL-Probability.Giry_Monad" UniversalHashFamily Field 
+    Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext
 begin
+
+text \<open>This algorithm estimates the second frequency moment $F_2$, it was introduced by Alon et. al.:
+
+Let $a_1, \cdots, a_n \subset U = \{0,\ldots,m-1\}$ be a sequence. It makes one (read-only) pass
+over the sequence requiring $O(- \lambda^{-1} \log \varepsilon (\log n + \log m))$ bits of memory. At the
+end it returns an estimate $F_2^{*}$ that deviates from $F_2$ by more than $\lambda F_2$ with
+probability at most $\varepsilon$.\<close>
+
+definition f2_sketch
+  where
+    "f2_sketch f xs \<omega> = (\<Sum> x \<in> set xs. (real (count_list xs x) * f x \<omega>))"
+
+definition f2_value
+  where
+    "f2_value xs = (\<Sum> x \<in> set xs. (real (count_list xs x)^2))"
+
+
+lemma (in prob_space)
+  assumes "\<And>I. I \<subseteq> set xs \<Longrightarrow> finite I \<Longrightarrow> card I \<le> 4 \<Longrightarrow> indep_vars (\<lambda>_. borel) h I"
+  assumes "\<And>i (m :: nat). i \<in> set xs \<Longrightarrow> integrable M (\<lambda>\<omega>. (h i \<omega>)^m)"
+  assumes "\<And>i. i \<in> set xs \<Longrightarrow> expectation (h i) = 0"
+  assumes "\<And>i. i \<in> set xs \<Longrightarrow> expectation (\<lambda>\<omega>. h i \<omega>^2) = 1"
+  assumes "\<And>i. i \<in> set xs \<Longrightarrow> expectation (\<lambda>\<omega>. h i \<omega>^4) \<le> 3"
+  shows var_f2:"variance (\<lambda>\<omega>. f2_sketch h xs \<omega>^2) \<le> (2*f2_value xs^2)" (is "?A \<le> ?B")
+  and exp_f2:"expectation (\<lambda>\<omega>. f2_sketch h xs \<omega>^2) = f2_value xs" (is ?D)
+  and int_exp_f2:"integrable M (\<lambda>\<omega>. f2_sketch h xs \<omega>^2)" (is ?E)
+  and int_var_f2:"integrable M (\<lambda>\<omega>. (f2_sketch h xs \<omega>^2)^2)" (is ?F)
+proof -
+
+  have "\<And>i. i \<in> set xs \<Longrightarrow> indep_vars (\<lambda>_. borel) h {i}" using assms(1) by simp
+  hence meas:"\<And>i. i \<in> set xs \<Longrightarrow> h i \<in> measurable M borel" by (simp add:indep_vars_def2) 
+
+  define f2_sum where "f2_sum = (\<lambda>x \<omega>. real (count_list xs x) * h x \<omega>)"
+  define f2_pow where "f2_pow = (\<lambda>x n \<omega>. f2_sum x \<omega> ^ n)"
+  define h_power where "h_power = (\<lambda>i m. expectation (\<lambda>\<omega>. (h i \<omega>)^m))"
+  define h_power_4_diff where "h_power_4_diff = (\<lambda>i. h_power i 4 - 3)"
+
+  have f2_sketch_elim: "\<And>\<omega>. f2_sketch h xs \<omega> = (\<Sum> x \<in> set xs. f2_sum x \<omega>)"
+    by (simp add:f2_sketch_def f2_sum_def)
+  have h_power_simps: 
+    "\<And>x. x \<in> set xs \<Longrightarrow> h_power x (Suc 0) = 0" 
+    "\<And>x. x \<in> set xs \<Longrightarrow> h_power x (Suc (Suc 0)) = 1" 
+    "\<And>x. x \<in> set xs \<Longrightarrow> h_power x (Suc (Suc (Suc (Suc 0)))) = (3 + h_power_4_diff x)" 
+    using assms(3) assms(4) h_power_4_diff_def h_power_def numeral_eq_Suc by simp+
+  have h_power_4_estimate:
+    "\<And>x. x \<in> set xs \<Longrightarrow> h_power_4_diff x \<le> 0" 
+    using assms(3) assms(5) h_power_4_diff_def h_power_def by simp+
+
+  have sketch_exp: "\<And>x m. x \<in> set xs  \<Longrightarrow>
+    expectation (\<lambda>\<omega>. f2_pow x m \<omega>) = h_power x m * (count_list xs x ^ m)"
+    using assms(2) by (simp add:f2_pow_def f2_sum_def algebra_simps h_power_def)
+
+  have sketch_int: "\<And>x m. x \<in> set xs  \<Longrightarrow> integrable M (\<lambda>\<omega>. f2_pow x m \<omega>)"
+    using assms(2) by (simp add:f2_pow_def f2_sum_def algebra_simps)
+
+  define f where "f = (\<lambda>l \<omega>. prod_mset (image_mset (\<lambda>i. f2_sum i \<omega>) (mset l)))"
+  
+  have c1: "\<And>k \<omega>. f2_sum k \<omega> = f [k] \<omega>" by (simp add:f_def)
+  
+  have c2: "\<And>a b \<omega>. f a \<omega> * f b \<omega> = f (a@b) \<omega>" by (simp add:f_def)
+
+  define g where "g = (\<lambda>l p \<omega>. (if has_eq_relation p l then f l \<omega> else 0))"
+
+  have c3 :"\<And>x. f x = (\<lambda>\<omega>. sum_list (map (\<lambda>p. g x p \<omega>) (enum_partitions (length x))))"
+    apply (simp only: g_def)
+    using sum_partitions by metis
+
+  have indep:
+    "\<And>x j. x \<subseteq> set xs \<Longrightarrow> finite x \<Longrightarrow> card x \<le> 4 \<Longrightarrow>
+    indep_vars (\<lambda>_. borel) (\<lambda>i. f2_pow i (j i)) x" 
+  proof -
+    fix x j
+    assume "x \<subseteq> set xs"
+    moreover assume "finite x"
+    moreover assume "card x \<le> 4"
+    ultimately have "indep_vars (\<lambda>_. borel) (\<lambda>i. h i) x" using assms by auto
+    moreover define Y where "Y = (\<lambda>i t. (real (count_list xs i) * t)^ j i)"
+    moreover have "\<And>i. i \<in> x \<Longrightarrow> Y i \<in> measurable borel borel" by (simp add:Y_def, measurable)
+    ultimately have "indep_vars (\<lambda>_. borel) (\<lambda>i. Y i \<circ> h i) x" using indep_vars_compose by fast
+    thus "indep_vars (\<lambda>_. borel) (\<lambda>i \<omega>. f2_pow i (j i) \<omega>) x"
+      by (simp add:f2_pow_def f2_sum_def Y_def comp_def) 
+  qed
+
+  have indep_2_aux:
+    "\<And>x. set x \<subseteq> set xs  \<Longrightarrow> length x \<le> 4 \<Longrightarrow> integrable M (f x)"
+  proof -
+    fix x
+    assume "set x \<subseteq> set xs"
+    moreover assume "length x \<le> 4"
+    hence "card (set x) \<le> 4" by (meson card_length le_trans)
+    ultimately have "integrable M (\<lambda>\<omega>. \<Prod>i\<in>set x. f2_pow i (count (mset x) i) \<omega>)"
+      apply (subst indep_vars_integrable)
+         apply (simp add:assms(1))+
+      using indep apply blast
+      using sketch_int apply blast
+      by simp
+    thus "integrable M (\<lambda>\<omega>. f x \<omega>)"
+      by (simp add:f_def prod_mset_conv f2_pow_def)
+  qed
+
+  hence indep2:
+    "\<And>x p. set x \<subseteq> set xs  \<Longrightarrow> length x \<le> 4  \<Longrightarrow> integrable M (g x p)"
+  proof -
+    fix x p
+    assume "set x \<subseteq> set xs"
+    moreover assume "length x \<le> 4"
+    ultimately show "integrable M (g x p)"
+      apply (cases "has_eq_relation p x")
+      by (simp add:g_def indep_2_aux)+ 
+  qed
+    
+  have
+    "\<And> x p. set x \<subseteq> set xs \<Longrightarrow> length x \<le> 4  \<Longrightarrow> has_eq_relation p x \<Longrightarrow>
+      integral\<^sup>L M (f x) = 
+      prod_list (map (\<lambda>i. h_power (x ! i) (count_list_p p i) * real (count_list xs (x ! i) ^ (count_list_p p i))) (remdups_indices p))"
+    proof -
+    fix x p
+    assume a1:"set x \<subseteq> set xs"
+    assume a2:"length x \<le> 4"             
+    assume a3:"has_eq_relation p x"
+
+    have a2_1: "card (set x) \<le> 4" by (meson card_length le_trans a2)
+
+    have t_2:"\<And>i. i \<in> set x \<Longrightarrow> i \<in> set xs" using a1 by auto
+    have "(LINT \<omega>|M. (\<Prod>i\<in>set x. f2_pow i (count (mset x) i) \<omega>)) =
+      prod_list (map (\<lambda>i. h_power (x ! i) (count_list_p p i) * real (count_list xs (x ! i) ^ (count_list_p p i))) (remdups_indices p))"
+      apply (simp add:f_def prod_mset_conv)
+      apply (subst indep_vars_lebesgue_integral)
+         apply (simp add:assms(1))+
+      using indep a2_1 a1 apply blast
+      using sketch_int a1 apply blast
+      using a3 apply (simp add: sketch_exp t_2 set_xs)
+      apply (subst prod.distinct_set_conv_list, simp add:a3 distinct_set_xs)
+      by (simp add:remdups_p_def comp_def count_xs cong:map_cong)
+
+    thus "integral\<^sup>L M (f x) = 
+      prod_list (map (\<lambda>i. h_power (x ! i) (count_list_p p i) * real (count_list xs (x ! i) ^ (count_list_p p i))) (remdups_indices p))"
+      by (simp add:f_def prod_mset_conv  f2_pow_def)
+  qed
+
+  hence indep1:
+    "\<And> x p. set x \<subseteq> set xs \<Longrightarrow> length x \<le> 4  \<Longrightarrow>  
+      integral\<^sup>L M (g x p) = (if has_eq_relation p x then 1 else 0) * 
+      prod_list (map (\<lambda>i. h_power (x ! i) (count_list_p p i) * real (count_list xs (x ! i) ^ (count_list_p p i))) (remdups_indices p))"
+    by (simp add:g_def)
+
+  have rev_ineq: "\<And>x y. (if (x \<noteq> y) then 1 else 0) = ((1::real) - (if (x = y) then 1 else 0))"
+  by auto
+
+  have  fold_sym: "\<And>x y. (x \<noteq> y \<and> y \<noteq> x) = (x \<noteq> y)" by auto
+
+  show int_exp_f2: "?E"
+    apply (simp add: f2_sketch_elim power2_eq_square)
+    apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
+    by (simp add: c3 indep1 indep2 exp_def sum.distrib)
+
+  show int_var_f2: "?F"
+    apply (simp add: f2_sketch_elim power2_eq_square)
+    apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
+    by (simp add: c3 indep1 indep2 exp_def sum.distrib)
+
+  have exp_2: "?D"
+    apply (simp add: f2_sketch_elim power2_eq_square f2_value_def)
+    apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
+    apply (simp add: c3 indep1 indep2 h_power_simps sum.distrib)
+    apply (simp add: has_eq_relation_elim)
+    by (simp add: sum_collapse rev_ineq)
+  thus ?D by auto
+
+  show "?A \<le> ?B"
+    apply (subst variance_eq, metis int_exp_f2, metis int_var_f2)
+    apply (simp add: exp_2 f2_value_def)
+    apply (simp add: f2_sketch_elim power4_eq_xxxx power2_eq_square)
+    apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
+    apply (simp add: c3 indep1 indep2 h_power_simps sum.distrib)
+    apply (simp add: has_eq_relation_elim)
+    apply (simp add: sum_collapse rev_ineq sum_subtractf algebra_simps fold_sym)
+    apply (simp add: algebra_simps sum_distrib_left)
+    apply (rule sum_mono)
+    by (simp add: h_power_4_estimate mult_nonneg_nonpos2 algebra_simps)
+qed
 
 definition \<alpha> :: "nat \<Rightarrow> real" where "\<alpha> p = sqrt((p-1)/(p+1))"
 definition \<beta> :: "nat \<Rightarrow> real" where "\<beta> p = -sqrt((p+1)/(p-1))"
@@ -315,7 +498,7 @@ lemma
         (\<lambda>\<omega>. (sum_list (map (eval_hash_function p \<omega>) xs)^2)^2)" (is "?D")
 proof -
   have f2_sketch_elim: "\<And>\<omega>. f2_sketch (\<lambda>k \<omega>. eval_hash_function p \<omega> k) xs \<omega> = sum_list (map (eval_hash_function p \<omega>) xs)"
-    by (simp add:sum_list_eval f2_sketch_def f2_sketch_summand_def del:eval_hash_function.simps)
+    by (simp add:sum_list_eval f2_sketch_def del:eval_hash_function.simps)
 
   have set_xs: "\<And>I. I \<subseteq> set xs \<Longrightarrow> I \<subseteq> {0..<p}"
     using assms(3)  atLeastLessThan_iff by blast
@@ -347,76 +530,6 @@ proof -
     eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
 qed
 
-lemma bigger_odd_prime:
-  "\<exists>p. prime p \<and> odd p \<and> (n::nat) < p"
-proof -
-  obtain p where p_def: "prime p \<and> n < p"
-    using bigger_prime by blast
-  have a:"\<not> odd p \<Longrightarrow> p = 2" 
-    using p_def primes_dvd_imp_eq two_is_prime_nat by blast
-  have "prime (3 :: nat)"
-    apply (rule prime_nat_naiveI, simp, simp add:numeral_eq_Suc) 
-    by (metis One_nat_def Suc_1 Suc_lessI add_2_eq_Suc' dvdE dvd_add_triv_right_iff gr_zeroI mult_0 nat_dvd_not_less old.nat.distinct(1))
-  hence b:"n < 2 \<Longrightarrow> prime (3 :: nat) \<and> odd (3 :: nat) \<and> n < 3" by simp 
-  show ?thesis 
-    using p_def
-    apply (cases "odd p", blast, simp add:a)
-    using b by blast
-qed
-
-
-lemma inf_primes: "wf ((\<lambda>n. (Suc n, n)) ` {n. \<not> (prime n \<and> odd n)})" (is "wf ?S") 
-proof (rule wfI_min)
-  fix x :: nat
-  fix Q :: "nat set"
-  assume a:"x \<in> Q"
-
-  have "\<exists>z \<in> Q. (prime z \<and> odd z) \<or> Suc z \<notin> Q" 
-  proof (cases "\<exists>z \<in> Q. Suc z \<notin> Q")
-    case True
-    then show ?thesis by auto
-  next
-    case False
-    hence b:"\<And>z. z \<in> Q \<Longrightarrow> Suc z \<in> Q" by blast
-    have c:"\<And>k. k + x \<in> Q"
-    proof -
-      fix k
-      show "k+x \<in> Q"
-        by (induction "k", simp add:a, simp add:b)
-    qed
-    show ?thesis 
-      apply (cases "\<exists>z \<in> Q. prime z \<and> odd z")
-       apply blast
-        by (metis add.commute less_natE bigger_odd_prime c)
-  qed
-  thus "\<exists>z \<in> Q. \<forall>y. (y,z) \<in> ?S \<longrightarrow> y \<notin> Q" by blast
-qed
-
-function find_odd_prime_above :: "nat \<Rightarrow> nat" where
-  "find_odd_prime_above n = (if prime n \<and> odd n then n else find_odd_prime_above (Suc n))"
-  by auto
-termination
-  apply (relation "(\<lambda>n. (Suc n, n)) ` {n. \<not> (prime n \<and> odd n)}")
-  using inf_primes apply blast
-  by simp
-
-declare find_odd_prime_above.simps [simp del]
-
-lemma find_prime_above_is_prime:
-  "prime (find_odd_prime_above n)" "odd (find_odd_prime_above n)"
-  apply (induction n rule:find_odd_prime_above.induct)
-  by (simp add: find_odd_prime_above.simps)+
-
-lemma find_prime_above_min:
-  "find_odd_prime_above n \<ge> 3"
-  using find_prime_above_is_prime 
-  by (metis One_nat_def Suc_1 even_numeral nle_le not_less_eq_eq numeral_3_eq_3 prime_ge_2_nat)
-
-lemma find_prime_above_lower_bound:
-  "find_odd_prime_above n \<ge> n"
-  apply (induction n rule:find_odd_prime_above.induct)
-  by (metis find_odd_prime_above.simps linorder_le_cases not_less_eq_eq)
-
 fun f2_alg where
   "f2_alg \<delta> \<epsilon> n xs =
     do {
@@ -426,19 +539,15 @@ fun f2_alg where
       h \<leftarrow> \<Pi>\<^sub>M _ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. poly_hash_family (ZFact (int p)) 4;
       sketch \<leftarrow> 
           return (\<Pi>\<^sub>M _ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. borel)
-            (\<lambda>(i\<^sub>1,i\<^sub>2) \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. sum_list (map (eval_hash_function p (h (i\<^sub>1, i\<^sub>2))) xs));
+            (\<lambda>(i\<^sub>1,i\<^sub>2) \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
+              sum_list (map (eval_hash_function p (h (i\<^sub>1, i\<^sub>2))) xs));
       sketch_avg \<leftarrow> 
           return (\<Pi>\<^sub>M _ \<in> {0..<s\<^sub>2}. borel)
-            (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . sketch (i\<^sub>1, i\<^sub>2)^2) / s\<^sub>1);
+            (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . (sketch (i\<^sub>1, i\<^sub>2))\<^sup>2) / s\<^sub>1);
       return borel (median sketch_avg s\<^sub>2)
     }"
 
-lemma count_list_gr_1:
-  assumes "x \<in> set xs"
-  shows "count_list xs x \<ge> 1"
-  using assms by (induction xs, simp, simp, fastforce) 
-
-lemma
+theorem f2_alg_correct:
   assumes "\<epsilon> < 1 \<and> \<epsilon> > 0"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
@@ -602,14 +711,13 @@ proof -
          using a apply (simp add:\<Omega>\<^sub>1_def)
         apply measurable
        apply (simp add: \<Omega>\<^sub>0_def f3_def comp_def cong:restrict_cong)
-       apply (rule indep_pointwise [where f="(\<lambda>j. (j,i))"])
+       apply (rule indep_pim [where f="(\<lambda>j. {(j,i)})"])
          apply (simp add:prob_space_poly)
          using a apply (simp cong:restrict_cong, measurable)
                apply (rule measurable_PiM_component_rev, simp, simp add:poly_hash_family_def)
-         apply simp apply simp 
-             apply (rule image_subsetI, simp add:a)
-            apply (rule inj_onI, simp)
-      using s1_nonzero apply simp
+         apply simp apply simp apply (simp add:disjoint_family_on_def, simp add:s1_nonzero) 
+             apply (rule subsetI, simp add:a)
+      using s1_nonzero s2_nonzero apply simp
       by (simp add:prob_space_0)
   qed
 
@@ -647,7 +755,6 @@ proof -
     apply (simp add:f2_def)
     using int_3 s1_nonzero by (simp add: Bochner_Integration.integral_sum exp_3)
 
-
   have "\<And> i. i < s\<^sub>2  \<Longrightarrow> prob_space.variance (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) (\<lambda>\<omega>. \<omega> i)
     \<le>  s\<^sub>1 * (2 * (f2_value xs)\<^sup>2 / s\<^sub>1\<^sup>2)"
     apply (simp add:dist_23)
@@ -666,7 +773,7 @@ proof -
     using int_3_2 apply (simp add: power_divide)
     using var_3 sum_mono[where g="(\<lambda>_. 2 * (f2_value xs)\<^sup>2 / (real s\<^sub>1)\<^sup>2)" and K="{0..<s\<^sub>1}"] 
     by simp
-  moreover have "  s\<^sub>1 * (2 * (f2_value xs)\<^sup>2 / s\<^sub>1\<^sup>2) =   2 * (f2_value xs)\<^sup>2 / s\<^sub>1" 
+  moreover have "s\<^sub>1 * (2 * (f2_value xs)\<^sup>2 / s\<^sub>1\<^sup>2) =   2 * (f2_value xs)\<^sup>2 / s\<^sub>1" 
     by (simp add: power2_eq_square)
   ultimately have var23: "\<And> i. i < s\<^sub>2  \<Longrightarrow> prob_space.variance (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) (\<lambda>\<omega>. \<omega> i)
     \<le>  2 * (f2_value xs)\<^sup>2 / s\<^sub>1"

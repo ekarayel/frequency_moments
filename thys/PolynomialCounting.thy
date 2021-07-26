@@ -1,8 +1,8 @@
 section \<open>Counting Interpolation Polynomials\<close>
 
 theory PolynomialCounting
-  imports Main CountMaps "HOL-Algebra.Polynomial_Divisibility" "HOL-Algebra.Polynomials"
-  PolyCard
+  imports Main "HOL-Algebra.Polynomial_Divisibility" "HOL-Algebra.Polynomials"
+  PolyCard "HOL-Library.FuncSet"
 begin
 
 text \<open>It is well known that over any field there is exactly one polynomial with degree at most
@@ -27,7 +27,7 @@ the evaluation of the polynomials at @{term "k"} distinct points and the second 
 coefficients of order at least @{term "k"}.\<close>
 
 definition split_poly where "split_poly F K p = 
-  (\<lambda>k. if k \<in> K then Some (ring.eval F p k) else None, \<lambda>k. ring.coeff F p (k+card K))"
+  (restrict (ring.eval F p) K, \<lambda>k. ring.coeff F p (k+card K))"
 
 text \<open>We call the bijection @{term "split_poly"} it returns the evaluation of the polynomial
 at the points in @{term "K"} and the coefficients of order at least @{term "card K"}.
@@ -40,10 +40,10 @@ lemma split_poly_image:
   assumes "field F"
   assumes "K \<subseteq> carrier F"
   shows "split_poly F K ` bounded_degree_polynomials F (card K + n) \<subseteq>
-        {f. dom f = K \<and> ran f \<subseteq> carrier F} \<times> {f. range f \<subseteq> carrier F \<and> (\<forall>k \<ge> n. f k = \<zero>\<^bsub>F\<^esub>)}" 
+        (K \<rightarrow>\<^sub>E carrier F) \<times> {f. range f \<subseteq> carrier F \<and> (\<forall>k \<ge> n. f k = \<zero>\<^bsub>F\<^esub>)}" 
   apply (rule image_subsetI)
-  apply (simp add:split_poly_def dom_def ran_def bounded_degree_polynomials_length)
-  apply (rule conjI, rule subsetI, simp)
+  apply (simp add:split_poly_def Pi_def bounded_degree_polynomials_length)
+  apply (rule conjI, rule allI, rule impI)  
    apply (metis assms(1) assms(2) field.is_ring mem_Collect_eq partial_object.select_convs(1) 
           ring.carrier_is_subring ring.eval_in_carrier ring.polynomial_in_carrier subset_iff 
           univ_poly_def) 
@@ -176,7 +176,7 @@ proof
   hence "degree (x \<ominus>\<^bsub>poly_ring F\<^esub> y) < card K \<or> (x \<ominus>\<^bsub>poly_ring F\<^esub> y) = \<zero>\<^bsub>poly_ring F\<^esub>"
     by (metis add.commute le_Suc_ex poly_degree_bound_from_coeff x_y_carrier ring_F)
   moreover have "\<And>k. k \<in> K \<Longrightarrow> ring.eval F x k = ring.eval F y k"
-    using a3 apply (simp add:split_poly_def) by (meson option.inject)
+    using a3 apply (simp add:split_poly_def restrict_def) by meson 
   hence "\<And>k. k \<in> K \<Longrightarrow> ring.eval F x k \<ominus>\<^bsub>F\<^esub> ring.eval F y k = \<zero>\<^bsub>F\<^esub>"
     by (metis (no_types, opaque_lifting) a2 assms(3) ring.eval_in_carrier ring.polynomial_incl 
         ring.r_right_minus_eq ring_F subsetD univ_poly_carrier)
@@ -201,12 +201,53 @@ proof -
   show ?B using a fin_degree_bounded assms(2) by blast
 qed
 
+lemma
+  assumes "finite (B :: 'b set)"
+  assumes "y \<in> B"
+  shows 
+    card_mostly_constant_maps: 
+    "card {f. range f \<subseteq> B \<and> (\<forall>x. x \<ge> n \<longrightarrow> f x = y)} = card B ^ n" (is "card ?A = ?B") and
+    finite_mostly_constant_maps:
+    "finite {f. range f \<subseteq> B \<and> (\<forall>x. x \<ge> n \<longrightarrow> f x = y)}"
+proof -
+  define C where "C = {k. k < n} \<rightarrow>\<^sub>E B"
+  define forward where "forward = (\<lambda>(f :: nat \<Rightarrow> 'b). restrict f {k. k< n})"
+  define backward where "backward = (\<lambda>f k. if k < n then f k else y)"
+
+  have forward_inject:"inj_on forward ?A"
+    apply (rule inj_onI, rule ext, simp add:forward_def restrict_def)
+    by (metis not_le)
+
+  have forward_image:"forward ` ?A \<subseteq> C"
+    apply (rule image_subsetI, simp add:forward_def C_def) by blast
+  have finite_C:"finite C"
+    by (simp add:C_def finite_PiE assms(1)) 
+
+  have card_ineq_1: "card ?A \<le> card C"
+    using card_image card_mono forward_inject forward_image finite_C by (metis (no_types, lifting))
+
+  show "finite ?A"
+    using inj_on_finite forward_inject forward_image finite_C by blast
+  moreover have "inj_on backward C"
+    apply (rule inj_onI, rule ext, simp add:backward_def C_def) 
+    by (metis (no_types, lifting) PiE_ext mem_Collect_eq)
+  moreover have "backward ` C \<subseteq> ?A"
+    apply (rule image_subsetI, simp add:backward_def C_def)
+    apply (rule conjI, rule image_subsetI) apply blast
+    by (rule image_subsetI, simp add:assms)
+  ultimately have  card_ineq_2: "card C \<le> card ?A" by (metis (no_types, lifting) card_image card_mono)
+
+  have "card ?A = card C" using card_ineq_1 card_ineq_2 by auto
+  moreover have "card C = card B ^ n" using C_def assms(1) by (simp add: card_PiE)
+  ultimately show "card ?A = ?B" by auto
+qed
+
 lemma split_poly_surj:
   assumes "field F"
   assumes "finite (carrier F)"
   assumes "K \<subseteq> carrier F"
   shows "split_poly F K ` bounded_degree_polynomials F (card K + n) =
-        {f. dom f = K \<and> ran f \<subseteq> carrier F} \<times> {f. range f \<subseteq> carrier F \<and> (\<forall>k \<ge> n. f k = \<zero>\<^bsub>F\<^esub>)}" 
+        (K \<rightarrow>\<^sub>E carrier F) \<times> {f. range f \<subseteq> carrier F \<and> (\<forall>k \<ge> n. f k = \<zero>\<^bsub>F\<^esub>)}" 
       (is "split_poly F K ` ?A = ?B")
 proof -
   define M where "M = split_poly F K ` ?A"
@@ -223,9 +264,9 @@ proof -
     using poly_count assms(2) assms(1) by metis
   moreover have "M \<subseteq> ?B" using split_poly_image M_def assms by blast
   moreover have "card ?B = card (carrier F)^(card K + n)" 
-    by (simp add: a assms b card_mostly_constant_maps count_maps power_add card_cartesian_product) 
-  moreover have "finite ?B" using assms(2) a b
-    by (simp add: finite_mostly_constant_maps finite_set_of_finite_maps)
+    by (simp add: a assms b card_mostly_constant_maps card_PiE power_add card_cartesian_product) 
+  moreover have "finite ?B" using assms(2) a b  
+    by (simp add: finite_mostly_constant_maps finite_PiE)
   ultimately have "M = ?B" by (simp add: card_seteq)
   thus ?thesis using M_def by auto
 qed
@@ -256,7 +297,7 @@ lemma interpolating_polynomials_count:
     card (carrier F)^n" 
     (is "card ?A = ?B")
 proof -
-  define z where "z = (\<lambda>k. if k \<in> K then Some (f k) else None)"
+  define z where "z = restrict f K"
   define M where "M = {f. range f \<subseteq> carrier F \<and> (\<forall>k \<ge> n. f k = \<zero>\<^bsub>F\<^esub>)}"
 
   have a:"\<zero>\<^bsub>F\<^esub> \<in> carrier F" using assms(1)
@@ -266,7 +307,7 @@ proof -
   hence inj_on_bounded: "inj_on (split_poly F K) (bounded_degree_polynomials F (card K + n))"
     using split_poly_inj assms(1) assms(3) inj_on_subset bounded_degree_polynomials_length 
     by (metis (mono_tags) Collect_subset)
-  moreover have "z \<in> {f. dom f = K \<and> ran f \<subseteq> carrier F}" apply (simp add: z_def dom_def ran_def)
+  moreover have "z \<in> (K \<rightarrow>\<^sub>E carrier F)" apply (simp add: z_def)
     using assms by blast
   hence "{z} \<times> M \<subseteq> split_poly F K ` (bounded_degree_polynomials F (card K + n))"
     apply (simp add: split_poly_surj assms M_def z_def) 
@@ -275,8 +316,8 @@ proof -
     = card ({z} \<times> M)" by (meson card_vimage_inj_on)
   moreover have "(split_poly F K -` ({z} \<times> M)) \<inter> bounded_degree_polynomials F (card K + n) \<subseteq> ?A"
     apply (rule inv_subsetI)
-    apply (simp add:split_poly_def z_def) 
-    by (meson option.inject)
+    apply (simp add:split_poly_def z_def restrict_def)
+    by (meson)
   moreover have "finite ?A" by (simp add: finite_poly_count assms)
   ultimately have card_ineq_1: "card ({z} \<times> M) \<le> card ?A" 
     by (metis (mono_tags, lifting) card_mono)

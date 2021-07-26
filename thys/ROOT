@@ -6,12 +6,10 @@ session StreamingAlgorithms = HOL +
   theories
     Field
     PolyCard
-    CountMaps
     PolynomialCounting
     UniversalHashFamily
     Partitions
     Multiset_Ext
-    Frequency_Moment_2
     F2_Algorithm
     Median
     Probability_Ext

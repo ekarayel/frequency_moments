@@ -6,10 +6,10 @@ theory Frequency_Moment_2
     Multiset_Ext Partitions
 begin
 
-text \<open>This algorithm estimates the second frequency moment F_2, it was introduced by Alon et. al.:
+text \<open>This algorithm estimates the second frequency moment $F_2$, it was introduced by Alon et. al.:
 
 Let $a_1, \cdots, a_n \subset U = \{0,\ldots,m-1\}$ be a sequence. It makes one (read-only) pass
-over the sequence requiring $O(- \<lambda>^{-1} log \varepsilon (log n + log m))$ bits of memory. At the
+over the sequence requiring $O(- \lambda^{-1} \log \varepsilon (\log n + \log m))$ bits of memory. At the
 end it returns an estimate $F_2^{*}$ that deviates from $F_2$ by more than $\lambda F_2$ with
 probability at most $\varepsilon$.\<close>
 

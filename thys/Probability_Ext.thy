@@ -1,3 +1,7 @@
+section \<open>Probabilities and Independent Families\<close>
+
+text \<open>Some additional results about probabilities and independent families.\<close>
+
 theory Probability_Ext
   imports Main "HOL-Probability.Independent_Family" Multiset_Ext
 begin
@@ -108,11 +112,9 @@ lemma pow_unit_cases:
   by (metis PowD assms(1) assms(2) subset_singleton_iff)
 
 lemma indep_vars_product_space:
-  assumes "J \<noteq> {}"
-  assumes "f ` J \<subseteq> I"
-  assumes "inj_on f J"
+  assumes "I \<noteq> {}"
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (\<Omega> i)"
-  shows "prob_space.indep_vars (PiM I \<Omega>) (\<Omega> \<circ> f) (\<lambda>i \<omega>. (\<omega> (f i))) J"
+  shows "prob_space.indep_vars (PiM I \<Omega>) \<Omega> (\<lambda>i \<omega>. (\<omega> i)) I"
 proof -
   define \<Omega>' where "\<Omega>' = (\<lambda>i. (if i \<in> I then \<Omega> i else count_space {undefined}))"
   have "prob_space (count_space {undefined})"
@@ -120,22 +122,22 @@ proof -
   hence prob_space_i: "\<And>i. prob_space (\<Omega>' i)" 
     using assms  apply (simp add:\<Omega>'_def) by blast
 
-  have t:"\<And>i. f i \<notin> I \<Longrightarrow> (\<lambda>\<omega>. \<omega> (f i)) -` {undefined} \<inter> space (Pi\<^sub>M I \<Omega>') = space (Pi\<^sub>M I \<Omega>')" 
+  have t:"\<And>i. i \<notin> I \<Longrightarrow> (\<lambda>\<omega>. \<omega> i) -` {undefined} \<inter> space (Pi\<^sub>M I \<Omega>') = space (Pi\<^sub>M I \<Omega>')" 
     apply (simp add:space_PiM PiE_def Pi_def)
     apply (rule order_antisym)
     by (rule subsetI, simp add:extensional_def)+
-  have "\<And>i. f i \<notin> I \<Longrightarrow> (\<lambda>\<omega>. \<omega> (f i)) \<in> measurable (PiM I \<Omega>') (count_space {undefined})" 
+  have "\<And>i. i \<notin> I \<Longrightarrow> (\<lambda>\<omega>. \<omega> i) \<in> measurable (PiM I \<Omega>') (count_space {undefined})" 
     apply (simp add: measurable_def, rule conjI)
      apply (simp add:space_PiM PiE_def Pi_def extensional_def)
     apply (rule pow_unit_cases)
     by (simp add:t)+
 
-  hence "\<And>i. f i \<notin> I \<Longrightarrow> (\<lambda>\<omega>. \<omega> (f i)) \<in> measurable (PiM I \<Omega>') (\<Omega>' (f i))"
+  hence "\<And>i. i \<notin> I \<Longrightarrow> (\<lambda>\<omega>. \<omega> i) \<in> measurable (PiM I \<Omega>') (\<Omega>' i)"
     by (simp add:\<Omega>'_def)
-  moreover have "\<And>i. f i \<in> I \<Longrightarrow> (\<lambda>\<omega>. \<omega> (f i)) \<in> measurable (PiM I \<Omega>') (\<Omega>' (f i))"
+  moreover have "\<And>i. i \<in> I \<Longrightarrow> (\<lambda>\<omega>. \<omega> i) \<in> measurable (PiM I \<Omega>') (\<Omega>' i)"
     by measurable
 
-  ultimately have meas: "\<And>i. (\<lambda>\<omega>. \<omega> (f i)) \<in> measurable (PiM I \<Omega>') (\<Omega>' (f i))"
+  ultimately have meas: "\<And>i. (\<lambda>\<omega>. \<omega> i) \<in> measurable (PiM I \<Omega>') (\<Omega>' i)"
     by blast
   
   interpret product_prob_space "\<Omega>'"
@@ -144,31 +146,31 @@ proof -
 
   have a:"prob_space (Pi\<^sub>M I \<Omega>')" using prob_space_i by (simp add:prob_space_PiM)
 
-
-  have "prob_space.indep_vars (PiM I \<Omega>') (\<Omega>' \<circ> f) (\<lambda>i \<omega>. (\<omega> (f i))) J" 
+  have "prob_space.indep_vars (PiM I \<Omega>') \<Omega>' (\<lambda>i \<omega>. (\<omega> i)) I" 
     apply (subst prob_space.indep_vars_iff_distr_eq_PiM)
        apply (simp add:a)
       apply (simp add:assms)
     apply (simp add:meas)
-    apply (simp add:comp_def)
     apply (subst distr_PiM_reindex)
        apply (simp add:prob_space_i)
-      using assms apply blast
-     using assms apply blast
+    apply simp apply simp
     apply (rule PiM_cong, simp)
     apply (subst product_prob_space.PiM_component)
       using product_prob_space_axioms apply blast
-     using assms apply blast
+      apply blast
     by simp
-  moreover have "\<And>i. i \<in> J \<Longrightarrow> (\<Omega>' \<circ> f) i = (\<Omega> \<circ> f) i" 
+  moreover have "\<And>i. i \<in> I \<Longrightarrow> \<Omega>' i = \<Omega> i" 
     using assms(2) by (simp add:\<Omega>'_def image_subset_iff)
-  ultimately have "prob_space.indep_vars (PiM I \<Omega>') (\<Omega> \<circ> f) (\<lambda>i \<omega>. (\<omega> (f i))) J"
+  ultimately have "prob_space.indep_vars (PiM I \<Omega>') \<Omega> (\<lambda>i \<omega>. (\<omega>  i)) I"
     by (simp  cong:indep_vars_cong)
   moreover have "Pi\<^sub>M I \<Omega> = Pi\<^sub>M I \<Omega>'" 
     by (rule PiM_cong, simp, simp add:\<Omega>'_def)
   ultimately
   show ?thesis by simp
 qed
+
+text \<open>Random variables that depend on disjoint sets of the components of a product space are
+independent.\<close>
 
 lemma indep_pim:
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
@@ -184,7 +186,7 @@ proof -
 
   have "I \<noteq> {}" by (simp add:assms)
   hence "indep_vars M (\<lambda>i \<omega>. (\<omega> i)) I"
-    using assms(1) indep_vars_product_space[where f="id" and J="I" and I="I" and \<Omega>="M"]
+    using assms(1) indep_vars_product_space[where I="I" and \<Omega>="M"]
     by simp
 
   hence b:"indep_vars (\<lambda>j. PiM (f j) M) (\<lambda>j \<omega>. restrict \<omega> (f j)) J" 
@@ -200,46 +202,8 @@ proof -
     by (simp add:Y'_def assms(2))
 qed
 
-lemma indep_pointwise:
-  assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
-  assumes "\<And>i. i \<in> J \<Longrightarrow> X' i \<in> measurable (PiM I M) (M' i)"
-  assumes "\<And>\<omega>1 \<omega>2 i. i \<in> J \<Longrightarrow> \<omega>1 (f i) = \<omega>2 (f i) \<Longrightarrow>  X' i \<omega>1 = X' i \<omega>2"
-  assumes "f ` J \<subseteq> I"
-  assumes "inj_on f J"
-  assumes "J \<noteq> {}"
-  shows "prob_space.indep_vars (PiM I M) M' X' J"
-proof -
-  have c:"prob_space (PiM I M)" using assms(1) by (simp add:prob_space_PiM)
-  hence "space (PiM I M) \<noteq> {}" using prob_space.not_empty by blast
-  then obtain z where z_def: "z \<in> space (PiM I M)" by blast
-  define Y where "Y = (\<lambda>i u. X' i (\<lambda>k. if k = f i then u else z k))"
-  have b:"\<And>i. i \<in> J \<Longrightarrow> Y i \<circ> (\<lambda>\<omega>. \<omega> (f i)) = X' i"
-    apply (simp add:Y_def comp_def)
-    apply (rule ext)
-    by (rule assms(3), simp, simp) 
-  have a:"\<And>i. i \<in> J \<Longrightarrow> f  i \<in> I" using assms(4) by blast
-  have "\<And>i. i \<in> J \<Longrightarrow> (\<lambda>x k. if k = f i then x else z k) \<in> M (f i) \<rightarrow>\<^sub>M Pi\<^sub>M I M"
-    apply (rule measurable_PiM_Collect)
-    using z_def a apply (simp add:space_PiM PiE_def Pi_def)
-    apply (simp add:extensional_def)
-    by simp
-  hence e:"\<And>i. i \<in> J \<Longrightarrow> Y i \<in> measurable (M (f i)) (M' i)"
-    apply (simp add:Y_def)
-    using z_def assms(2) apply measurable
-    by simp
-  have d:"prob_space.indep_vars (PiM I M) (M \<circ> f) (\<lambda>i \<omega>. \<omega> (f i)) J" 
-    apply (rule indep_vars_product_space)     
-    using assms by blast+
-  have "prob_space.indep_vars (PiM I M) M' (\<lambda>i. Y i \<circ> (\<lambda>\<omega>. \<omega> (f i))) J" 
-    apply (rule prob_space.indep_vars_compose[where M'="M \<circ> f"])
-    by (simp add:c, simp add:d, simp add:e)
-
-  thus ?thesis
-    using c by (simp add:b cong:prob_space.indep_vars_cong)
-qed 
-
 lemma make_ext: 
-  assumes "\<And>x.  P x = P (restrict x I)" 
+  assumes "\<And>x. P x = P (restrict x I)" 
   shows "(\<forall>x \<in> Pi I A. P x) = (\<forall>x \<in> PiE I A. P x)"
   apply (simp add:PiE_def Pi_def)
   apply (rule order_antisym)

@@ -1,3 +1,5 @@
+section \<open>Median\<close>
+
 theory Median
   imports Main "HOL-Probability.Hoeffding" "HOL-Library.Multiset"
 begin
@@ -191,12 +193,10 @@ proof -
   ultimately show ?thesis by linarith
 qed
 
-
 lemma (in prob_space) events_restr_events:
   assumes "X \<in> events"
   shows "{\<omega> \<in> space M. \<omega> \<in> X} \<in> events"
   using assms by measurable 
-
 
 lemma (in prob_space) hoeffding_count:
   assumes "indep_vars (\<lambda>_.borel) X {0..<n}"

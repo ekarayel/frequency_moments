@@ -1,10 +1,12 @@
+section \<open>Multisets\<close> 
+
 theory Multiset_Ext
   imports Main "HOL.Real" "HOL-Library.Multiset"
 begin
 
 text \<open>This is a disjoint induction scheme for multisets: We can represent each multiset as
-a sum like: replicate_mset n x_1 + replicate_mset n x_2 + .. + replicate_mset n x_n where the 
-x_i are distinct.\<close>
+a sum like: @{text "replicate_mset n\<^sub>1 x\<^sub>1 + replicate_mset n\<^sub>2 x\<^sub>2 + ... + replicate_mset n\<^sub>k x\<^sub>k"} where the 
+@{term "x\<^sub>i"} are distinct.\<close>
 
 lemma disj_induct_mset:
   assumes "P {#}"
@@ -72,5 +74,10 @@ proof -
   ultimately show ?thesis
     by (simp add:M_def sum_mset_sum_list[symmetric])
 qed
+
+lemma count_list_gr_1:
+  assumes "x \<in> set xs"
+  shows "count_list xs x \<ge> 1"
+  using assms by (induction xs, simp, simp, fastforce) 
 
 end

@@ -1,10 +1,13 @@
 theory Partitions
-  imports Main  "HOL-Library.Multiset"
+  imports Main "HOL-Library.Multiset" "HOL.Real"
 begin
 
-subsection \<open>Partitions\<close>
+section \<open>Partitions\<close>
 
-text \<open>In this section, we define a function that enumerates all the partitions of {0..<n}.\<close>
+text \<open>In this section, we define a function that enumerates all the partitions of
+@{text "{0..<n}"}. We represent the partitions as lists with @{text "n"} elements. If the element
+at index @{text "i"} and @{text "j"} have the same value, then @{text "i"} and @{text "j"} are in
+the same partition.\<close>
 
 fun enum_partitions_aux :: "nat \<Rightarrow> (nat \<times> nat list) list"
   where
@@ -217,7 +220,6 @@ next
     by (meson nth_non_equal_first_eq)
 qed
 
-
 lemma count_xs:
   assumes "k \<in> set (remdups_indices r)"
   assumes "has_eq_relation r xs"
@@ -259,5 +261,11 @@ lemma has_eq_relation_elim:
   "has_eq_relation r xs = (length r = length xs \<and> verify r xs (length xs) (length xs))"
   apply (simp add: has_eq_relation_def verify_elim ) 
   by (metis (mono_tags, lifting) less_trans nat_neq_iff)
+
+lemma sum_filter: "sum_list (map (\<lambda>p. if f p then (r::real) else 0) y) = r*(length (filter f y))"
+  by (induction y, simp, simp add:algebra_simps)
+
+lemma sum_partitions: "sum_list (map (\<lambda>p. if has_eq_relation p x then (r::real) else 0) (enum_partitions (length x))) = r"
+  by (metis mult.right_neutral of_nat_1 enum_partitions_complete sum_filter)
 
 end
