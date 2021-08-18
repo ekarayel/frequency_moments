@@ -196,6 +196,12 @@ independent random variables.\<close>
 definition (in prob_space) k_wise_indep_vars where
   "k_wise_indep_vars k M' X' I = (\<forall>J \<subseteq> I. card J \<le> k \<longrightarrow> finite J \<longrightarrow> indep_vars M' X' J)" 
 
+lemma (in prob_space) k_wise_subset:
+  assumes "k_wise_indep_vars k M' X' I"
+  assumes "J \<subseteq> I"
+  shows "k_wise_indep_vars k M' X' J"
+  using assms by (simp add:k_wise_indep_vars_def)
+
 text \<open>Key result hash functions are k-wise independent random variables.\<close>
 
 lemma indep:

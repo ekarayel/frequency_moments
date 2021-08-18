@@ -4,8 +4,9 @@ theory Multiset_Ext
   imports Main "HOL.Real" "HOL-Library.Multiset"
 begin
 
-text \<open>This is a disjoint induction scheme for multisets: We can represent each multiset as
-a sum like: @{text "replicate_mset n\<^sub>1 x\<^sub>1 + replicate_mset n\<^sub>2 x\<^sub>2 + ... + replicate_mset n\<^sub>k x\<^sub>k"} where the 
+text \<open>This is a induction scheme over the distinct elements of a multisets: 
+We can represent each multiset as a sum like: 
+@{text "replicate_mset n\<^sub>1 x\<^sub>1 + replicate_mset n\<^sub>2 x\<^sub>2 + ... + replicate_mset n\<^sub>k x\<^sub>k"} where the 
 @{term "x\<^sub>i"} are distinct.\<close>
 
 lemma disj_induct_mset:
@@ -33,7 +34,9 @@ proof (induction "size M" arbitrary: M rule:nat_less_induct)
   qed
 qed
 
-lemma prod_mset_conv: "prod_mset (image_mset f A) = prod (\<lambda>x. (f x :: 'a :: comm_monoid_mult)^(count A x)) (set_mset A)"
+lemma prod_mset_conv: 
+  fixes f :: "'a \<Rightarrow> 'b::{comm_monoid_mult}"
+  shows "prod_mset (image_mset f A) = prod (\<lambda>x. f x^(count A x)) (set_mset A)"
 proof (induction A rule: disj_induct_mset)
   case 1
   then show ?case by simp
@@ -45,9 +48,10 @@ next
 qed
 
 lemma sum_collapse: 
+  fixes f :: "'a \<Rightarrow> 'b::{comm_monoid_add}"
   assumes "finite A"
   assumes "z \<in> A"
-  assumes "\<And>y. y \<in> A \<Longrightarrow> y \<noteq> z \<Longrightarrow> f y = (0::'a ::comm_monoid_add)"
+  assumes "\<And>y. y \<in> A \<Longrightarrow> y \<noteq> z \<Longrightarrow> f y = 0"
   shows "sum f A = f z"
   using sum.union_disjoint[where A="A-{z}" and B="{z}" and g="f"]
   by (simp add: assms sum.insert_if)
@@ -56,18 +60,18 @@ text \<open>There is a version @{thm [source] sum_list_map_eq_sum_count} but it 
 if the function maps into the reals.\<close>
 
 lemma sum_list_eval:
-  fixes f :: "'a \<Rightarrow> real"
-  shows "sum_list (map f xs) = (\<Sum>x \<in> set xs. (count_list xs x) * f x)"
+  fixes f :: "'a \<Rightarrow> 'b::{ring,semiring_1}"
+  shows "sum_list (map f xs) = (\<Sum>x \<in> set xs. of_nat (count_list xs x) * f x)"
 proof -
   define M where "M = mset xs"
-  have "sum_mset (image_mset f M) = (\<Sum>x \<in> set_mset M. (count M x) * f x)"
+  have "sum_mset (image_mset f M) = (\<Sum>x \<in> set_mset M. of_nat (count M x) * f x)"
   proof (induction "M" rule:disj_induct_mset)
     case 1
     then show ?case by simp
   next
     case (2 n M x)
     have a:"\<And>y. y \<in> set_mset M \<Longrightarrow> y \<noteq> x" using 2(2) by blast
-    show ?case using 2 by (simp add:a count_eq_zero_iff)
+    show ?case using 2 by (simp add:a  count_eq_zero_iff[symmetric])
   qed
   moreover have "\<And>x. count_list xs x = count (mset xs) x" 
     by (induction xs, simp, simp)

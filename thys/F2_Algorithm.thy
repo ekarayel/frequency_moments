@@ -1,39 +1,56 @@
 section \<open>Frequency Moment 2\<close>
 
 theory F2_Algorithm
-  imports Main "HOL-Probability.Giry_Monad" UniversalHashFamily Field 
+  imports Main "HOL-Probability.Giry_Monad" "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
     Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext
+    "HOL-Library.Rewrite"
 begin
 
-text \<open>This algorithm estimates the second frequency moment $F_2$, it was introduced by Alon et. al.:
+definition f2_value where
+  "f2_value xs = (\<Sum> x \<in> set xs. (rat_of_nat (count_list xs x)^2))"
 
-Let $a_1, \cdots, a_n \subset U = \{0,\ldots,m-1\}$ be a sequence. It makes one (read-only) pass
-over the sequence requiring $O(- \lambda^{-1} \log \varepsilon (\log n + \log m))$ bits of memory. At the
-end it returns an estimate $F_2^{*}$ that deviates from $F_2$ by more than $\lambda F_2$ with
-probability at most $\varepsilon$.\<close>
+fun eval_hash_function where
+  "eval_hash_function p h k = (
+    if hash_function (ZFact (int p)) (zfact_embed p k) h \<in> zfact_embed p ` {k. 2*k < p} then
+      int p - 1
+    else
+      - int p - 1
+  )"
 
-definition f2_sketch
-  where
-    "f2_sketch f xs \<omega> = (\<Sum> x \<in> set xs. (real (count_list xs x) * f x \<omega>))"
+type_synonym f2_space = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
 
-definition f2_value
-  where
-    "f2_value xs = (\<Sum> x \<in> set xs. (real (count_list xs x)^2))"
+fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
+  "f2_init \<delta> \<epsilon> n =
+    do {
+      let s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>;
+      let s\<^sub>2 = nat \<lceil>-32/9 * ln (real_of_rat \<epsilon>)\<rceil>;
+      let p = find_odd_prime_above n;
+      h \<leftarrow> pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4);
+      return_pmf (s\<^sub>1, s\<^sub>2, p, h, (\<lambda>_ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0 :: int)))
+    }"
 
+fun f2_update :: "nat \<Rightarrow> f2_space \<Rightarrow> f2_space pmf" where
+  "f2_update x (s\<^sub>1, s\<^sub>2, p, h, sketch) = 
+    return_pmf (s\<^sub>1, s\<^sub>2, p, h, \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. eval_hash_function p (h i) x + sketch i)"
+
+fun f2_result :: "f2_space \<Rightarrow> rat pmf" where
+  "f2_result (s\<^sub>1, s\<^sub>2, p, h, sketch) = 
+    return_pmf (median (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. 
+      (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . rat_of_int (sketch (i\<^sub>1, i\<^sub>2))^2) / ((rat_of_nat p^2-1) * rat_of_nat s\<^sub>1)) s\<^sub>2
+    )"
 
 lemma (in prob_space)
-  assumes "\<And>I. I \<subseteq> set xs \<Longrightarrow> finite I \<Longrightarrow> card I \<le> 4 \<Longrightarrow> indep_vars (\<lambda>_. borel) h I"
+  assumes "\<And>I. k_wise_indep_vars 4 (\<lambda>_. borel) h (set xs)"
   assumes "\<And>i (m :: nat). i \<in> set xs \<Longrightarrow> integrable M (\<lambda>\<omega>. (h i \<omega>)^m)"
   assumes "\<And>i. i \<in> set xs \<Longrightarrow> expectation (h i) = 0"
   assumes "\<And>i. i \<in> set xs \<Longrightarrow> expectation (\<lambda>\<omega>. h i \<omega>^2) = 1"
   assumes "\<And>i. i \<in> set xs \<Longrightarrow> expectation (\<lambda>\<omega>. h i \<omega>^4) \<le> 3"
-  shows var_f2:"variance (\<lambda>\<omega>. f2_sketch h xs \<omega>^2) \<le> (2*f2_value xs^2)" (is "?A \<le> ?B")
-  and exp_f2:"expectation (\<lambda>\<omega>. f2_sketch h xs \<omega>^2) = f2_value xs" (is ?D)
-  and int_exp_f2:"integrable M (\<lambda>\<omega>. f2_sketch h xs \<omega>^2)" (is ?E)
-  and int_var_f2:"integrable M (\<lambda>\<omega>. (f2_sketch h xs \<omega>^2)^2)" (is ?F)
+  defines "f2_sketch \<equiv> (\<lambda>\<omega>. \<Sum> x \<in> set xs. real (count_list xs x) * h x \<omega>)"
+  shows var_f2:"has_variance M (\<lambda>\<omega>. f2_sketch \<omega>^2) (\<lambda>r. r \<le> 2*(real_of_rat (f2_value xs)^2))" (is "?A")
+  and exp_f2:"has_bochner_integral M (\<lambda>\<omega>. f2_sketch \<omega>^2) (real_of_rat (f2_value xs))" (is ?B)
 proof -
 
-  have "\<And>i. i \<in> set xs \<Longrightarrow> indep_vars (\<lambda>_. borel) h {i}" using assms(1) by simp
+  have "\<And>i. i \<in> set xs \<Longrightarrow> indep_vars (\<lambda>_. borel) h {i}" using assms(1) by (simp add:k_wise_indep_vars_def)
   hence meas:"\<And>i. i \<in> set xs \<Longrightarrow> h i \<in> measurable M borel" by (simp add:indep_vars_def2) 
 
   define f2_sum where "f2_sum = (\<lambda>x \<omega>. real (count_list xs x) * h x \<omega>)"
@@ -41,7 +58,7 @@ proof -
   define h_power where "h_power = (\<lambda>i m. expectation (\<lambda>\<omega>. (h i \<omega>)^m))"
   define h_power_4_diff where "h_power_4_diff = (\<lambda>i. h_power i 4 - 3)"
 
-  have f2_sketch_elim: "\<And>\<omega>. f2_sketch h xs \<omega> = (\<Sum> x \<in> set xs. f2_sum x \<omega>)"
+  have f2_sketch_elim: "\<And>\<omega>. f2_sketch \<omega> = (\<Sum> x \<in> set xs. f2_sum x \<omega>)"
     by (simp add:f2_sketch_def f2_sum_def)
   have h_power_simps: 
     "\<And>x. x \<in> set xs \<Longrightarrow> h_power x (Suc 0) = 0" 
@@ -79,7 +96,7 @@ proof -
     assume "x \<subseteq> set xs"
     moreover assume "finite x"
     moreover assume "card x \<le> 4"
-    ultimately have "indep_vars (\<lambda>_. borel) (\<lambda>i. h i) x" using assms by auto
+    ultimately have "indep_vars (\<lambda>_. borel) (\<lambda>i. h i) x" using assms(1) by (simp add:k_wise_indep_vars_def)
     moreover define Y where "Y = (\<lambda>i t. (real (count_list xs i) * t)^ j i)"
     moreover have "\<And>i. i \<in> x \<Longrightarrow> Y i \<in> measurable borel borel" by (simp add:Y_def, measurable)
     ultimately have "indep_vars (\<lambda>_. borel) (\<lambda>i. Y i \<circ> h i) x" using indep_vars_compose by fast
@@ -153,60 +170,54 @@ proof -
   have rev_ineq: "\<And>x y. (if (x \<noteq> y) then 1 else 0) = ((1::real) - (if (x = y) then 1 else 0))"
   by auto
 
-  have  fold_sym: "\<And>x y. (x \<noteq> y \<and> y \<noteq> x) = (x \<noteq> y)" by auto
+  have fold_sym: "\<And>x y. (x \<noteq> y \<and> y \<noteq> x) = (x \<noteq> y)" by auto
 
-  show int_exp_f2: "?E"
+  have int_exp_f2: "integrable M (\<lambda>\<omega>. f2_sketch \<omega>^2)"
     apply (simp add: f2_sketch_elim power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
     by (simp add: c3 indep1 indep2 exp_def sum.distrib)
 
-  show int_var_f2: "?F"
-    apply (simp add: f2_sketch_elim power2_eq_square)
+  have int_var_f2: "integrable M (\<lambda>\<omega>. f2_sketch \<omega>^4)"
+    apply (simp add: f2_sketch_elim power2_eq_square power4_eq_xxxx)
     apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
     by (simp add: c3 indep1 indep2 exp_def sum.distrib)
 
-  have exp_2: "?D"
+  show exp_2: "?B"
+    apply (simp add: has_bochner_integral_iff)
     apply (simp add: f2_sketch_elim power2_eq_square f2_value_def)
     apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
     apply (simp add: c3 indep1 indep2 h_power_simps sum.distrib)
     apply (simp add: has_eq_relation_elim)
-    by (simp add: sum_collapse rev_ineq)
-  thus ?D by auto
+    by (simp add: sum_collapse rev_ineq of_rat_sum of_rat_mult)
 
-  show "?A \<le> ?B"
-    apply (subst variance_eq, metis int_exp_f2, metis int_var_f2)
-    apply (simp add: exp_2 f2_value_def)
+  have t:"\<And>x. ((x::real)^2)^2=x^4"
+    by simp
+
+  show "?A"
+    apply (simp add:has_variance_def)
+    apply (rule conjI) apply (metis int_var_f2)
+    apply (rule conjI) apply (metis int_exp_f2)
+    apply (rule conjI, simp add: prob_space_axioms)
+    apply (subst variance_eq, metis int_exp_f2, simp add:t int_var_f2)
+    using exp_2 apply (simp add: has_bochner_integral_iff f2_value_def)
     apply (simp add: f2_sketch_elim power4_eq_xxxx power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
     apply (simp add: c3 indep1 indep2 h_power_simps sum.distrib)
     apply (simp add: has_eq_relation_elim)
     apply (simp add: sum_collapse rev_ineq sum_subtractf algebra_simps fold_sym)
-    apply (simp add: algebra_simps sum_distrib_left)
+    apply (simp add: algebra_simps sum_distrib_left of_rat_sum of_rat_mult)
     apply (rule sum_mono)
     by (simp add: h_power_4_estimate mult_nonneg_nonpos2 algebra_simps)
 qed
 
-definition \<alpha> :: "nat \<Rightarrow> real" where "\<alpha> p = sqrt((p-1)/(p+1))"
-definition \<beta> :: "nat \<Rightarrow> real" where "\<beta> p = -sqrt((p+1)/(p-1))"
-
-fun eval_hash_function where
-  "eval_hash_function p h k = (
-    if (hash_function (ZFact (int p)) (zfact_embed p k) h) \<in> zfact_embed p ` {k. 2*k < p} then
-      \<alpha> p
-    else
-      \<beta> p
-  )"
 
 lemma eval_exp:
   assumes "prime p"
   assumes "k < p"
   assumes "p > 2" 
   shows eval_hash_exp: 
-    "prob_space.expectation (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k^m) = 
-    (real (p+1)/ real(2*p) * \<alpha> p ^m) + 
-    (real (p-1)/ real(2*p) * \<beta> p ^m)" (is "?A = ?C")
-    and eval_hash_int:
-    "integrable (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k^m)" (is ?B)
+    "has_bochner_integral (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. (eval_hash_function p \<omega> k / sqrt (real p^2-1)) ^m) (
+    ((real p-1)^m* (real p+1) + (-real p - 1)^m *(real p - 1))/ ((2*real p) * sqrt(real p^2-1)^m))"
 proof -
   define A where "A = {\<omega>. 
     \<omega> \<in> bounded_degree_polynomials (ZFact p) 4 \<and>
@@ -214,8 +225,8 @@ proof -
   define B where "B = {\<omega>. 
     \<omega> \<in> bounded_degree_polynomials (ZFact p) 4 \<and>
     (hash_function (ZFact p) (zfact_embed p k) \<omega>) \<in> zfact_embed p ` {k. 2*k \<ge> p \<and> k < p}}"
-  define f where "f = (\<lambda>\<omega>. indicator A \<omega> * \<alpha> p^m)"
-  define g where "g = (\<lambda>\<omega>. indicator B \<omega> * \<beta> p^m)"
+  define f where "f = (\<lambda>\<omega>. indicator A \<omega> * (real p-1)^m)"
+  define g where "g = (\<lambda>\<omega>. indicator B \<omega> * (-real p-1)^m)"
 
   have g:"p > 1" using assms(1) prime_gt_1_nat by auto
 
@@ -224,7 +235,7 @@ proof -
   have "zfact_embed p k \<in> carrier (ZFact p)" using zfact_embed_ran assms g 
     by (metis image_eqI mem_Collect_eq)
   hence g4:"\<And>\<omega>. \<omega> \<in> bounded_degree_polynomials (ZFact p) 4 \<Longrightarrow> ring.eval (ZFact (int p)) \<omega> (zfact_embed p k) \<in> carrier (ZFact p)"
-    using a2   ring.polynomial_in_carrier[where K="carrier (ZFact p)" and R="ZFact p"] 
+    using a2 ring.polynomial_in_carrier[where K="carrier (ZFact p)" and R="ZFact p"] 
     by (simp add: bounded_degree_polynomials_def ring.carrier_is_subring ring.eval_in_carrier univ_poly_carrier)
   have "odd p" using assms prime_odd_nat by blast
   then obtain t where t_def: "p=2*t+1" 
@@ -265,10 +276,13 @@ proof -
     ultimately show "(x \<in> ?lhs) = (x \<notin> ?rhs)"
       by (metis (no_types, lifting) UnE disjoint_iff)
   qed
-  have r3: "\<And>\<omega>. \<omega> \<in> space (poly_hash_family (ZFact (int p)) 4) \<Longrightarrow>  eval_hash_function p \<omega> k^m =  f \<omega> + g \<omega>"
+  have r3: "\<And>\<omega>. \<omega> \<in> space (poly_hash_family (ZFact (int p)) 4) \<Longrightarrow> 
+    (real_of_int (eval_hash_function p \<omega> k))^m =  f \<omega> + g \<omega>"
     apply (simp add:poly_hash_family_def space_uniform_count_measure)
     apply (simp add:f_def g_def A_def B_def hash_function_def)
-    apply (rule conjI, rule impI) using g4 r3_aux by simp+
+    apply (rule conjI, rule impI) using g4 r3_aux apply (simp add:power_one_over[symmetric])
+    apply (rule impI)
+    using g4 r3_aux by (simp add:power_one_over[symmetric])
 
   have "card {k. Suc(2 * t) \<le> 2 *k \<and> k < Suc (2*t)} = card {Suc t..<Suc (2*t)}" 
     by (rule arg_cong[where f="card"], auto)
@@ -297,7 +311,7 @@ proof -
     apply (subst card_image) using g zfact_embed_inj inj_on_subset[where B="{k. 2 * k < p}"] apply force
     using g apply (simp add: card_B zfact_card nonzero_divide_eq_eq nonzero_eq_divide_eq)
     by (simp add: power3_eq_cube power4_eq_xxxx)
-  ultimately have r1:"has_bochner_integral (poly_hash_family (ZFact p) 4) f (real (p+1)/ real(2*p) * \<alpha> p^m)"
+  ultimately have r1:"has_bochner_integral (poly_hash_family (ZFact p) 4) f (real (p+1)/ real(2*p) * (real p-1)^m)"
     apply (subst f_def) using has_bochner_integral_mult_left by metis
 
   have "B \<in> sets (poly_hash_family (ZFact p) 4)"
@@ -306,7 +320,7 @@ proof -
     by (simp add:poly_hash_family_def emeasure_uniform_count_measure a B_def) 
   ultimately have "has_bochner_integral (poly_hash_family (ZFact p) 4) (indicator B) (measure (poly_hash_family (ZFact p) 4) B)"
     using has_bochner_integral_real_indicator by blast
-  moreover have "measure (poly_hash_family (ZFact p) 4) B = (p-1)/(2*p)" 
+  moreover have "measure (poly_hash_family (ZFact p) 4) B = (real p-1)/(2*p)" 
     apply (simp add:poly_hash_family_def measure_uniform_count_measure a B_def bounded_degree_polynomials_count a1 a2) 
     apply (simp add: hash_function_def)
     apply (subst poly_card_set)
@@ -318,33 +332,102 @@ proof -
      apply (simp add: ZFact_defs(1) ZFact_defs(2) int.a_rcosetsI zfact_embed_def)
     apply (subst card_image) using g zfact_embed_inj inj_on_subset[where B="{k. p \<le> 2 * k \<and> k < p}"] apply force
     using g apply (simp add:card_A zfact_card nonzero_divide_eq_eq nonzero_eq_divide_eq)
-    by (simp add: algebra_simps power3_eq_cube power4_eq_xxxx)
-  ultimately have r2:"has_bochner_integral (poly_hash_family (ZFact p) 4) g (real (p-1)/ real(2*p) * \<beta> p^m)"
+    by (simp add: power3_eq_cube power4_eq_xxxx)
+  ultimately have r2:"has_bochner_integral (poly_hash_family (ZFact p) 4) g ((real p-1)/ real(2*p) * (-real p-1)^m)"
     apply (subst g_def) using has_bochner_integral_mult_left by metis
 
-  have r4: "has_bochner_integral (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k^m) ?C"
-    apply (subst has_bochner_integral_cong [where f="(\<lambda>\<omega>. eval_hash_function p \<omega> k^m)" and
-      g ="(\<lambda>\<omega>. f \<omega> + g \<omega>)" and M =" (poly_hash_family (ZFact p) 4)" and N=" (poly_hash_family (ZFact p) 4)"
-      and y="?C"])
-    apply simp
-      apply (simp add:r3 del:eval_hash_function.simps)
-     apply simp
+  show ?thesis
+    apply (subst power_divide)
+    apply (subst divide_divide_eq_left[symmetric])
+    apply (rule has_bochner_integral_divide_zero)
+    using r3 apply (simp add:add_divide_distrib del:eval_hash_function.simps cong:has_bochner_integral_cong)
     apply (rule has_bochner_integral_add)
-    using r1 r2 by simp+
-
-  show "?A = ?C" using r4 has_bochner_integral_integral_eq by blast
-  show "?B " using r4 has_bochner_integral_iff by blast
+    using r1 apply (simp add:algebra_simps)
+    using r2 by (simp add:algebra_simps)
 qed
 
-lemma eval_exp_1_aux: "a > 0 \<Longrightarrow> a * sqrt(x) = sqrt(a^2*x)" 
-  by (simp add: real_sqrt_mult)
+lemma eval_exp_1:
+  assumes "prime p"
+  assumes "k < p"
+  assumes "p > 2"
+  shows "has_bochner_integral (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) 0"
+proof -
+  have a:"((real p - 1) ^ 1 * (real p + 1) + (- real p - 1) ^ 1 * (real p - 1)) = 0"
+    by (simp add:algebra_simps)
+  show ?thesis 
+    using assms eval_hash_exp[where m="1" and p="p"] a by (simp del:eval_hash_function.simps)
+qed
+
+lemma eval_exp_2:
+  assumes "prime p"
+  assumes "k < p"
+  assumes "p > 2"
+  shows "has_bochner_integral (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. (eval_hash_function p \<omega> k/ sqrt (real p^2-1))^2) 1"
+proof -
+  have b:"(-real p -1)^2=(real p +1)^2"
+    by (simp add: power2_commute)
+
+  have a:"(((real p - 1)\<^sup>2 * (real p + 1) + (- real p - 1)\<^sup>2 * (real p - 1)) / (2 * real p * (sqrt ((real p)\<^sup>2 - 1))\<^sup>2)) = 1"
+    using b power2_eq_square[where a="real p-1"]  power2_eq_square[where a="real p+1"] apply (simp)
+    apply (subst (2) mult.assoc)
+    apply (subst mult.commute[where b="real p+1" and a="real p - 1"]) 
+    apply (subst (2) mult.assoc)
+    apply (simp add:mult.assoc[symmetric])
+    apply (subst distrib_right[symmetric])
+    apply (subst distrib_right[symmetric], simp)
+    apply (subst real_sqrt_pow2)
+    using assms apply simp
+    apply (simp add:algebra_simps power2_eq_square)
+    using assms 
+    by (metis bot_nat_0.not_eq_extremum less_nat_zero_code less_one mult_less_cancel2 of_nat_1_eq_iff of_nat_mult prime_gt_1_nat)
+  show ?thesis 
+    apply (subst (2) a[symmetric])
+    apply (rule eval_hash_exp[where m="2" and p="p"])
+    using assms by auto
+qed
+
+lemma eval_exp_4:
+  assumes "prime p"
+  assumes "k < p"
+  assumes "p > 2"
+  shows 
+    "prob_space.expectation (poly_hash_family (ZFact p) 4) 
+      (\<lambda>\<omega>. (eval_hash_function p \<omega> k / sqrt (real p^2-1))^4) \<le> 3"
+proof -
+  have a:"\<And>x. (x::real)^4=(x^2)^2"
+    by simp
+  have b: "\<And>x y. x\<le>y \<Longrightarrow> x \<le> 12 +(y::real)"
+    by simp
+
+  have c:"2 \<le> real p" using assms 
+    by linarith
+  have d: "4=(2::real)^2" by auto
+  have "(((real p-1)^4* (real p+1) + (-real p - 1)^4 *(real p - 1))/ ((2*real p) * sqrt(real p^2-1)^4)) \<le> 3"
+    apply (subst pos_divide_le_eq)
+    using assms apply (simp add:a)
+    apply (rule mult_pos_pos, simp, simp)
+    apply (metis One_nat_def Suc_1 less_not_refl nat.simps(3) nat_power_eq_Suc_0_iff of_nat_1_eq_iff of_nat_power prime_gt_1_nat)
+    using assms apply (subst (3) a, simp)
+    apply (simp add:algebra_simps power4_eq_xxxx power2_eq_square)
+    apply (subst distrib_left[symmetric])
+    apply (subst mult_le_cancel_iff2, simp)
+    apply (rule b)
+    apply (subst mult_le_cancel_iff2, simp)
+    apply (subst mult_le_cancel_iff2, simp)
+    apply (simp add:power2_eq_square[symmetric])
+    apply (subst d)
+    by (metis c of_nat_le_iff of_nat_numeral of_nat_power power_mono zero_le)
+
+  then show ?thesis using eval_exp[where m="4" and p="p"] has_bochner_integral_integral_eq
+    by (metis assms)
+qed
 
 lemma eval_4_indep:
   assumes "prime p"
   assumes "p > 2"
   shows "prob_space.k_wise_indep_vars 
     (poly_hash_family (ZFact p) 4) 4 (\<lambda>_. borel)
-    (\<lambda>k \<omega>. eval_hash_function p \<omega> k) {0..<p}"
+    (\<lambda>k \<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) {0..<p}"
 proof -
   have a1:"p > 1" using assms(2) by auto
   have a:"prob_space (poly_hash_family (ZFact p) 4)" 
@@ -374,7 +457,7 @@ proof -
      using a2 c1 c2 c3 apply presburger
     by simp
   have b:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow>
-    prob_space.indep_vars (poly_hash_family (ZFact (int p)) 4) (\<lambda>_. borel) (\<lambda>k \<omega>. eval_hash_function p \<omega> k) J"
+    prob_space.indep_vars (poly_hash_family (ZFact (int p)) 4) (\<lambda>_. borel) (\<lambda>k \<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) J"
     apply simp
     apply (rule prob_space.indep_vars_compose2 [where X="(\<lambda>k \<omega>. hash_function (ZFact (int p)) (zfact_embed p k) \<omega>)"
             and M'=" (\<lambda>_. uniform_count_measure (carrier (ZFact (int p))))"])
@@ -386,500 +469,479 @@ proof -
     by (simp add: a b prob_space.k_wise_indep_vars_def del:eval_hash_function.simps)
 qed
 
-lemma eval_exp_1:
-  assumes "prime p"
-  assumes "k < p"
-  assumes "p > 2"
-  shows "prob_space.expectation (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k) = 0"
+lemma ex_poly: 
+  "bounded_degree_polynomials (ZFact (int p)) 4 \<noteq> {}" (is "?A \<noteq> _")
 proof -
-  have b:"1 + real p > 0" 
-    using assms(3) by linarith
-  have c:"real (p - Suc 0) > 0"  
-    using assms(3) by linarith
-  have d:"real (p - Suc 0) = real p - 1" 
-    using assms(3) by linarith
-  have a: "(1 + real p) * sqrt ((real p - 1) / (real p + 1)) = real (p - Suc 0) * sqrt ((real p + 1) / (real p - 1))" 
-    using b c apply (simp add:eval_exp_1_aux)
-    apply (subst frac_eq_eq)
-    using assms(3) apply linarith
-    using assms(3) apply linarith
-    by (simp add:power2_eq_square d add.commute) 
-  show ?thesis 
-    using assms eval_hash_exp[where m="1"] apply (simp del:eval_hash_function.simps)
-    by (simp add:\<alpha>_def \<beta>_def a)
+  have "\<zero>\<^bsub>poly_ring (ZFact (int p))\<^esub> \<in> ?A"
+    apply (simp add:bounded_degree_polynomials_def)
+    apply (rule conjI)
+     apply (simp add: univ_poly_zero univ_poly_zero_closed)
+    using univ_poly_zero by blast
+  thus ?thesis by blast
 qed
 
-lemma eval_exp_2:
-  assumes "prime p"
-  assumes "k < p"
-  assumes "p > 2"
-  shows "prob_space.expectation (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k^2) = 1"
-proof-
-  have a:"(1 + real p) * (real p - 1) / ((real p + 1) * (2 * real p)) = (real p - 1) / (2*real p)"
-    apply (subst frac_eq_eq)
-    using assms(3) apply force
-    using assms(3) apply force
-    by simp
-  have b:"real (p - Suc 0) * (real p + 1) / ((real p - 1) * (2 * real p)) = (real p + 1) / (2*real p)"
-    apply (subst frac_eq_eq)
-    using assms(3) apply force
-    using assms(3) apply force
-      apply simp
-    using assms(3) by linarith
-  show ?thesis
-    using assms eval_hash_exp[where m="2"] apply (simp del:eval_hash_function.simps)
-    by (simp add:\<alpha>_def \<beta>_def a b add_divide_distrib[symmetric])
-qed
 
-lemma sq_power_4_elim: "sqrt x^4 = x^2 " 
-  by (simp add: mult.assoc power2_eq_square power4_eq_xxxx)
-
-lemma eval_exp_4:
+lemma fin_poly: 
   assumes "prime p"
-  assumes "k < p"
+  shows "finite (bounded_degree_polynomials (ZFact (int p)) 4)"
+  apply (rule finite_poly_count)
+   apply (rule zfact_prime_is_field)
+   apply (simp add:assms)
+  apply (rule zfact_finite)
+  using assms  prime_gt_1_nat by blast
+
+lemma 
+  assumes "prime p"
   assumes "p > 2"
-  shows "prob_space.expectation (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k^4) \<le> 3"
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < p"
+  defines "M \<equiv> uniform_count_measure (bounded_degree_polynomials (ZFact (int p)) 4)"
+  defines "f2_sketch \<equiv> (\<lambda>a. (real_of_int (sum_list (map (eval_hash_function p a) xs)))\<^sup>2 / ((real p)\<^sup>2 - 1))"
+  shows var_f2:"has_variance M (\<lambda>\<omega>. f2_sketch \<omega>) (\<lambda>r. r \<le> 2*(real_of_rat (f2_value xs)^2))" (is "?A")
+  and exp_f2:"has_bochner_integral M (\<lambda>\<omega>. f2_sketch \<omega>) (real_of_rat (f2_value xs))" (is "?B")
 proof -
-  have a:" (2 * real p) > 0" 
-    using assms by force
-  have b:"(1 + real p) * ((real p - 1) / (real p + 1))\<^sup>2 = (real p - 1)^2 / (real p + 1)" 
-    apply (simp add:power_divide)
-    apply (subst frac_eq_eq)
-    using assms apply force
-    using assms apply force
-    using assms by (simp add:power2_eq_square)
-  have c:"real (p - Suc 0) * ((real p + 1) / (real p - 1))\<^sup>2 = (real p + 1)^2 / (real p - 1)"
-    apply (simp add:power_divide)
-    apply (subst frac_eq_eq)
-    using assms apply force
-    using assms apply force
-    using assms by (simp add:power2_eq_square)
+  have a:"prob_space M" 
+    apply (simp add:M_def, rule prob_space_uniform_count_measure)
+     apply (metis fin_poly assms(1))
+    by (rule ex_poly)
 
-  have e:"2^2 < (real p)^2"
-    apply (subst power_strict_mono)
+  have f2_sketch_elim:
+  "f2_sketch = (\<lambda>\<omega>. (\<Sum> x \<in> set xs. real (count_list xs x) * (eval_hash_function p \<omega> x/ sqrt (real p^2-1)))^2 )"
+    apply (simp add:sum_list_eval f2_sketch_def  sum_divide_distrib[symmetric] power_divide del:eval_hash_function.simps)
+    apply (subst real_sqrt_pow2)
     using assms by simp+
-
-  have d:"(real p - 1)\<^sup>2 / (real p + 1) + (real p + 1)\<^sup>2 / (real p - 1) \<le> 6 * real p"
-    apply (subst add_frac_eq)
-    using assms apply force
-    using assms apply force
-    apply (subst pos_divide_le_eq)
-    using assms apply force
-    apply (simp add:power2_eq_square power3_eq_cube algebra_simps)
-    apply (subst mult_le_cancel_left_pos)
-    using assms apply force
-    using e by (simp add:power2_eq_square)
-  show ?thesis
-    using assms eval_hash_exp[where m="4"] apply (simp del:eval_hash_function.simps)
-    apply (simp add:\<alpha>_def \<beta>_def a add_divide_distrib[symmetric] pos_divide_le_eq sq_power_4_elim)
-    by (simp add:b c d)
-qed
-
-lemma
-  assumes "p > 2"
-  assumes "prime p"
-  assumes "\<And>i. i \<in> set xs \<Longrightarrow> i < p" 
-  shows var_f2':
-    "prob_space.variance
-        (poly_hash_family (ZFact p) 4)
-        (\<lambda>\<omega>. sum_list (map (eval_hash_function p \<omega>) xs)^2) \<le> 2*(f2_value xs)^2" (is "?A")
-  and exp_f2':
-    "prob_space.expectation
-        (poly_hash_family (ZFact p) 4)
-        (\<lambda>\<omega>. sum_list (map (eval_hash_function p \<omega>) xs)^2) = f2_value xs" (is "?B")
-
-  and int_exp_f2':
-    "integrable
-        (poly_hash_family (ZFact p) 4)
-        (\<lambda>\<omega>. sum_list (map (eval_hash_function p \<omega>) xs)^2)" (is "?C")
-  and int_var_f2':
-    "integrable
-        (poly_hash_family (ZFact p) 4)
-        (\<lambda>\<omega>. (sum_list (map (eval_hash_function p \<omega>) xs)^2)^2)" (is "?D")
-proof -
-  have f2_sketch_elim: "\<And>\<omega>. f2_sketch (\<lambda>k \<omega>. eval_hash_function p \<omega> k) xs \<omega> = sum_list (map (eval_hash_function p \<omega>) xs)"
-    by (simp add:sum_list_eval f2_sketch_def del:eval_hash_function.simps)
-
-  have set_xs: "\<And>I. I \<subseteq> set xs \<Longrightarrow> I \<subseteq> {0..<p}"
-    using assms(3)  atLeastLessThan_iff by blast
-  have a1:"p > 1" using assms(1) by auto
-  have a:"prob_space (poly_hash_family (ZFact p) 4)" 
-    apply (rule prob_space_poly_family)
-    using assms zfact_prime_is_field apply simp
-    using a1 zfact_finite by auto
+  have b:"prob_space.k_wise_indep_vars M 4 (\<lambda>_. borel) (\<lambda>x \<omega>. real_of_int (eval_hash_function p \<omega> x) / sqrt ((real p)\<^sup>2 - 1))
+          (set xs)"
+    apply (rule prob_space.k_wise_subset [where I="{0..<p}"])
+    apply (simp add:a)
+    using eval_4_indep assms apply (simp add:poly_hash_family_def del:eval_hash_function.simps)
+    apply (rule subsetI)
+    using assms(3) by simp
 
   show ?A
-    using prob_space.var_f2[where M="poly_hash_family (ZFact p) 4" and h="\<lambda>k \<omega>. eval_hash_function p \<omega> k" and xs="xs"]
     apply (simp only:f2_sketch_elim)
-    using set_xs eval_4_indep[where p="p"] assms a1 a
-    eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
-  show ?B 
-    using prob_space.exp_f2[where M="poly_hash_family (ZFact p) 4" and h="\<lambda>k \<omega>. eval_hash_function p \<omega> k" and xs="xs"]
+    apply (rule prob_space.var_f2[where xs="xs" and M="M" and h="\<lambda>x \<omega>. real_of_int (eval_hash_function p \<omega> x)/sqrt (real p^2-1)"])
+    apply (simp add:a)
+    apply (metis b)
+    using assms eval_exp [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
+    using assms eval_exp_1 [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
+    using assms eval_exp_2 [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
+    using assms eval_exp_4 [where p="p"] by (simp add:has_bochner_integral_iff poly_hash_family_def)
+
+  show ?B
     apply (simp only:f2_sketch_elim)
-    using set_xs eval_4_indep[where p="p"] assms a1 a
-    eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
-  show ?C 
-    using prob_space.int_exp_f2[where M="poly_hash_family (ZFact p) 4" and h="\<lambda>k \<omega>. eval_hash_function p \<omega> k" and xs="xs"]
-    apply (simp only:f2_sketch_elim)
-    using set_xs eval_4_indep[where p="p"] assms a1 a
-    eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
-  show ?D 
-    using prob_space.int_var_f2[where M="poly_hash_family (ZFact p) 4" and h="\<lambda>k \<omega>. eval_hash_function p \<omega> k" and xs="xs"]
-    apply (simp only:f2_sketch_elim)
-    using set_xs eval_4_indep[where p="p"] assms a1 a
-    eval_hash_int eval_exp_1 eval_exp_2 eval_exp_4 by (simp only:prob_space.k_wise_indep_vars_def)
+    apply (rule prob_space.exp_f2[where xs="xs" and M="M" and h="\<lambda>x \<omega>. real_of_int (eval_hash_function p \<omega> x)/sqrt (real p^2-1)"])
+    apply (simp add:a)
+    apply (metis b)
+    using assms eval_exp [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
+    using assms eval_exp_1 [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
+    using assms eval_exp_2 [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
+    using assms eval_exp_4 [where p="p"] by (simp add:has_bochner_integral_iff poly_hash_family_def)
 qed
 
-fun f2_alg where
-  "f2_alg \<delta> \<epsilon> n xs =
-    do {
-      let s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>;
-      let s\<^sub>2 = nat \<lceil>-32/9 * ln \<epsilon>\<rceil>;
-      let p = find_odd_prime_above n;
-      h \<leftarrow> \<Pi>\<^sub>M _ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. poly_hash_family (ZFact (int p)) 4;
-      sketch \<leftarrow> 
-          return (\<Pi>\<^sub>M _ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. borel)
-            (\<lambda>(i\<^sub>1,i\<^sub>2) \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
-              sum_list (map (eval_hash_function p (h (i\<^sub>1, i\<^sub>2))) xs));
-      sketch_avg \<leftarrow> 
-          return (\<Pi>\<^sub>M _ \<in> {0..<s\<^sub>2}. borel)
-            (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . (sketch (i\<^sub>1, i\<^sub>2))\<^sup>2) / s\<^sub>1);
-      return borel (median sketch_avg s\<^sub>2)
-    }"
+lemma pmf_to_borel:
+  assumes "{\<omega>. g \<omega>} \<in> sets borel"
+  assumes "(real_of_rat \<circ> f) \<in> measurable (measure_pmf M) borel"
+  shows "measure (distr (measure_pmf M) (count_space UNIV) f) {\<omega>. g (real_of_rat \<omega>)} = 
+         \<P>(\<omega> in distr (measure_pmf M) borel (real_of_rat \<circ> f). g \<omega>)"
+  using assms by (simp add:measure_distr) 
 
-theorem f2_alg_correct:
+lemma represent_ext:
+  assumes "x \<in> PiE I M"
+  shows "{x} = PiE I (\<lambda>i. {x i})"
+  apply (rule order_antisym)
+  apply (rule subsetI) using assms apply (simp add:PiE_def Pi_def extensional_def)
+  apply (rule subsetI) using assms apply (simp add:PiE_iff) 
+  using extensionalityI by auto
+
+lemma sets_finite_pim:
+  assumes "finite I"
+  assumes "finite M"
+  shows "sets (PiM I (\<lambda>_. uniform_count_measure M)) = Pow (I \<rightarrow>\<^sub>E M)"
+proof -
+  have a:"countable (I \<rightarrow>\<^sub>E M)"
+    apply (rule countable_finite)
+    using assms finite_PiE by force
+  have b:"(\<lambda>s. {s}) ` (I \<rightarrow>\<^sub>E M) \<subseteq> prod_algebra I (\<lambda>_. uniform_count_measure M)"
+  proof (rule image_subsetI)
+    fix x
+    assume "x \<in> I \<rightarrow>\<^sub>E M"
+    then show "{x} \<in> prod_algebra I (\<lambda>_. uniform_count_measure M)"
+      apply (simp add:represent_ext)
+      apply (rule prod_algebraI_finite, simp add:assms(1), simp add:sets_uniform_count_measure) 
+      by blast
+  qed
+  show ?thesis
+  apply (simp add:sets_PiM space_uniform_count_measure)
+  apply (rule order_antisym)
+   apply (rule sigma_algebra.sigma_sets_subset)
+    apply (rule algebra.is_sigma_algebra)
+     apply (rule algebra_Pow)
+    apply (metis assms finite_PiE finite_Pow_iff)
+   using prod_algebra_sets_into_space space_uniform_count_measure apply fastforce
+  apply (subst sigma_sets_singletons[symmetric], simp add:a)
+  apply (rule sigma_sets_mono')
+  by (simp add:b)
+qed
+
+lemma measurable_pim:
+  assumes "finite I"
+  assumes "finite M"
+  assumes "f \<in> (I \<rightarrow>\<^sub>E M) \<rightarrow> (space N)"
+  shows "f \<in> PiM I (\<lambda>_. uniform_count_measure M) \<rightarrow>\<^sub>M N"
+  apply (rule measurableI)
+   using assms(3) apply (simp add:space_PiM space_uniform_count_measure, blast)
+  using assms by (simp add:sets_finite_pim space_PiM space_uniform_count_measure)
+
+lemma pim_pmf_conv:
+  assumes "M \<noteq> {}" 
+  assumes "finite I"
+  assumes "finite M"
+  shows "restrict_space (measure_pmf (pmf_of_set (I \<rightarrow>\<^sub>E M))) (I \<rightarrow>\<^sub>E M) = PiM I (\<lambda>_. uniform_count_measure M)"
+proof -
+  interpret product_sigma_finite "(\<lambda>_. uniform_count_measure M)"
+    apply (simp add:product_sigma_finite_def)
+    using assms(1) assms(3) 
+    by (simp add: prob_space_imp_sigma_finite prob_space_uniform_count_measure)
+  have a:"finite (I \<rightarrow>\<^sub>E M)" using assms by (simp add:finite_PiE)
+  have b:"I \<rightarrow>\<^sub>E M \<noteq> {}" using assms(1) by (simp add: PiE_eq_empty_iff)
+
+  show ?thesis
+  apply (rule measure_eqI_finite[where A="I \<rightarrow>\<^sub>E M"])
+     apply (simp add: sets_restrict_space)
+     apply (rule order_antisym, rule subsetI, simp, fastforce, rule subsetI, simp, blast)
+    using assms apply (simp add:sets_finite_pim)
+    using assms apply (simp add:finite_PiE)
+    apply (subst (2) represent_ext[where I="I" and M="(\<lambda>_. M)"], simp)
+      apply (subst emeasure_PiM, metis assms(2), simp add:sets_uniform_count_measure PiE_iff)
+    apply (subst emeasure_restrict_space, simp, simp)
+    apply (simp add:emeasure_pmf_of_set a b)
+    using assms(3) assms(2) apply (simp add:emeasure_uniform_count_measure PiE_iff card_PiE)
+    by (simp add: ennreal_power power_one_over)
+qed
+
+lemma pmf_product:
+  assumes "M \<noteq> {}"
+  assumes "finite I"
+  assumes "finite M"
+  assumes "f \<in> UNIV \<rightarrow> space N"
+  shows "distr (measure_pmf (pmf_of_set (I \<rightarrow>\<^sub>E M))) N f = 
+    distr (PiM I (\<lambda>_. uniform_count_measure M)) N f"
+proof -
+
+  have a:"finite (I \<rightarrow>\<^sub>E M)" using assms by (simp add:finite_PiE)
+  have b:"I \<rightarrow>\<^sub>E M \<noteq> {}" using assms(1) by (simp add: PiE_eq_empty_iff)
+
+  show ?thesis
+    apply (simp add:pim_pmf_conv[symmetric] assms)
+    apply (rule measure_eqI, simp, simp)
+    apply (subst emeasure_distr, simp add:assms, simp)
+    apply (subst emeasure_distr) 
+      apply (metis assms(4) measurable_pmf_measure1 measurable_restrict_space1)
+     apply simp
+    using a b  apply (simp add:emeasure_restrict_space emeasure_pmf_of_set)
+    by (rule arg_cong[where f="card"], blast)
+qed
+
+lemma sorted_mono_map: 
+  assumes "sorted xs"
+  assumes "mono f"
+  shows "sorted (map f xs)"
+  using assms apply (simp add:sorted_wrt_map)
+  apply (rule sorted_wrt_mono_rel[where P="(\<le>)"])
+  by (simp add:mono_def, simp)
+
+lemma map_sort:
+  assumes "mono f"
+  shows "sort (map f xs) = map f (sort xs)"
+  apply (rule properties_for_sort)
+   apply simp
+  by (rule sorted_mono_map, simp, simp add:assms)
+
+lemma "map (\<lambda>i. f (g i)) xs  = map f (map g xs)"
+  by simp
+
+lemma median_rat: 
+  assumes "n > 0"
+  shows "real_of_rat (median f n) = median (\<lambda>i \<in> {0..<n}. real_of_rat (f i)) n"
+proof -
+  have a:"map (\<lambda>i\<in>{0..<n}. real_of_rat (f i)) [0..<n] = 
+    map real_of_rat (map (\<lambda>i\<in>{0..<n}. f i) [0..<n])"
+    by (simp)
+  show ?thesis 
+    apply (simp add:a median_def del:map_map)
+    apply (subst map_sort[where f="real_of_rat"], simp add:mono_def of_rat_less_eq)
+    apply (subst nth_map[where f="real_of_rat"]) using assms 
+    apply fastforce
+    apply simp
+     apply (rule arg_cong2[where f="(!)"])
+    by (rule arg_cong[where f="sort"], simp, simp)
+qed
+
+lemma f2_alg_correct:
   assumes "\<epsilon> < 1 \<and> \<epsilon> > 0"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
-  shows "\<P>(r in (f2_alg \<delta> \<epsilon> n xs). abs (r - f2_value xs) \<ge> \<delta> * f2_value xs) \<le> \<epsilon>"
+  defines "sketch \<equiv> foldr (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). abs (\<omega> - f2_value xs) \<ge> (\<delta> * f2_value xs)) \<le> real_of_rat \<epsilon>"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
-  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32/9 * ln \<epsilon>)\<rceil>"
+  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
   define p where "p = find_odd_prime_above n"
-  define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = PiM ({0..<s\<^sub>1}\<times>{0..<s\<^sub>2}) (\<lambda>_. poly_hash_family (ZFact (int p)) 4)"
-  define \<Omega>\<^sub>1 where "\<Omega>\<^sub>1 = PiM ({0..<s\<^sub>1}\<times>{0..<s\<^sub>2}) (\<lambda>_. borel :: real measure)"
-  define \<Omega>\<^sub>2 where "\<Omega>\<^sub>2 = PiM {0..<s\<^sub>2} (\<lambda>_. borel :: real measure)"
-  define \<Omega>\<^sub>3 where "\<Omega>\<^sub>3 = (borel :: real measure)"
-  define medians where
-    "medians = (\<lambda>(sketch_avg :: nat \<Rightarrow> real). return \<Omega>\<^sub>3 (median sketch_avg s\<^sub>2))"
-  define averages where 
-    "averages = (\<lambda>(sketch :: nat \<times> nat \<Rightarrow> real).
-    return \<Omega>\<^sub>2 (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. (\<Sum> i\<^sub>1 \<in> {0..<s\<^sub>1}. sketch (i\<^sub>1, i\<^sub>2)^2) / real s\<^sub>1) \<bind> medians)"
+  define \<Omega>\<^sub>0 where 
+    "\<Omega>\<^sub>0 = pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4)"
+  define \<Omega>\<^sub>1 where 
+    "\<Omega>\<^sub>1 = Pi\<^sub>M ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. uniform_count_measure (bounded_degree_polynomials (ZFact (int p)) 4))"
 
-  define sketches where 
-      "sketches = (\<lambda>h. return \<Omega>\<^sub>1 (\<lambda>(i\<^sub>1,i\<^sub>2) \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
-        sum_list (map (eval_hash_function p (h (i\<^sub>1, i\<^sub>2))) xs)) \<bind> averages)"
+  define s\<^sub>1_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>1_from = fst"
+  define s\<^sub>2_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
+  define p_from :: "f2_space \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
+  define h_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
+  define sketch_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
 
-  have prob_space_poly: "prob_space (poly_hash_family (ZFact p) 4)"
-    apply (rule prob_space_poly_family)
-     apply (rule zfact_prime_is_field)
-    apply (simp add:p_def find_prime_above_is_prime)
-    apply (rule zfact_finite)
-    using find_prime_above_min apply (simp add:p_def numeral_eq_Suc) 
-    by (metis less_Suc_eq less_Suc_eq_le order_le_less_trans)
-  have prob_space_0: "prob_space \<Omega>\<^sub>0" 
-    by (simp add:\<Omega>\<^sub>0_def, rule prob_space_PiM, simp add:prob_space_poly)
 
-  have s1_nonzero: "s\<^sub>1 > 0"
-    apply(simp add: s\<^sub>1_def)
-    using assms(2) by blast
+  have fin_poly': "finite (bounded_degree_polynomials (ZFact (int p)) 4)"
+    apply (rule fin_poly)
+    by (simp add:p_def find_prime_above_is_prime)
+
+  have p_ge_3: "p \<ge> 3"
+    using find_prime_above_min by (simp add:p_def)
+
   have s2_nonzero: "s\<^sub>2 > 0"
-    apply(simp add: s\<^sub>2_def)
-    using assms(1) by simp
+    using assms by (simp add:s\<^sub>2_def)
 
-  define f3 where "f3 = (\<lambda>h. (\<lambda>(i\<^sub>1,i\<^sub>2) \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. sum_list (map (eval_hash_function p (h (i\<^sub>1, i\<^sub>2))) xs)))"
-  define f2 where "f2 = (\<lambda>h. (\<lambda>i\<^sub>2\<in>{0..<s\<^sub>2}. (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. (h (i\<^sub>1, i\<^sub>2))\<^sup>2) / real s\<^sub>1))"
-  define f1 :: "(nat \<Rightarrow> real) \<Rightarrow> real" where "f1 = (\<lambda>h. median h s\<^sub>2)"
+  have s1_nonzero: "s\<^sub>1 > 0"  
+    using assms by (simp add:s\<^sub>1_def)
 
-  have f2_meas: "f2 \<in> measurable \<Omega>\<^sub>1 \<Omega>\<^sub>2"
-    by (simp add:f2_def \<Omega>\<^sub>1_def \<Omega>\<^sub>2_def, measurable)
-  have f3_meas: "f3 \<in> measurable \<Omega>\<^sub>0 \<Omega>\<^sub>1"
-    apply (simp add:f3_def \<Omega>\<^sub>0_def \<Omega>\<^sub>1_def, measurable, simp)
-    apply (rule measurable_PiM_component_rev, simp)
-    by (simp add:poly_hash_family_def)
-  have f23_meas: "(f2 \<circ> f3) \<in> measurable \<Omega>\<^sub>0 \<Omega>\<^sub>2"
-    using f2_meas f3_meas by measurable
-  have f1_meas: "f1 \<in> measurable \<Omega>\<^sub>2 \<Omega>\<^sub>3"
-    using s2_nonzero median_measurable by (simp add:f1_def \<Omega>\<^sub>2_def \<Omega>\<^sub>3_def del:median.simps)
-  have f123_meas: "(f1 \<circ> f2 \<circ> f3) \<in> measurable \<Omega>\<^sub>0 \<Omega>\<^sub>3"
-    using f1_meas f2_meas f3_meas by measurable
-  have dist_23: "distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3) = distr (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) \<Omega>\<^sub>2 f2"
-    using f2_meas f3_meas by (simp add:distr_distr comp_assoc)
+  have "rat_of_nat 1 \<le> rat_of_nat (card (set xs))"
+    apply (rule of_nat_mono)
+    using assms(4) card_0_eq[where A="set xs"] 
+    by (metis List.finite_set One_nat_def Suc_leI neq0_conv set_empty)
+  also have "... \<le> f2_value xs"
+    apply (simp add:f2_value_def)
+    apply (rule sum_mono[where K="set xs" and f="\<lambda>_.(1::rat)", simplified])
+    by (metis  count_list_gr_1  of_nat_1 of_nat_power_le_of_nat_cancel_iff one_le_power)
+  finally have f2_value_nonzero: "f2_value xs > 0" by (simp)
 
-  have dist_123: "distr \<Omega>\<^sub>0 \<Omega>\<^sub>3 (f1 \<circ> f2 \<circ> f3) = distr (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) \<Omega>\<^sub>3 f1"
-    using f1_meas f23_meas by (simp add:distr_distr comp_assoc)
+  have prob_space_1: "prob_space \<Omega>\<^sub>1"
+    apply (simp add:\<Omega>\<^sub>1_def, rule prob_space_PiM)
+    by (metis fin_poly' ex_poly prob_space_uniform_count_measure)
 
-  have p_conditions: "p > 2" "prime p"
-    using find_prime_above_min apply (simp add:p_def numeral_eq_Suc Suc_le_eq) 
-    by (simp add:p_def find_prime_above_is_prime) 
-
-  have "n \<le> p" by (simp add:p_def find_prime_above_lower_bound)
-  hence p_bound: "\<And>x. x \<in> set xs \<Longrightarrow> x < p"
-    using assms(3) order_less_le_trans by blast
-  have exp_3: "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> prob_space.expectation (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. (\<omega> (i, j))^2)
-    = f2_value xs"
-    apply (subst integral_distr)
-      apply (simp add:f3_meas)
-     apply (simp add:\<Omega>\<^sub>1_def, measurable)
-    apply (simp add:f3_def \<Omega>\<^sub>0_def)
-    apply (subst lift_bochner_integral_PiM, simp)
-       apply (simp add:prob_space_poly)
-    using p_conditions p_bound  int_exp_f2' apply blast
-    apply simp
-    using p_conditions p_bound exp_f2' by blast
-
-  have int_3: "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> integrable (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. (\<omega> (i, j))^2)"
-    apply (subst integrable_distr_eq)
-    apply (simp add:f3_meas)
-     apply (simp add:\<Omega>\<^sub>1_def, measurable)
-    apply (simp add:f3_def \<Omega>\<^sub>0_def)
-    apply (subst lift_bochner_integral_PiM, simp)
-       apply (simp add:prob_space_poly)
-    using p_conditions p_bound  int_exp_f2' apply blast
-    by simp+
-
-  have int_3_2_aux: "\<And>x. ((x::real)^2)^2 = x^4" by (simp add:power2_eq_square power4_eq_xxxx)
-
-  have int_3_2: "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> integrable (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. ((\<omega> (i, j))^2)^2)"
-    apply (subst integrable_distr_eq)
-    apply (simp add:f3_meas)
-     apply (simp add:\<Omega>\<^sub>1_def, measurable)
-    apply (simp add:f3_def \<Omega>\<^sub>0_def)
-    apply (subst lift_bochner_integral_PiM, simp, simp add:prob_space_poly)
-    using p_conditions p_bound int_var_f2' by (simp add:int_3_2_aux, simp, simp) 
-
-  have var3_h1: "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> prob_space.variance (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. (\<omega> (i, j))^2)
-    \<le> 2 * f2_value xs^2" (is "\<And> i j. _ \<Longrightarrow> _ \<Longrightarrow> ?ths i j")
-  proof -
-    fix i j
-    assume a1:"i < s\<^sub>1"
-    assume a2:"j < s\<^sub>2"
-
-    have a4:"(LINT a|poly_hash_family (ZFact (int p)) 4. (sum_list (map (eval_hash_function p a) xs) ^ 2)^2) -
-    (LINT a|poly_hash_family (ZFact (int p)) 4. (sum_list (map (eval_hash_function p a) xs))\<^sup>2)\<^sup>2
-    \<le> 2 * (f2_value xs)\<^sup>2 "
-      apply (subst prob_space.variance_eq[symmetric]) 
-      apply (simp add:prob_space_poly)
-      using p_conditions p_bound int_exp_f2' apply (simp, simp, simp)
-      using p_conditions p_bound int_var_f2' apply (simp add:int_3_2_aux)
-      using p_conditions p_bound var_f2' by (simp add:int_3_2_aux)
-
-    have a3:"LINT x|\<Omega>\<^sub>0. ((f3 x (i, j))\<^sup>2 - (LINT x|\<Omega>\<^sub>0. (f3 x (i, j))\<^sup>2))\<^sup>2 \<le> 2 * (f2_value xs)\<^sup>2"
-      apply (subst prob_space.variance_eq)
-      apply (simp add:prob_space_0)
-      using a1 a2 apply (simp add:f3_def \<Omega>\<^sub>0_def)
-      apply (subst lift_bochner_integral_PiM, simp, simp add:prob_space_poly)
-      using p_conditions p_bound int_exp_f2' apply (simp, simp, simp)
-      using a1 a2 apply (simp add:f3_def \<Omega>\<^sub>0_def)
-      apply (subst lift_bochner_integral_PiM, simp, simp add:prob_space_poly)
-      using p_conditions p_bound int_var_f2' apply (simp add:int_3_2_aux, simp, simp) 
-      using a1 a2 apply (simp add:f3_def \<Omega>\<^sub>0_def)
-      apply (subst lift_bochner_integral_PiM, simp, simp add:prob_space_poly)
-      using p_conditions p_bound int_var_f2' apply (simp add:int_3_2_aux, simp, simp) 
-      apply (subst lift_bochner_integral_PiM, simp, simp add:prob_space_poly)
-      using p_conditions p_bound int_exp_f2' apply (simp, simp, simp)
-      using a4 by (simp add:int_3_2_aux)
-    show "?ths i j"
-      apply (subst integral_distr)
-      apply (simp add:f3_meas)
-      apply (measurable)
-      using a1 a2 apply (simp add:\<Omega>\<^sub>1_def, measurable)
-      apply (subst integral_distr)
-      apply (simp add:f3_meas)
-      using a1 a2 apply (simp add:\<Omega>\<^sub>1_def, measurable)
-      by (simp add:a3)
-  qed
-  have var3_h2:  "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> prob_space.variance (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. (\<omega> (i, j))^2 / real s\<^sub>1)
-    =  prob_space.variance (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. (\<omega> (i, j))^2) / (real s\<^sub>1^2)"
-    using int_3_2 prob_space_0 f3_meas int_3 int_3_2
-    by (subst prob_space.variance_eq; simp add: prob_space.prob_space_distr power_divide diff_divide_distrib)+
-
-  have var_3: "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> prob_space.variance (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>\<omega>. (\<omega> (i, j))^2 / real s\<^sub>1)
-    \<le> 2 * f2_value xs^2 / real s\<^sub>1^2"
-    apply (subst var3_h2, simp, simp) using var3_h1 s1_nonzero by (simp add:divide_right_mono)
-
-  have indep_3: "\<And>i. i < s\<^sub>2 \<Longrightarrow> prob_space.indep_vars (distr \<Omega>\<^sub>0 \<Omega>\<^sub>1 f3) (\<lambda>_. borel) (\<lambda>n x. (x (n,i))\<^sup>2 / real s\<^sub>1) {0..<s\<^sub>1}"
-    (is "\<And>i. _ \<Longrightarrow> ?ths i")
-  proof -
-    fix i
-    assume a:"i < s\<^sub>2"
-    show "?ths i"
-      apply (rule indep_vars_distr)
-         apply (simp add:f3_meas)
-        apply measurable
-         using a apply (simp add:\<Omega>\<^sub>1_def)
-        apply measurable
-       apply (simp add: \<Omega>\<^sub>0_def f3_def comp_def cong:restrict_cong)
-       apply (rule indep_pim [where f="(\<lambda>j. {(j,i)})"])
-         apply (simp add:prob_space_poly)
-         using a apply (simp cong:restrict_cong, measurable)
-               apply (rule measurable_PiM_component_rev, simp, simp add:poly_hash_family_def)
-         apply simp apply simp apply (simp add:disjoint_family_on_def, simp add:s1_nonzero) 
-             apply (rule subsetI, simp add:a)
-      using s1_nonzero s2_nonzero apply simp
-      by (simp add:prob_space_0)
-  qed
-
-  have int23: "\<And> i. i < s\<^sub>2  \<Longrightarrow> integrable (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) (\<lambda>\<omega>. \<omega> i)"
-    apply (simp add:dist_23)
-    apply (subst integrable_distr_eq)
-    using f2_meas apply measurable
-     apply (simp add: \<Omega>\<^sub>2_def)
-    apply (simp add:f2_def)
-    apply (rule Bochner_Integration.integrable_divide)
-    apply (rule Bochner_Integration.integrable_sum)
-    using int_3 s1_nonzero by simp
-
-  have int23_2: "\<And> i. i < s\<^sub>2  \<Longrightarrow> integrable (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) (\<lambda>\<omega>. \<omega> i^2)"
-    apply (simp add:dist_23)
-    apply (subst integrable_distr_eq)
-    using f2_meas apply measurable
-     apply (simp add: \<Omega>\<^sub>2_def)
-    apply (simp add:f2_def sum_divide_distrib)
-    apply (rule prob_space.var_sum_int)
-    apply (rule prob_space.prob_space_distr)
-         apply (simp add:prob_space_0, simp add:f3_meas, simp, simp add:indep_3)
-     apply (rule Bochner_Integration.integrable_divide)
-    apply (simp add:int_3)
-    apply (simp add:power_divide)
-     apply (rule Bochner_Integration.integrable_divide)
-    using int_3_2 by (simp add:int_3_2_aux)
   
-  have exp23: "\<And> i. i < s\<^sub>2  \<Longrightarrow> prob_space.expectation (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) (\<lambda>\<omega>. \<omega> i)
-    = f2_value xs"
-    apply (simp add:dist_23)
-    apply (subst integral_distr)
-    using f2_meas apply measurable
-     apply (simp add: \<Omega>\<^sub>2_def)
-    apply (simp add:f2_def)
-    using int_3 s1_nonzero by (simp add: Bochner_Integration.integral_sum exp_3)
+  have split_f2_space: "\<And>x. x = (s\<^sub>1_from x, s\<^sub>2_from x, p_from x, h_from x, sketch_from x)"
+    by (simp add:prod_eq_iff s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def sketch_from_def)
 
-  have "\<And> i. i < s\<^sub>2  \<Longrightarrow> prob_space.variance (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) (\<lambda>\<omega>. \<omega> i)
-    \<le>  s\<^sub>1 * (2 * (f2_value xs)\<^sup>2 / s\<^sub>1\<^sup>2)"
-    apply (simp add:dist_23)
-    apply (subst (1 2) integral_distr)
-    using f2_meas apply measurable
-     apply (simp add: \<Omega>\<^sub>2_def)
-    using f2_meas apply measurable
-     apply (simp add: \<Omega>\<^sub>2_def)
-    apply (simp add:f2_def)
-    apply (simp add:f2_def sum_divide_distrib)
-    apply (subst prob_space.var_sum)
-         apply (rule prob_space.prob_space_distr)
-          apply (simp add:prob_space_0)
-         apply (simp add:f3_meas, simp, simp add:indep_3)
-    apply (simp add:int_3)
-    using int_3_2 apply (simp add: power_divide)
-    using var_3 sum_mono[where g="(\<lambda>_. 2 * (f2_value xs)\<^sup>2 / (real s\<^sub>1)\<^sup>2)" and K="{0..<s\<^sub>1}"] 
-    by simp
-  moreover have "s\<^sub>1 * (2 * (f2_value xs)\<^sup>2 / s\<^sub>1\<^sup>2) =   2 * (f2_value xs)\<^sup>2 / s\<^sub>1" 
-    by (simp add: power2_eq_square)
-  ultimately have var23: "\<And> i. i < s\<^sub>2  \<Longrightarrow> prob_space.variance (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) (\<lambda>\<omega>. \<omega> i)
-    \<le>  2 * (f2_value xs)\<^sup>2 / s\<^sub>1"
-    by auto
+  have f2_result_conv: "f2_result = (\<lambda>x. f2_result (s\<^sub>1_from x, s\<^sub>2_from x, p_from x, h_from x, sketch_from x))"
+    by (simp add:split_f2_space[symmetric] del:f2_result.simps)
+  have sketch_eq:
+    "sketch = f2_init \<delta> \<epsilon> n \<bind> (\<lambda>state. 
+       return_pmf (s\<^sub>1, s\<^sub>2, p, h_from state, \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
+       sum_list (map (eval_hash_function p (h_from state i)) xs)))"
+  proof (subst sketch_def, induction xs)
+    case Nil
+    then show ?case apply (simp add:s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
+      apply (subst bind_assoc_pmf)
+      apply (rule bind_pmf_cong, simp)
+      apply (subst bind_return_pmf)
+      by (simp add:restrict_def h_from_def)
+  next
+    case (Cons a xs)
+    have a:"f2_update a = (\<lambda>state. 
+      return_pmf (
+        s\<^sub>1_from state,
+        s\<^sub>2_from state, 
+        p_from state, 
+        h_from state, 
+        \<lambda>i \<in> {0..<s\<^sub>1_from state} \<times> {0..<s\<^sub>2_from state}. 
+          eval_hash_function (p_from state) (h_from state i) a + sketch_from state i
+      ))"
+      apply (rule ext)
+      by (subst split_f2_space, simp del:eval_hash_function.simps) 
+    show ?case using Cons 
+      apply (simp add:s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:eval_hash_function.simps f2_init.simps)
+      apply (subst bind_assoc_pmf)
+      apply (rule bind_pmf_cong, simp, simp add:a del:eval_hash_function.simps)
+      apply (subst bind_return_pmf)
+      apply (simp add:restrict_def s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def sketch_from_def del:eval_hash_function.simps)
+      apply (rule ext)
+      by ( simp add:restrict_def h_from_def del:eval_hash_function.simps)
+  qed
 
-  have space_0: "space \<Omega>\<^sub>0 \<noteq> {}" using prob_space.not_empty prob_space_0 by blast
+  define f where "f = (\<lambda>x. median
+           (\<lambda>i\<in>{0..<s\<^sub>2}.
+               (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. (rat_of_int (sum_list (map (eval_hash_function p (x (i\<^sub>1, i))) xs)))\<^sup>2) /
+               (((rat_of_nat p)\<^sup>2 - 1) * rat_of_nat s\<^sub>1))
+           s\<^sub>2)"
 
-  have "\<And>i. i < s\<^sub>2 \<Longrightarrow> \<P>(r in (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)). abs (r i - f2_value xs) \<ge> \<delta> * f2_value xs) \<le> 1/8"
-    (is "\<And>i. i < s\<^sub>2 \<Longrightarrow> ?rhs i \<le> 1/8")
+  define f3 where 
+    "f3 = (\<lambda>x (i\<^sub>1::nat) (i\<^sub>2::nat). (real_of_int (sum_list (map (eval_hash_function p (x (i\<^sub>1, i\<^sub>2))) xs)))\<^sup>2)"
+
+  have f3_var_1: "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> has_variance \<Omega>\<^sub>1 (\<lambda>\<omega>. f3 \<omega> i j / ((real p)\<^sup>2 - 1)) 
+    (\<lambda>r. r \<le> 2 * (real_of_rat (f2_value xs))\<^sup>2)"
+    apply (simp add:\<Omega>\<^sub>1_def f3_def)
+    apply (rule lift_has_variance, simp, simp)
+     apply (metis prob_space_uniform_count_measure fin_poly' ex_poly)
+    apply (rule var_f2)
+      apply (simp add:p_def find_prime_above_is_prime)
+    using p_ge_3 apply linarith
+    using assms(3) find_prime_above_lower_bound apply (simp add:p_def)
+    using order_less_le_trans by blast
+
+  have f3_var_2: " 2 * (real_of_rat (f2_value xs))\<^sup>2 \<le>  (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / (8 * real s\<^sub>1) * (real s\<^sub>1)\<^sup>2"
+    using s1_nonzero apply (simp add:of_rat_mult)
+    apply (subst mult.commute[where b="real s\<^sub>1"])
+    apply (subst divide_divide_eq_left[symmetric])
+    apply (subst pos_le_divide_eq, simp)
+    apply (simp add:power2_eq_square[where a="real s\<^sub>1"] power_mult_distrib)
+    apply (subst mult.commute[where b="real s\<^sub>1"])
+    apply (subst mult.assoc[symmetric])
+    apply (subst mult_le_cancel_iff1)
+    using f2_value_nonzero apply simp
+    apply (subst mult.commute[where b="real s\<^sub>1"])
+    apply (subst pos_divide_le_eq[symmetric])
+    using assms(2) apply simp
+    apply (simp add:s\<^sub>1_def)
+    by (metis (mono_tags, opaque_lifting) of_nat_numeral of_rat_ceiling of_rat_divide 
+        of_rat_of_nat_eq of_rat_power real_nat_ceiling_ge)
+
+  have div_to_mult: "\<And>a b. b \<noteq> (0::real) \<Longrightarrow> a / b = a * (1/b)" by simp
+
+  have f3_var': "\<And>i j. i < s\<^sub>1 \<Longrightarrow> j < s\<^sub>2 \<Longrightarrow> has_variance \<Omega>\<^sub>1 (\<lambda>\<omega>. f3 \<omega> i j / (((real p)\<^sup>2 - 1) * real s\<^sub>1))
+    (\<lambda>r. r \<le> (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / (8 * real s\<^sub>1))"
+    apply (subst divide_divide_eq_left[symmetric])
+    apply (subst div_to_mult[where b="real s\<^sub>1"], simp)
+    apply (rule has_variance_scale)
+    apply (rule has_variance_imp [where r="(\<lambda>r. r \<le> 2 * (real_of_rat (f2_value xs))\<^sup>2)"])
+     apply (simp add:power_one_over)
+     apply (subst pos_divide_le_eq)
+    using s1_nonzero of_nat_zero_less_power_iff apply blast 
+    using f3_var_2 order_trans apply blast
+    using f3_var_1 by simp
+
+  define f2 where "f2 = (\<lambda>x. \<lambda>i\<in>{0..<s\<^sub>2}. (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. f3 x i\<^sub>1 i) / (((real p)\<^sup>2 - 1) * real s\<^sub>1))"
+  
+  have f2_var: "\<And>i. i < s\<^sub>2 \<Longrightarrow> has_variance \<Omega>\<^sub>1 (\<lambda>\<omega>. f2 \<omega> i) (\<lambda>r. r \<le> (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / 8)"
+    (is "\<And>i. _ \<Longrightarrow> ?lhs i")
   proof -
     fix i
     assume a:"i < s\<^sub>2"
-    define M where "M = distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)"
-    define v where "v = prob_space.variance M (\<lambda>\<omega>. \<omega> i)"
-    have b:"integral\<^sup>L M (\<lambda>\<omega>. \<omega> i) = f2_value xs" 
-      using exp23 a by (simp add: M_def) 
-    have "prob_space M" using prob_space_0 f23_meas by (simp add: M_def prob_space.prob_space_distr) 
-    moreover have "(\<lambda>\<omega>. \<omega> i) \<in> borel_measurable M" using a by (simp add:M_def \<Omega>\<^sub>2_def, measurable)
-    moreover have "integrable M (\<lambda>x. (x i)\<^sup>2)" using a int23_2 by (simp add:M_def)
-    moreover 
-    have c2:"(\<Sum>x \<in> set xs. (1::real)) \<le> f2_value xs"
-      apply (simp only:f2_value_def)
-      apply (rule sum_mono)
-      using count_list_gr_1 
-      by (metis one_le_power real_of_nat_ge_one_iff)
-    have "set xs \<noteq> {}" using assms(4) by blast
-    hence "card (set xs) \<ge> 1" 
-      by (metis List.finite_set One_nat_def Suc_le_eq card_0_eq not_gr0)
-    hence "(\<Sum>x \<in> set xs. (1::real)) \<ge> 1" by simp
-    hence "f2_value xs > 0"
-      using c2 by linarith
-    hence c:"0 < \<delta> * f2_value xs" using assms(2) by simp 
-    ultimately have "?rhs i \<le> v/(\<delta> * f2_value xs)\<^sup>2"
-      using prob_space.Chebyshev_inequality[where a="\<delta> * f2_value xs" and M="M" and f="(\<lambda>\<omega>. \<omega> i)"]
-      apply (simp add:v_def[symmetric] M_def[symmetric])
-      by (simp add:b v_def[symmetric] M_def[symmetric])
-    moreover have "v \<le> 2* (f2_value xs)\<^sup>2 / s\<^sub>1"  using var23 a by (simp add:v_def M_def) 
-    hence "v/(\<delta> * f2_value xs)\<^sup>2 \<le> 2/ (\<delta>\<^sup>2 * s\<^sub>1)" 
-      using s1_nonzero c apply (simp add:algebra_simps  divide_le_eq  pos_le_divide_eq) 
-      by (metis power2_less_0 power_mult_distrib)
-    moreover have "s\<^sub>1 \<ge> 16 / \<delta>\<^sup>2" using s\<^sub>1_def 
-      using real_nat_ceiling_ge by blast
-    hence "2/(\<delta>\<^sup>2 * s\<^sub>1) \<le> 1/8" using assms(2) 
-      by (simp add: algebra_simps divide_le_eq)
-    ultimately show "?rhs i \<le> 1/8" by linarith
+    show "?lhs i"
+    apply (simp add:f2_def a sum_divide_distrib)
+    apply (rule prob_space.has_variance_sum [where r="(\<lambda>_ r. r \<le> (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / (8 * real s\<^sub>1))"])
+          apply (metis prob_space_1, simp)
+    apply (simp add:\<Omega>\<^sub>1_def, rule indep_pim [where f="\<lambda>j. {(j,i)}"])
+                 apply (metis prob_space_uniform_count_measure fin_poly' ex_poly)
+         apply (rule measurable_pim, simp, metis fin_poly', simp, simp add:f3_def)
+       apply (simp add:disjoint_family_on_def, simp add:s1_nonzero, simp add:a, simp add:s1_nonzero s2_nonzero)
+      using f3_var' a apply simp
+      using s1_nonzero sum_mono[where g="\<lambda>_. (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / (8 * real s\<^sub>1)" and K="{0..<s\<^sub>1}"]
+      by simp
   qed
 
-  moreover have "prob_space.indep_vars (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)) (\<lambda>_. borel) (\<lambda>i \<omega>. \<omega> i)  {0..<s\<^sub>2}"
-    apply (rule indep_vars_distr)
-       apply (simp add:f23_meas)
-      apply (simp add:\<Omega>\<^sub>2_def)
-     apply (simp add:\<Omega>\<^sub>0_def)
-     apply (rule indep_pim [where f="(\<lambda>i. {0..<s\<^sub>1} \<times> {i})"])
-            apply (simp add:prob_space_poly)
-           apply (simp add:comp_def f2_def f3_def, measurable)
-           apply (rule measurable_PiM_component_rev, simp, simp add:poly_hash_family_def, measurable)
-         apply (simp add:f2_def f3_def)
-        apply (simp add:disjoint_family_on_def, fastforce)
-       apply (simp add:s2_nonzero)
-      apply (rule subsetI, force)
-     apply (simp add:s2_nonzero s1_nonzero)
-    by (simp add:prob_space_0)
+  have f2_exp_1: "real_of_rat (f2_value xs) = (\<Sum> i\<in>{0..<s\<^sub>1}. real_of_rat (f2_value xs)) / real s\<^sub>1"
+    by (simp add:s1_nonzero)
 
-  moreover have "- 32 / 9 * ln \<epsilon> \<le> real s\<^sub>2" using s\<^sub>2_def by linarith
-  moreover have "prob_space (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3))" 
-    using f23_meas prob_space_0 by (simp add: prob_space.prob_space_distr)
-  ultimately have 
-    "\<P>(r in (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)). abs (median r s\<^sub>2 - f2_value xs) \<ge> \<delta> * f2_value xs) \<le> \<epsilon>"
-    using assms prob_space.median_bound[where \<delta>="\<delta>*f2_value xs" and X="\<lambda>i \<omega>. \<omega> i"]
-    by blast
-  moreover have "\<P>(r in (distr \<Omega>\<^sub>0 \<Omega>\<^sub>3 (f1 \<circ> f2 \<circ> f3)). abs (r - f2_value xs) \<ge> \<delta> * f2_value xs) =
-    \<P>(r in (distr \<Omega>\<^sub>0 \<Omega>\<^sub>2 (f2 \<circ> f3)). abs (median r s\<^sub>2 - f2_value xs) \<ge> \<delta> * f2_value xs)"
-    apply (subst dist_123)
-    apply (subst measure_distr)
-      apply (simp add: f1_meas)
-     apply (simp) 
-    apply (simp add:\<Omega>\<^sub>3_def)
-    apply (rule measure_eq_AE)
-      apply (rule AE_I2)
-     apply (simp add:f1_def \<Omega>\<^sub>3_def \<Omega>\<^sub>2_def del:median.simps)
-    apply (simp add:\<Omega>\<^sub>3_def \<Omega>\<^sub>2_def, measurable)
-    using f1_meas apply (simp add:\<Omega>\<^sub>3_def \<Omega>\<^sub>2_def)
-    apply measurable
-     using s2_nonzero apply (simp  add: \<Omega>\<^sub>3_def median_measurable  \<Omega>\<^sub>2_def del:median.simps)
-    by measurable
-  moreover 
-  have "(\<Omega>\<^sub>0 \<bind> sketches) = distr \<Omega>\<^sub>0 \<Omega>\<^sub>3 (f1 \<circ> f2 \<circ> f3)" 
-    apply (simp add:sketches_def)
-    apply (subst bind_return [where N="\<Omega>\<^sub>3"])
-      apply (simp add:averages_def \<Omega>\<^sub>1_def \<Omega>\<^sub>3_def, measurable)
-     apply (simp add:\<Omega>\<^sub>2_def)
-     using median_measurable s2_nonzero apply (simp add:\<Omega>\<^sub>2_def \<Omega>\<^sub>3_def medians_def del:median.simps, measurable)
-     apply (simp add:\<Omega>\<^sub>1_def space_PiM)
-    apply (simp add:averages_def)
-    apply (subst bind_return [where N="\<Omega>\<^sub>3"])
-      using median_measurable s2_nonzero apply (simp add:medians_def del:median.simps add: \<Omega>\<^sub>2_def \<Omega>\<^sub>3_def, measurable)
-     apply (simp add:\<Omega>\<^sub>2_def space_PiM)
-    apply (simp add:medians_def del:median.simps cong:restrict_cong)
-    apply (subst bind_return_distr')
-      apply (simp add:space_0)
-     using f123_meas apply (simp add: f1_def f2_def f3_def comp_def del:median.simps cong:restrict_cong)
-    by (simp add: f1_def f2_def f3_def comp_def del:median.simps cong:restrict_cong)
-  moreover have "f2_alg \<delta> \<epsilon> n xs = \<Omega>\<^sub>0 \<bind> sketches"
-    by (simp add:\<Omega>\<^sub>0_def \<Omega>\<^sub>1_def \<Omega>\<^sub>2_def \<Omega>\<^sub>3_def sketches_def averages_def medians_def Let_def s\<^sub>1_def s\<^sub>2_def p_def
-            del:median.simps)
-  ultimately show ?thesis by (simp del:median.simps f2_alg.simps) 
+  have f2_exp: "\<And>i. i < s\<^sub>2 \<Longrightarrow> has_bochner_integral \<Omega>\<^sub>1 (\<lambda>\<omega>. f2 \<omega> i) (real_of_rat (f2_value xs))"
+    apply (simp add:f2_def)
+    apply (subst divide_divide_eq_left[symmetric])
+    apply (subst f2_exp_1)
+    apply (rule has_bochner_integral_divide_zero)
+    apply (subst sum_divide_distrib)
+    apply (rule has_bochner_integral_sum)
+    apply (simp add:f3_def)
+    apply (simp add:\<Omega>\<^sub>1_def)
+    apply (rule lift_has_bochner_integral, simp, simp, metis fin_poly' ex_poly prob_space_uniform_count_measure)
+    apply (rule exp_f2)
+      apply (simp add:p_def find_prime_above_is_prime)
+    using p_ge_3 apply linarith
+    using assms(3) find_prime_above_lower_bound apply (simp add:p_def)
+    using order_less_le_trans by blast
+
+  define f' where "f' = (\<lambda>x. median (f2 x) s\<^sub>2)"
+  have real_f: "real_of_rat \<circ> f = f'"
+    apply (rule ext)
+    using s2_nonzero apply (simp add:f'_def f2_def f3_def f_def median_rat cong:restrict_cong)
+    by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
+
+  have "sketch \<bind> f2_result = map_pmf f (pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4))"
+    apply (simp add:sketch_eq s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:eval_hash_function.simps)
+      apply (subst bind_assoc_pmf)
+    apply (subst bind_return_pmf)
+    apply (subst f2_result_conv, simp)
+      apply (subst bind_assoc_pmf)
+    apply (subst bind_return_pmf)
+    apply (simp add:s\<^sub>2_from_def s\<^sub>1_from_def p_from_def h_from_def sketch_from_def cong:restrict_cong)
+    by (simp add:map_pmf_def[symmetric] f_def)
+  hence distr: "measure_pmf (sketch \<bind> f2_result) = distr (measure_pmf \<Omega>\<^sub>0) (count_space UNIV) f"
+    by (simp add:map_pmf_rep_eq \<Omega>\<^sub>0_def)
+
+
+  define g where "g = (\<lambda>\<omega>. real_of_rat (\<delta> * f2_value xs) \<le> \<bar>\<omega> - real_of_rat (f2_value xs)\<bar>)"
+  have e: "{\<omega>. \<delta> * f2_value xs \<le> \<bar>\<omega> - f2_value xs\<bar>} = {\<omega>. (g \<circ> real_of_rat) \<omega>}"
+    apply (simp add:g_def)
+    apply (rule order_antisym, rule subsetI, simp) 
+    apply (metis abs_of_rat of_rat_diff of_rat_less_eq)
+    apply (rule subsetI, simp)
+    by (metis abs_of_rat of_rat_diff of_rat_less_eq)
+
+  have median_bound_2: "prob_space.indep_vars \<Omega>\<^sub>1 (\<lambda>_. borel) (\<lambda>i \<omega>. f2 \<omega> i) {0..<s\<^sub>2}"
+    apply (simp add:f2_def \<Omega>\<^sub>1_def)
+    apply (rule indep_pim[where f="\<lambda>j. {0..<s\<^sub>1} \<times> {j}"] ) (* X i1 i x = x (i1,i)  *)
+          apply (metis fin_poly' ex_poly prob_space_uniform_count_measure)
+         apply (rule measurable_pim, simp, metis fin_poly', simp, simp add:f3_def)
+       apply (simp add:disjoint_family_on_def, fastforce, simp add:s2_nonzero)
+     apply (rule subsetI, force)
+    by (simp add:s1_nonzero s2_nonzero)
+
+  have median_bound_3: " - (32 * ln (real_of_rat \<epsilon>) / 9) \<le> real s\<^sub>2"
+    apply (simp add:s\<^sub>2_def)
+    using of_nat_ceiling by blast
+
+  have median_bound_4: "\<And>i. i < s\<^sub>2 \<Longrightarrow>
+           \<P>(\<omega> in \<Omega>\<^sub>1. real_of_rat (\<delta> * f2_value xs) \<le> \<bar>f2 \<omega> i - real_of_rat (f2_value xs)\<bar>) \<le> 1/8"
+    (is "\<And>i. _ \<Longrightarrow> ?lhs i \<le> _")
+  proof -
+    fix i
+    assume a: "i < s\<^sub>2"
+    define var where  "var = prob_space.variance \<Omega>\<^sub>1 (\<lambda>\<omega>. f2 \<omega> i)"
+    have "real_of_rat (f2_value xs) = prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. f2 \<omega> i)"
+      using f2_exp a has_bochner_integral_iff by metis
+    moreover have "0 < real_of_rat (\<delta> * f2_value xs)"
+      using assms(2) f2_value_nonzero by simp
+    moreover have "integrable \<Omega>\<^sub>1 (\<lambda>\<omega>. f2 \<omega> i^2)"
+      using f2_var has_variance_def a by metis 
+    moreover have "(\<lambda>\<omega>. f2 \<omega> i) \<in> borel_measurable \<Omega>\<^sub>1"
+      by (simp add:\<Omega>\<^sub>1_def, rule measurable_pim, simp, metis fin_poly', simp)
+    ultimately have "?lhs i \<le> var / (real_of_rat (\<delta> * f2_value xs))\<^sup>2"
+      using prob_space.Chebyshev_inequality[where M="\<Omega>\<^sub>1" and a="real_of_rat (\<delta> * f2_value xs)"
+          and f="\<lambda>\<omega>. f2 \<omega> i"] assms(2) prob_space_1 f2_value_nonzero
+      by (simp add:var_def)
+    also  have "... \<le> 1/8" (is ?ths)
+      apply (subst pos_divide_le_eq )
+      using f2_value_nonzero assms(2) apply simp
+      apply (simp add:var_def)
+      using f2_var a has_variance_def by fastforce      
+    finally show "?lhs i \<le> 1/8"
+      by blast
+  qed
+  show ?thesis
+    apply (simp add:distr e)
+    apply (subst pmf_to_borel)
+      apply (simp add:g_def)
+     apply (simp add:f_def)
+    apply (simp add:real_f f'_def \<Omega>\<^sub>0_def)
+    apply (subst pmf_product)
+    apply (metis ex_poly, simp, metis fin_poly', simp)
+       apply (subst measure_distr)
+         apply (rule measurable_pim, simp)
+    apply (metis fin_poly')
+    apply simp
+    apply (simp add:g_def)
+    using prob_space.median_bound[where M="\<Omega>\<^sub>1" and 
+          \<delta>="real_of_rat (\<delta> * f2_value xs)" and \<mu>="real_of_rat (f2_value xs)" and
+          \<epsilon>="real_of_rat \<epsilon>" and n ="s\<^sub>2" and X="(\<lambda>i \<omega>. f2 \<omega> i)"]
+    assms(1) prob_space_1 median_bound_2 median_bound_3 median_bound_4 \<Omega>\<^sub>1_def[symmetric]
+    by (simp add:measure_inters g_def)
 qed
 
 end

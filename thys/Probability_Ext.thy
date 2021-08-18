@@ -6,6 +6,9 @@ theory Probability_Ext
   imports Main "HOL-Probability.Independent_Family" Multiset_Ext
 begin
 
+lemma measure_inters: "measure M (E \<inter> space M) = \<P>(x in M. x \<in> E)"
+  by (simp add: Collect_conj_eq inf_commute)
+
 lemma set_comp_subsetI: "(\<And>x. P x \<Longrightarrow> f x \<in> B) \<Longrightarrow> {f x|x. P x} \<subseteq> B"
   by blast
 
@@ -90,7 +93,7 @@ proof -
   apply (simp add:a cong:prob_space.indep_sets_cong)
   apply (simp add:a cong:prob_space.indep_sets_cong)
    apply (simp add:a cong:prob_space.indep_sets_cong)
-  using assms(2)  measurable_sets by blast
+  using assms(2) measurable_sets by blast
 qed
 
 lemma enn2real_prod:
@@ -171,6 +174,7 @@ qed
 
 text \<open>Random variables that depend on disjoint sets of the components of a product space are
 independent.\<close>
+
 
 lemma indep_pim:
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
@@ -269,7 +273,7 @@ lemma (in prob_space) indep_vars_reindex:
   assumes "indep_vars M' X' (f ` I)"
   shows "indep_vars (M' \<circ> f) (\<lambda>k \<omega>. X' (f k) \<omega>) I"
   using assms by (simp add:indep_vars_def2 indep_sets_reindex)
- 
+
 lemma lift_nn_integral_PiM:
   assumes "i \<in> I"
   assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
@@ -295,7 +299,7 @@ proof -
     apply (rule arg_cong[where f="ennreal"])
     using assms(5) assms(1) by (induction I rule:finite_induct, simp, simp)
 
-  have d:"\<And>j. j \<in> I \<Longrightarrow> j\<noteq> i \<Longrightarrow> g j \<in> borel_measurable (M' j)"
+  have d:"\<And>j. j \<in> I \<Longrightarrow> j \<noteq> i \<Longrightarrow> g j \<in> borel_measurable (M' j)"
     by (simp add:g_def M'_def)
   moreover have "g i \<in> borel_measurable (M' i)"
     using assms(1) apply (simp add:g_def M'_def)
@@ -377,6 +381,49 @@ proof -
     by (simp add:lift_pos_bochner_integral_PiM f_split)
 qed
 
+lemma lift_has_bochner_integral:
+  assumes "i \<in> I"
+  assumes "finite I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
+  assumes "has_bochner_integral (M i) f (r::real)"
+  shows "has_bochner_integral (PiM I M) (\<lambda>\<omega>. f (\<omega> i)) r"
+  using assms lift_bochner_integral_PiM[where i="i" and I="I" and M="M" and f="f"]
+  by (simp add:has_bochner_integral_iff)
+
+definition has_variance where
+  "has_variance M f r = (integrable M (\<lambda>\<omega>. f \<omega>^2) \<and> integrable M f \<and> prob_space M \<and> r ((prob_space.variance M f) ::real))"
+
+lemma has_variance_scale:
+  assumes "has_variance M f (\<lambda>x. r (x * a^2))"
+  shows "has_variance M (\<lambda>\<omega>. f \<omega> * a) r"
+  using assms by(simp add:has_variance_def power_mult_distrib  left_diff_distrib[symmetric]) 
+
+lemma has_variance_imp:
+  assumes "\<And>x. r x \<Longrightarrow> s x"
+  assumes "has_variance M f r"
+  shows "has_variance M f s"
+  using assms by (simp add:has_variance_def)
+
+lemma lift_has_variance:
+  assumes "i \<in> I"
+  assumes "finite I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> prob_space (M i)"
+  assumes "has_variance (M i) f r"
+  shows "has_variance (PiM I M) (\<lambda>\<omega>. f (\<omega> i)) r"
+  using assms apply (simp add:has_variance_def)
+  apply (rule conjI, rule lift_bochner_integral_PiM(2), simp, simp, simp, simp)
+  apply (rule conjI, rule lift_bochner_integral_PiM(2), simp, simp, simp, simp)
+  apply (rule conjI, simp add:prob_space_PiM)
+  apply (subst lift_bochner_integral_PiM(1), simp, simp, simp, simp)
+  apply (subst lift_bochner_integral_PiM(1), simp, simp)
+    apply (simp add:power2_diff)
+  apply (rule Bochner_Integration.integrable_diff)
+     apply (rule Bochner_Integration.integrable_add, simp) 
+  apply (rule finite_measure.integrable_const) 
+  using prob_space.finite_measure apply blast
+  by simp+
+
+
 lemma (in prob_space)
   assumes "finite I"
   assumes "indep_vars (\<lambda>_. borel ::real measure) X' I" 
@@ -440,5 +487,21 @@ proof -
     apply (simp add: b assms(1) sum_collapse)
     by (simp add:power2_eq_square)
 qed
+
+lemma (in prob_space) has_variance_sum:
+  assumes "finite I"
+  assumes "prob_space.indep_vars M (\<lambda>_. borel ::real measure) X' I" 
+  assumes "\<And>i. i \<in> I \<Longrightarrow> has_variance M (X' i) (r i)"
+  assumes "\<And>f. (\<And>i. i \<in> I \<Longrightarrow> (r i) (f i)) \<Longrightarrow> s (sum f I)"
+  shows "has_variance M (\<lambda>\<omega>. \<Sum> i \<in> I. X' i \<omega>) s"
+  using assms
+  apply (simp only:has_variance_def)
+  apply (rule conjI, rule prob_space.var_sum_int) 
+  using prob_space_axioms apply blast 
+      apply (simp, simp, simp, simp)
+  apply (rule conjI)
+  using prob_space_axioms apply blast 
+  apply (subst var_sum, simp, simp, simp, simp, simp)
+  using prob_space_axioms by blast 
 
 end
