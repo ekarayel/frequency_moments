@@ -40,6 +40,15 @@ qed
 text \<open>A hash function is just polynomial evaluation.\<close>
 definition hash_function where "hash_function F x \<omega> = ring.eval F \<omega> x"
 
+lemma hash_function_image:
+  assumes "field F"
+  assumes "x \<in> carrier F"
+  assumes "y \<in> bounded_degree_polynomials F n"
+  shows "hash_function F x y \<in> carrier F"
+  by (metis (no_types, lifting) assms(1) assms(2) assms(3) bounded_degree_polynomials_def 
+      field.is_ring hash_function_def mem_Collect_eq ring.eval_in_carrier ring.polynomial_incl 
+      univ_poly_carrier)
+
 lemma hash_functions_are_random_variables:
   assumes "field F"
   assumes "finite (carrier F)"
@@ -202,9 +211,46 @@ lemma (in prob_space) k_wise_subset:
   shows "k_wise_indep_vars k M' X' J"
   using assms by (simp add:k_wise_indep_vars_def)
 
+(*
+lemma (in prob_space) indep_uniform_count_measure:
+  assumes "\<And>i. i \<in> I \<Longrightarrow> finite (M' i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> M' i \<noteq> {}"
+  assumes "\<And>J g. J \<subseteq> I \<Longrightarrow> g \<in> Pi J M' \<Longrightarrow> finite J \<Longrightarrow> prob {\<omega> \<in> space M. \<forall>j \<in> J. X' j \<omega> = g j}
+      = (\<Prod>j \<in> J. 1 / (real (card (M' j))))" 
+  shows "indep_vars (\<lambda>i. uniform_count_measure (M' i)) X' I"
+  sorry
+
+lemma (in prob_space) k_wise_indep_uniform_count_measure:
+  assumes "\<And>i. i \<in> I \<Longrightarrow> finite (M' i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> M' i \<noteq> {}"
+  assumes "\<And>J g. J \<subseteq> I \<Longrightarrow> g \<in> Pi J M' \<Longrightarrow> finite J \<Longrightarrow> card J \<le> k \<Longrightarrow> prob {\<omega> \<in> space M. \<forall>j \<in> J. X' j \<omega> = g j}
+      = (\<Prod>j \<in> J. 1 / (real (card (M' j))))" 
+  shows "k_wise_indep_vars k (\<lambda>i. uniform_count_measure (M' i)) X' I"
+proof -
+  have "\<And>J. finite J \<Longrightarrow> J \<subseteq> I \<Longrightarrow>card J \<le> k \<Longrightarrow> indep_vars (\<lambda>i. uniform_count_measure (M' i)) X' J"
+  proof -
+    fix J
+    assume c:"J \<subseteq> I"
+    assume a:"finite J"
+    assume b:"card J \<le> k"
+    have d: "\<And>J'. J' \<subseteq> J \<Longrightarrow>  J' \<subseteq> I" using c by simp
+    have e: "\<And>J'. J' \<subseteq> J \<Longrightarrow> card J' \<le> k" using b a 
+      by (meson card_mono le_trans)
+    have f: "\<And>J'. J' \<subseteq> J \<Longrightarrow>  finite J'" using a by (simp add:finite_subset)
+
+    show " indep_vars (\<lambda>i. uniform_count_measure (M' i)) X' J"
+      apply (rule indep_uniform_count_measure)
+      using assms(1) c apply blast
+      using assms(2) c apply blast
+      using assms(3)[OF d _ f e] by blast
+  qed
+  thus ?thesis 
+    by (simp add: k_wise_indep_vars_def)
+qed
+*)
 text \<open>Key result hash functions are k-wise independent random variables.\<close>
 
-lemma indep:
+lemma poly_family_indep:
   assumes "field F"
   assumes "finite (carrier F)"
   shows 

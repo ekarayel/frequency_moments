@@ -75,6 +75,36 @@ proof -
     using indep_A by blast
 qed
 
+lemma (in prob_space) indep_vars_equiv_rv:
+  assumes "\<And>x i. x \<in> space M \<Longrightarrow> i \<in> I \<Longrightarrow> X' i x = Y' i x"
+  assumes "indep_vars M' X' I"
+  shows "indep_vars M' Y' I"
+proof -
+  have "\<And>i. i \<in> I \<Longrightarrow> random_variable (M' i) (Y' i)"
+    using assms by (simp add:indep_vars_def2 cong: measurable_cong[where M="M"])
+  moreover 
+  have "\<And>i. i \<in> I \<Longrightarrow> {Y' i -` A \<inter> space M |A. A \<in> sets (M' i)} = {X' i -` A \<inter> space M |A. A \<in> sets (M' i)}"
+    using assms(1) assms(2) by auto
+  hence "indep_sets (\<lambda>i. {Y' i -` A \<inter> space M |A. A \<in> sets (M' i)}) I"
+    using assms by (simp add:indep_vars_def2 cong:indep_sets_cong)
+  ultimately show ?thesis
+    by (simp add:indep_vars_def2)
+qed
+
+lemma (in prob_space) indep_vars_cong_with_space:
+  assumes "I = J"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> M' i = N' i" 
+  assumes "\<And>x i. x \<in> space M \<Longrightarrow> i \<in> I \<Longrightarrow> X' i x = Y' i x"
+  shows "indep_vars M' X' I = indep_vars N' Y' J"
+proof -
+  have "indep_vars N' Y' J = indep_vars M' Y' I"
+    apply (rule indep_vars_cong)
+    using assms by auto
+  moreover have "indep_vars M' Y' I = indep_vars M' X' I"
+    using assms indep_vars_equiv_rv by metis
+  ultimately show ?thesis by meson
+qed
+
 lemma indep_vars_distr:
   assumes "f \<in> measurable M N"
   assumes "\<And>i. i \<in> I \<Longrightarrow> X' i \<in> measurable N (M' i)"

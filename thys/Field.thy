@@ -22,18 +22,18 @@ definition zfact_embed :: "nat \<Rightarrow> nat \<Rightarrow> int set" where
 
 lemma zfact_embed_ran:
   assumes "p > 1"
-  shows "zfact_embed p ` {m. m < p} = carrier (ZFact p)"
+  shows "zfact_embed p ` {0..<p} = carrier (ZFact p)"
 proof -
-  have "zfact_embed p ` {m. m < p} \<subseteq> carrier (ZFact p)"
+  have "zfact_embed p ` {0..<p} \<subseteq> carrier (ZFact p)"
   proof (rule subsetI)
     fix x
-    assume "x \<in> zfact_embed p ` {m. m < p}"
+    assume "x \<in> zfact_embed p ` {0..< p}"
     then obtain m where m_def: "zfact_embed p m = x" by blast
     have "zfact_embed p m \<in> carrier (ZFact p)" 
       by (simp add: ZFact_def ZFact_defs(2) int.a_rcosetsI zfact_embed_def)
     thus "x \<in> carrier (ZFact p)" using m_def by auto
   qed
-  moreover have "carrier (ZFact p) \<subseteq> zfact_embed p ` {m. m < p}"
+  moreover have "carrier (ZFact p) \<subseteq> zfact_embed p ` {0..< p}"
   proof (rule subsetI)
     define I where "I = Idl\<^bsub>\<Z>\<^esub> {int p}"
     fix x
@@ -57,19 +57,19 @@ proof -
     obtain w::nat  where y_4: "int w = y \<oplus>\<^bsub>\<Z>\<^esub> y'" 
       using y_2 nonneg_int_cases by metis
     have "x = I +>\<^bsub>\<Z>\<^esub> (int w)" and "w < p" using y_2 a3 y_0 y_4 by presburger+  
-    thus "x \<in> zfact_embed p ` {m. m < p}" by (simp add:zfact_embed_def I_def)
+    thus "x \<in> zfact_embed p ` {0..<p}" by (simp add:zfact_embed_def I_def)
   qed
   ultimately show ?thesis using order_antisym by auto
 qed
 
 lemma zfact_embed_inj:
   assumes "p > 1"
-  shows "inj_on (zfact_embed p) {m. m < p}"
+  shows "inj_on (zfact_embed p) {0..<p}"
 proof
   fix x
   fix y
-  assume a1: "x \<in> {m. m < p}"
-  assume a2: "y \<in> {m. m < p}"
+  assume a1: "x \<in> {0..<p}"
+  assume a2: "y \<in> {0..<p}"
   assume "zfact_embed p x = zfact_embed p y"
   hence "Idl\<^bsub>\<Z>\<^esub> {int p} +>\<^bsub>\<Z>\<^esub> int x = Idl\<^bsub>\<Z>\<^esub> {int p} +>\<^bsub>\<Z>\<^esub> int y"
     by (simp add:zfact_embed_def)
@@ -79,21 +79,23 @@ proof
   hence "p dvd (int x - int y)" apply (simp add:int_Idl) 
     using int_a_minus_eq by force
   thus "x = y" using a1 a2 
+    apply simp
     by (metis diffs0_imp_equal dvd_0_right dvd_diff_commute gr_implies_not_zero 
-        int_ops(6) less_imp_diff_less mem_Collect_eq nat_dvd_not_less 
+        int_ops(6) less_imp_diff_less nat_dvd_not_less 
         nat_neq_iff of_nat_dvd_iff) 
 qed
 
 lemma zfact_embed_bij:
   assumes "p > 1"
-  shows "bij_betw (zfact_embed p) {m. m < p} (carrier (ZFact p))"
+  shows "bij_betw (zfact_embed p) {0..<p} (carrier (ZFact p))"
   apply (rule bij_betw_imageI)
   using zfact_embed_inj zfact_embed_ran assms by auto 
 
 lemma zfact_card:
   assumes "(p :: nat) > 1"
   shows "card (carrier (ZFact (int p))) = p"
-  by (metis assms card_Collect_less_nat card_image zfact_embed_inj zfact_embed_ran)
+  using zfact_embed_ran[OF assms, symmetric] card_image[OF zfact_embed_inj[OF assms]]
+  by simp
 
 lemma zfact_finite:
   assumes "(p :: nat) > 1"
@@ -149,6 +151,46 @@ proof -
   have "finite (carrier (ZFact q))" using zfact_finite assms q_def prime_gt_1_nat by blast
   moreover have "domain (ZFact q)" using ZFact_prime_is_domain assms q_def by auto
   ultimately show ?thesis using finite_domains_are_fields q_def by blast
+qed
+
+lemma zfact_embed_zero_iff:
+  assumes "p > 1" 
+  assumes "k < p"
+  shows "(zfact_embed p k = \<zero>\<^bsub>ZFact p\<^esub>) = (k=0)"
+proof -
+  have "zfact_embed p 0 = \<zero>\<^bsub>ZFact p\<^esub>"
+    by (simp add:zfact_embed_def ZFact_def FactRing_simps)
+  thus ?thesis
+    using zfact_embed_inj[OF assms(1)]
+    using assms(2) 
+    by (metis atLeastLessThan_iff bot_nat_0.extremum inj_on_def less_zeroE zero_less_iff_neq_zero)
+qed
+
+lemma zfact_embed_inv_zero_iff:
+  assumes "p > 1" 
+  assumes "k \<in> carrier (ZFact p)"
+  shows "(the_inv_into {0..<p} (zfact_embed p) k = 0) = (k= \<zero>\<^bsub>ZFact p\<^esub>)"
+  sorry
+
+lemma zpoly_is_field:
+  assumes "field F"
+  assumes "p \<in> carrier (poly_ring F) - {\<zero>\<^bsub>poly_ring F\<^esub>}"
+  assumes "ring_irreducible\<^bsub>poly_ring F\<^esub> p"
+  shows "field ((poly_ring F) Quot PIdl\<^bsub>poly_ring F\<^esub> p)"
+proof -
+  have a:"principal_domain (poly_ring F)"
+    apply (rule domain.univ_poly_is_principal)
+  using assms(1) apply (simp add: field.axioms(1))
+  by (simp add: assms(1) field.carrier_is_subfield)
+
+  show ?thesis
+    apply (subst principal_domain.field_iff_prime)
+    apply (simp add:a)
+  using assms(2) apply simp
+  apply (subst principal_domain.primeness_condition[symmetric])
+    apply (simp add:a)
+  using assms(2) apply blast
+  using assms(3) by blast
 qed
 
 end

@@ -3,21 +3,27 @@ section \<open>Frequency Moment 2\<close>
 theory F2_Algorithm
   imports Main "HOL-Probability.Giry_Monad" "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
     Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext
-    "HOL-Library.Rewrite"
+    "HOL-Library.Rewrite" "HOL-Library.Finite_Map"
 begin
+
 
 definition f2_value where
   "f2_value xs = (\<Sum> x \<in> set xs. (rat_of_nat (count_list xs x)^2))"
 
 fun eval_hash_function where
   "eval_hash_function p h k = (
-    if hash_function (ZFact (int p)) (zfact_embed p k) h \<in> zfact_embed p ` {k. 2*k < p} then
+    if hash_function (ZFact (int p)) (zfact_embed p k) (map (zfact_embed p) h) \<in> zfact_embed p ` {k. 2*k < p} then
       int p - 1
     else
       - int p - 1
   )"
 
-type_synonym f2_space = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
+type_synonym f2_space = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> nat list) \<times> (nat \<times> nat \<Rightarrow> int)"
+
+definition poly_rep :: "nat \<Rightarrow> nat \<Rightarrow> nat list set" where
+  "poly_rep p n = {h. h = [] \<or> (length h \<le> n \<and> set h \<subseteq> {0..<p} \<and> hd h \<noteq> 0)}"
+definition poly_rep_space where "poly_rep_space p n = uniform_count_measure (poly_rep p n)"
+
 
 fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
   "f2_init \<delta> \<epsilon> n =
@@ -25,7 +31,7 @@ fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space p
       let s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>;
       let s\<^sub>2 = nat \<lceil>-32/9 * ln (real_of_rat \<epsilon>)\<rceil>;
       let p = find_odd_prime_above n;
-      h \<leftarrow> pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4);
+      h \<leftarrow> pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E poly_rep p 4);
       return_pmf (s\<^sub>1, s\<^sub>2, p, h, (\<lambda>_ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0 :: int)))
     }"
 
@@ -210,20 +216,173 @@ proof -
     by (simp add: h_power_4_estimate mult_nonneg_nonpos2 algebra_simps)
 qed
 
+lemma fin_poly_rep: "finite (poly_rep p n)"
+proof -
+  have "poly_rep p n \<subseteq> {x. set x \<subseteq> {0..<p} \<and> length x \<le> n}"
+    apply (rule subsetI, simp add:poly_rep_def)
+    apply (rule conjI)
+     apply (metis length_pos_if_in_set less_numeral_extra(3) list.size(3) subset_iff)
+    by fastforce
+  moreover have "finite {x. set x \<subseteq> {0..<p} \<and> length x \<le> n}"
+    by (rule finite_lists_length_le, simp)
+  ultimately show ?thesis using finite_subset by blast
+qed
+
+lemma prob_space_poly_rep_space: "prob_space (poly_rep_space p n)"
+  apply (simp add:poly_rep_space_def)
+  apply (rule  prob_space_uniform_count_measure)
+   apply (simp add:fin_poly_rep)
+  apply (simp add:poly_rep_def) by blast
+  
+lemma image_eqI:
+  assumes "\<And>x. x \<in> A \<Longrightarrow> f x \<in> B"
+  assumes "\<And>x. x \<in> B \<Longrightarrow> g x \<in> A \<and> f (g x) = x"
+  shows "f ` A = B"
+  by (metis order_antisym assms image_subsetI subsetI rev_image_eqI)
+
+lemma poly_rep_into_polynomials:
+  assumes "p > 1"
+  shows "map (zfact_embed p) ` (poly_rep p n) \<subseteq> bounded_degree_polynomials (ZFact p) n" (is "_ ` ?A \<subseteq> ?B")
+proof (rule image_subsetI)
+  fix x
+  assume a:"x \<in> ?A"
+  show "map (zfact_embed p) x \<in> ?B" 
+    apply (cases "x= []",simp add:bounded_degree_polynomials_length univ_poly_def polynomial_def)
+    using a
+    apply (simp add:poly_rep_def bounded_degree_polynomials_length univ_poly_def polynomial_def)
+    apply (rule conjI)
+    using zfact_embed_ran[OF assms] image_mono apply blast
+    by (simp add: hd_map  subset_iff zfact_embed_zero_iff[OF assms(1)]) 
+qed
+
+lemma polynomials_into_poly_rep:
+  assumes "p > 1"
+  shows "map (the_inv_into {0..<p} (zfact_embed p)) ` bounded_degree_polynomials (ZFact p) n \<subseteq> (poly_rep p n)" (is "_ ` ?A \<subseteq> ?B")
+proof (rule image_subsetI)
+  fix x
+  assume a:"x \<in> ?A"
+  have b:"x \<noteq> [] \<Longrightarrow> lead_coeff x \<in> carrier (ZFact p)"
+    using a apply (simp add:bounded_degree_polynomials_length  univ_poly_def polynomial_def)
+    using hd_in_set a by blast
+  show "map (the_inv_into {0..<p} (zfact_embed p)) x \<in> ?B" 
+    apply (cases "x= []",simp add:poly_rep_def)
+    using a
+    apply (simp add:poly_rep_def bounded_degree_polynomials_length univ_poly_def polynomial_def)
+    apply (rule conjI, rule image_subsetI)
+     apply (rule the_inv_into_into)
+       apply(metis zfact_embed_inj[OF assms])
+      using zfact_embed_ran[OF assms] apply blast
+       apply simp
+      apply (simp add:hd_map)
+      apply(rule ccontr)
+      using b by (simp add: zfact_embed_inv_zero_iff[OF assms(1)])
+qed
+
+lemma poly_rep_eq_polynomials:
+  assumes "p > 1"
+  shows "map (zfact_embed p) ` (poly_rep p n) = (bounded_degree_polynomials (ZFact p) n)"
+  apply (rule image_eqI[where g="map (the_inv_into {0..<p} (zfact_embed p))"])
+  using assms poly_rep_into_polynomials apply blast
+  apply (rule conjI)
+  using assms polynomials_into_poly_rep apply blast
+  apply (simp add:comp_def)
+  apply (rule map_idI, rule f_the_inv_into_f)
+   apply (metis zfact_embed_inj[OF assms])
+  apply (simp add:zfact_embed_ran[OF assms] bounded_degree_polynomials_def)
+  by (metis length_greater_0_conv length_pos_if_in_set polynomial_def subsetD univ_poly_carrier)
+
+lemma polynomials_eq_poly_rep:
+  assumes "p > 1"
+  shows "map (the_inv_into {0..<p} (zfact_embed p)) `  (bounded_degree_polynomials (ZFact p) n) = (poly_rep p n)"
+  apply (rule image_eqI[where g="map (zfact_embed p)"])
+  using assms polynomials_into_poly_rep apply blast
+  apply (rule conjI)
+  using assms poly_rep_into_polynomials apply blast
+  apply (simp add:comp_def)
+  apply (rule map_idI, rule the_inv_into_f_f)
+   apply (metis zfact_embed_inj[OF assms])
+  apply (simp add:poly_rep_def) 
+  by (metis atLeast0LessThan length_pos_if_in_set lessThan_iff less_numeral_extra(3) list.size(3) subsetD)
+
+lemma ex_poly: 
+  "bounded_degree_polynomials (ZFact (int p)) 4 \<noteq> {}" (is "?A \<noteq> _")
+proof -
+  have "\<zero>\<^bsub>poly_ring (ZFact (int p))\<^esub> \<in> ?A"
+    apply (simp add:bounded_degree_polynomials_def)
+    apply (rule conjI)
+     apply (simp add: univ_poly_zero univ_poly_zero_closed)
+    using univ_poly_zero by blast
+  thus ?thesis by blast
+qed
+
+lemma fin_poly: 
+  assumes "prime p"
+  shows "finite (bounded_degree_polynomials (ZFact (int p)) n)"
+  using finite_poly_count zfact_prime_is_field zfact_finite prime_gt_1_nat assms 
+  by blast
+
+lemma distr_equiv_finite_space:
+  assumes "finite A"
+  assumes "B = f ` A"
+  assumes "inj_on f A"
+  shows "distr (uniform_count_measure A) (uniform_count_measure B) f = uniform_count_measure B"
+proof -
+  have a:"f \<in> uniform_count_measure A \<rightarrow>\<^sub>M uniform_count_measure B"
+    apply (simp add:measurable_def space_uniform_count_measure sets_uniform_count_measure)
+    using assms by blast
+  have b: "finite (f ` A)" 
+    using assms by blast
+  show ?thesis 
+    apply (rule measure_eqI, simp)
+    using a apply (simp add: emeasure_distr)
+    using assms b card_image[OF assms(3)]
+    apply (simp add:emeasure_uniform_count_measure space_uniform_count_measure sets_uniform_count_measure)
+    using assms(3) card_vimage_inj_on by blast
+qed
+
+lemma inj_on_map:
+  assumes "inj_on f A"
+  assumes "B \<subseteq> {x. set x \<subseteq> A}"
+  shows "inj_on (map f) B"
+  apply (rule inj_onI)
+  apply (rule list.inj_map_strong[where f="f" and fa="f"])
+   apply (metis inj_on_contraD mem_Collect_eq subsetD assms)
+  by simp
+
+lemma distr_poly_rep_rev:
+  assumes "prime p"
+  shows "distr (uniform_count_measure (bounded_degree_polynomials (ZFact p) n)) (uniform_count_measure (poly_rep p n))
+    (map (the_inv_into {0..<p} (zfact_embed p))) = poly_rep_space p n"
+  apply (simp add:poly_rep_space_def)
+  apply (rule distr_equiv_finite_space)
+    apply (metis fin_poly[OF assms])
+   apply (metis polynomials_eq_poly_rep[OF prime_gt_1_nat[OF assms], symmetric])
+  apply (rule inj_on_map[where A="carrier (ZFact p)"])
+  using inj_on_the_inv_into[OF zfact_embed_inj]
+   zfact_embed_ran prime_gt_1_nat  assms apply simp
+  apply (simp add:bounded_degree_polynomials_def)
+  apply (rule subsetI, simp)
+  by (meson ZFact_is_cring cring_def ring.carrier_is_subring ring.polynomial_in_carrier univ_poly_carrier)
+
+lemma measurable_uniform_count_measure:
+  assumes "f ` A \<subseteq> B"
+  shows "f \<in> uniform_count_measure A \<rightarrow>\<^sub>M uniform_count_measure B"
+  apply (simp add:measurable_def space_uniform_count_measure sets_uniform_count_measure)
+  using assms by blast
 
 lemma eval_exp:
   assumes "prime p"
   assumes "k < p"
   assumes "p > 2" 
   shows eval_hash_exp: 
-    "has_bochner_integral (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. (eval_hash_function p \<omega> k / sqrt (real p^2-1)) ^m) (
+    "has_bochner_integral (poly_rep_space p 4) (\<lambda>\<omega>. (eval_hash_function p \<omega> k / sqrt (real p^2-1)) ^m) (
     ((real p-1)^m* (real p+1) + (-real p - 1)^m *(real p - 1))/ ((2*real p) * sqrt(real p^2-1)^m))"
 proof -
   define A where "A = {\<omega>. 
     \<omega> \<in> bounded_degree_polynomials (ZFact p) 4 \<and>
     (hash_function (ZFact p) (zfact_embed p k) \<omega>) \<in> zfact_embed p ` {k. 2*k < p}}"
   define B where "B = {\<omega>. 
-    \<omega> \<in> bounded_degree_polynomials (ZFact p) 4 \<and>
+    \<omega> \<in>  bounded_degree_polynomials (ZFact p) 4 \<and>
     (hash_function (ZFact p) (zfact_embed p k) \<omega>) \<in> zfact_embed p ` {k. 2*k \<ge> p \<and> k < p}}"
   define f where "f = (\<lambda>\<omega>. indicator A \<omega> * (real p-1)^m)"
   define g where "g = (\<lambda>\<omega>. indicator B \<omega> * (-real p-1)^m)"
@@ -232,8 +391,9 @@ proof -
 
   have a1:"finite (carrier (ZFact p))"  using zfact_finite g by auto
   have a2:"ring (ZFact p)"  using ZFact_is_cring cring_def by blast
-  have "zfact_embed p k \<in> carrier (ZFact p)" using zfact_embed_ran assms g 
-    by (metis image_eqI mem_Collect_eq)
+  have a7:"zfact_embed p k \<in> carrier (ZFact p)" 
+    using zfact_embed_ran[OF g] assms(2) atLeast0LessThan by auto
+
   hence g4:"\<And>\<omega>. \<omega> \<in> bounded_degree_polynomials (ZFact p) 4 \<Longrightarrow> ring.eval (ZFact (int p)) \<omega> (zfact_embed p k) \<in> carrier (ZFact p)"
     using a2 ring.polynomial_in_carrier[where K="carrier (ZFact p)" and R="ZFact p"] 
     by (simp add: bounded_degree_polynomials_def ring.carrier_is_subring ring.eval_in_carrier univ_poly_carrier)
@@ -252,7 +412,7 @@ proof -
     fix x
     assume "x \<in> carrier (ZFact p)"
     hence a:"x \<in> zfact_embed p ` {k. k < p}" 
-      using zfact_embed_ran g by presburger
+      by (metis zfact_embed_ran[OF g] atLeastLessThan_iff image_mono mem_Collect_eq subset_eq)
     moreover have "?lhs \<inter> ?rhs = {}"
     proof (rule Int_emptyI)
       fix x
@@ -262,8 +422,8 @@ proof -
       assume "x \<in> zfact_embed p ` {k. p \<le> 2*k \<and> k < p}"
       then obtain k2 where x_def_2: "x = zfact_embed p k2" and k2_bound: "p \<le> 2*k2 \<and> k2 < p"
         by blast
-      have "k1 \<in> {k. k < p}" using k1_bound by auto
-      moreover have "k2 \<in> {k. k < p}" using k2_bound by auto
+      have "k1 \<in> {0..< p}" using k1_bound by auto
+      moreover have "k2 \<in> {0..<p}" using k2_bound by auto
       ultimately have "k1 = k2" using g zfact_embed_inj x_def_1 x_def_2 inj_onD
         by metis
       thus "False" using k1_bound k2_bound 
@@ -276,9 +436,14 @@ proof -
     ultimately show "(x \<in> ?lhs) = (x \<notin> ?rhs)"
       by (metis (no_types, lifting) UnE disjoint_iff)
   qed
-  have r3: "\<And>\<omega>. \<omega> \<in> space (poly_hash_family (ZFact (int p)) 4) \<Longrightarrow> 
-    (real_of_int (eval_hash_function p \<omega> k))^m =  f \<omega> + g \<omega>"
-    apply (simp add:poly_hash_family_def space_uniform_count_measure)
+  have r3_p: "\<And>\<omega> y. \<omega> \<in> space (poly_hash_family (ZFact (int p)) 4) \<Longrightarrow> y \<in> set \<omega> \<Longrightarrow> y \<in> zfact_embed p ` {0..<p}"
+    using zfact_embed_ran[OF g]
+    apply (simp add:poly_hash_family_def space_uniform_count_measure bounded_degree_polynomials_length)
+    by (meson a2 ring.carrier_is_subring ring.polynomial_in_carrier subsetD univ_poly_carrier)
+
+  have r3: "\<And>\<omega>. \<omega> \<in> space (poly_hash_family (ZFact (int p)) 4) \<Longrightarrow>
+    (real_of_int (eval_hash_function p (map (the_inv_into {0..<p} (zfact_embed p)) \<omega>) k))^m =  f \<omega> + g \<omega>"
+    using r3_p f_the_inv_into_f[OF zfact_embed_inj[OF g]] apply (simp add:poly_hash_family_def space_uniform_count_measure comp_def cong:map_cong)
     apply (simp add:f_def g_def A_def B_def hash_function_def)
     apply (rule conjI, rule impI) using g4 r3_aux apply (simp add:power_one_over[symmetric])
     apply (rule impI)
@@ -303,8 +468,7 @@ proof -
     apply (simp add: hash_function_def)
     apply (subst poly_card_set)
     using zfact_prime_is_field assms apply force
-    using zfact_finite g apply simp
-    using g assms zfact_embed_ran apply blast
+    using zfact_finite g apply simp apply (simp add:a7)
       apply simp
     apply (rule image_subsetI, simp) using zfact_embed_ran g 
      apply (simp add: ZFact_defs(1) ZFact_defs(2) int.a_rcosetsI zfact_embed_def)
@@ -325,8 +489,7 @@ proof -
     apply (simp add: hash_function_def)
     apply (subst poly_card_set)
     using zfact_prime_is_field assms apply force
-    using zfact_finite g apply simp
-    using g assms zfact_embed_ran apply blast
+    using zfact_finite g apply simp apply (simp add:a7)
       apply simp
     apply (rule image_subsetI, simp) using zfact_embed_ran g 
      apply (simp add: ZFact_defs(1) ZFact_defs(2) int.a_rcosetsI zfact_embed_def)
@@ -340,7 +503,13 @@ proof -
     apply (subst power_divide)
     apply (subst divide_divide_eq_left[symmetric])
     apply (rule has_bochner_integral_divide_zero)
-    using r3 apply (simp add:add_divide_distrib del:eval_hash_function.simps cong:has_bochner_integral_cong)
+    apply (subst distr_poly_rep_rev[OF assms(1), symmetric])
+    apply (rule has_bochner_integral_distr)
+      apply simp
+     apply simp
+     apply (simp add:measurable_def space_uniform_count_measure sets_uniform_count_measure) 
+    using polynomials_into_poly_rep[OF g] apply (simp add:Pi_def, blast) 
+    using r3 apply (simp add:add_divide_distrib poly_hash_family_def[symmetric] del:eval_hash_function.simps cong:has_bochner_integral_cong)
     apply (rule has_bochner_integral_add)
     using r1 apply (simp add:algebra_simps)
     using r2 by (simp add:algebra_simps)
@@ -350,7 +519,7 @@ lemma eval_exp_1:
   assumes "prime p"
   assumes "k < p"
   assumes "p > 2"
-  shows "has_bochner_integral (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) 0"
+  shows "has_bochner_integral (poly_rep_space p 4) (\<lambda>\<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) 0"
 proof -
   have a:"((real p - 1) ^ 1 * (real p + 1) + (- real p - 1) ^ 1 * (real p - 1)) = 0"
     by (simp add:algebra_simps)
@@ -362,7 +531,7 @@ lemma eval_exp_2:
   assumes "prime p"
   assumes "k < p"
   assumes "p > 2"
-  shows "has_bochner_integral (poly_hash_family (ZFact p) 4) (\<lambda>\<omega>. (eval_hash_function p \<omega> k/ sqrt (real p^2-1))^2) 1"
+  shows "has_bochner_integral (poly_rep_space p 4) (\<lambda>\<omega>. (eval_hash_function p \<omega> k/ sqrt (real p^2-1))^2) 1"
 proof -
   have b:"(-real p -1)^2=(real p +1)^2"
     by (simp add: power2_commute)
@@ -390,8 +559,7 @@ lemma eval_exp_4:
   assumes "prime p"
   assumes "k < p"
   assumes "p > 2"
-  shows 
-    "prob_space.expectation (poly_hash_family (ZFact p) 4) 
+  shows "prob_space.expectation (poly_rep_space p 4) 
       (\<lambda>\<omega>. (eval_hash_function p \<omega> k / sqrt (real p^2-1))^4) \<le> 3"
 proof -
   have a:"\<And>x. (x::real)^4=(x^2)^2"
@@ -422,11 +590,17 @@ proof -
     by (metis assms)
 qed
 
+
+lemma prob_space_poly:
+  assumes "prime p"
+  shows "prob_space (uniform_count_measure (bounded_degree_polynomials (ZFact (int p)) 4))"
+  by (metis assms prob_space_uniform_count_measure fin_poly ex_poly)
+
 lemma eval_4_indep:
   assumes "prime p"
   assumes "p > 2"
   shows "prob_space.k_wise_indep_vars 
-    (poly_hash_family (ZFact p) 4) 4 (\<lambda>_. borel)
+    (poly_rep_space p 4) 4 (\<lambda>_. borel)
     (\<lambda>k \<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) {0..<p}"
 proof -
   have a1:"p > 1" using assms(2) by auto
@@ -434,75 +608,77 @@ proof -
     apply (rule prob_space_poly_family)
     using assms zfact_prime_is_field apply simp
     using a1 zfact_finite by auto
+
+  interpret prob_space "(poly_hash_family (ZFact p) 4)"
+    by (metis a)
+
   have a2:"\<And>J. J\<subseteq>carrier (ZFact (int p)) \<Longrightarrow> finite J \<Longrightarrow> card J \<le> 4 \<Longrightarrow>
     prob_space.indep_vars (poly_hash_family (ZFact (int p)) 4) 
     (\<lambda>_. uniform_count_measure (carrier (ZFact (int p)))) (hash_function (ZFact (int p))) 
     J"
-    using a1 indep[where F="ZFact (int p)" and n="4"] zfact_prime_is_field assms(1) a zfact_finite 
+    using a1 poly_family_indep[where F="ZFact (int p)" and n="4"] zfact_prime_is_field assms(1) a zfact_finite 
     by (simp add:prob_space.k_wise_indep_vars_def)
 
-  have c1:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> zfact_embed p ` J \<subseteq> carrier (ZFact (int p))"
-    using zfact_embed_ran a1 by fastforce
-  have c2:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow> card (zfact_embed p ` J) \<le> 4"
-    by (meson card_image_le le_trans)
-  have c3:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> finite J \<Longrightarrow> finite (zfact_embed p ` J)"
-    by simp
-  have b_aux:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> finite J \<Longrightarrow> card J \<le> 4 \<Longrightarrow>
-    prob_space.indep_vars (poly_hash_family (ZFact (int p)) 4) 
-    ((\<lambda>_. uniform_count_measure (carrier (ZFact (int p)))) \<circ> zfact_embed p) (\<lambda>k \<omega>. hash_function (ZFact (int p)) (zfact_embed p k) \<omega>) 
+  have a3_aux: "\<And>x y. x \<in> space (poly_hash_family (ZFact (int p)) 4) \<Longrightarrow> y \<in> set x \<Longrightarrow> y \<in> zfact_embed p ` {0..<p}"
+    apply (simp add:poly_hash_family_def bounded_degree_polynomials_def space_uniform_count_measure zfact_embed_ran[OF a1])
+        by (metis length_greater_0_conv length_pos_if_in_set polynomial_def subsetD univ_poly_carrier)
+  have step_2:"\<And>J. J\<subseteq>carrier (ZFact (int p)) \<Longrightarrow> finite J \<Longrightarrow> card J \<le> 4 \<Longrightarrow>
+    prob_space.indep_vars (poly_rep_space p 4) 
+    (\<lambda>_. uniform_count_measure (carrier (ZFact (int p)))) (\<lambda>k \<omega>. hash_function (ZFact (int p)) k (map (zfact_embed p) \<omega>)) 
     J"
-    apply (subst prob_space.indep_vars_reindex [where f="zfact_embed p" and X'="hash_function (ZFact (int p))"])
-       apply (simp add:a)
-      apply (metis zfact_embed_inj a1 inj_on_subset atLeastLessThan_iff mem_Collect_eq subset_eq)
-     using a2 c1 c2 c3 apply presburger
-    by simp
-  have b:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow>
-    prob_space.indep_vars (poly_hash_family (ZFact (int p)) 4) (\<lambda>_. borel) (\<lambda>k \<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) J"
+    apply (subst distr_poly_rep_rev[OF assms(1), symmetric])
+    apply (rule indep_vars_distr)
+       apply (metis measurable_uniform_count_measure polynomials_into_poly_rep[OF a1])
+    apply (rule measurable_uniform_count_measure, rule image_subsetI)
+    apply (rule hash_function_image[where n="4"])
+    using assms(1) zfact_prime_is_field apply presburger
+       apply blast
+    using  poly_rep_into_polynomials[OF a1] apply blast
+       apply (subst poly_hash_family_def[symmetric])
+       apply (rule indep_vars_equiv_rv[where X'="hash_function (ZFact (int p))"])
+    using f_the_inv_into_f[OF zfact_embed_inj [OF a1]] a a3_aux
+      apply (simp add:comp_def poly_hash_family_def[symmetric] space_uniform_count_measure cong:indep_vars_cong_with_space map_cong)
+       apply (simp add:a2)
+    by (simp add: prob_space_poly[OF assms(1)])
+
+  have reindex_subst: "(\<lambda>_. uniform_count_measure (carrier (ZFact (int p)))) =
+      (\<lambda>_. uniform_count_measure (carrier (ZFact (int p)))) \<circ> zfact_embed p" by simp
+
+  have step_1:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow>
+    prob_space.indep_vars (poly_rep_space p 4) (\<lambda>_. borel) (\<lambda>k \<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) J"
     apply simp
-    apply (rule prob_space.indep_vars_compose2 [where X="(\<lambda>k \<omega>. hash_function (ZFact (int p)) (zfact_embed p k) \<omega>)"
+    apply (rule prob_space.indep_vars_compose2 [where X="(\<lambda>k \<omega>. hash_function (ZFact (int p)) (zfact_embed p k) (map (zfact_embed p) \<omega>))"
             and M'=" (\<lambda>_. uniform_count_measure (carrier (ZFact (int p))))"])
-      apply (simp add:a)
-     using b_aux apply (simp)
-    by measurable
+      apply (simp add:prob_space_poly_rep_space)
+     apply (subst reindex_subst)
+     apply (rule prob_space.indep_vars_reindex)
+       apply (simp add:prob_space_poly_rep_space)
+      apply (metis zfact_embed_inj[OF a1] inj_on_subset)
+     apply (rule step_2)
+    using zfact_embed_ran[OF a1] apply blast
+      apply blast
+     apply (subst card_image)
+      apply (metis zfact_embed_inj[OF a1] inj_on_subset)
+     apply simp
+    by simp
   
   show ?thesis
-    by (simp add: a b prob_space.k_wise_indep_vars_def del:eval_hash_function.simps)
+    by (simp add: step_1 prob_space_poly_rep_space prob_space.k_wise_indep_vars_def 
+        del:eval_hash_function.simps)
 qed
 
-lemma ex_poly: 
-  "bounded_degree_polynomials (ZFact (int p)) 4 \<noteq> {}" (is "?A \<noteq> _")
-proof -
-  have "\<zero>\<^bsub>poly_ring (ZFact (int p))\<^esub> \<in> ?A"
-    apply (simp add:bounded_degree_polynomials_def)
-    apply (rule conjI)
-     apply (simp add: univ_poly_zero univ_poly_zero_closed)
-    using univ_poly_zero by blast
-  thus ?thesis by blast
-qed
-
-
-lemma fin_poly: 
-  assumes "prime p"
-  shows "finite (bounded_degree_polynomials (ZFact (int p)) 4)"
-  apply (rule finite_poly_count)
-   apply (rule zfact_prime_is_field)
-   apply (simp add:assms)
-  apply (rule zfact_finite)
-  using assms  prime_gt_1_nat by blast
 
 lemma 
   assumes "prime p"
   assumes "p > 2"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < p"
-  defines "M \<equiv> uniform_count_measure (bounded_degree_polynomials (ZFact (int p)) 4)"
+  defines "M \<equiv> poly_rep_space p 4"
   defines "f2_sketch \<equiv> (\<lambda>a. (real_of_int (sum_list (map (eval_hash_function p a) xs)))\<^sup>2 / ((real p)\<^sup>2 - 1))"
   shows var_f2:"has_variance M (\<lambda>\<omega>. f2_sketch \<omega>) (\<lambda>r. r \<le> 2*(real_of_rat (f2_value xs)^2))" (is "?A")
   and exp_f2:"has_bochner_integral M (\<lambda>\<omega>. f2_sketch \<omega>) (real_of_rat (f2_value xs))" (is "?B")
 proof -
   have a:"prob_space M" 
-    apply (simp add:M_def, rule prob_space_uniform_count_measure)
-     apply (metis fin_poly assms(1))
-    by (rule ex_poly)
+    by (simp add:M_def prob_space_poly_rep_space)
 
   have f2_sketch_elim:
   "f2_sketch = (\<lambda>\<omega>. (\<Sum> x \<in> set xs. real (count_list xs x) * (eval_hash_function p \<omega> x/ sqrt (real p^2-1)))^2 )"
@@ -689,14 +865,14 @@ proof -
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
   define p where "p = find_odd_prime_above n"
   define \<Omega>\<^sub>0 where 
-    "\<Omega>\<^sub>0 = pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4)"
+    "\<Omega>\<^sub>0 = pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E  poly_rep p 4)"
   define \<Omega>\<^sub>1 where 
-    "\<Omega>\<^sub>1 = Pi\<^sub>M ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. uniform_count_measure (bounded_degree_polynomials (ZFact (int p)) 4))"
+    "\<Omega>\<^sub>1 = Pi\<^sub>M ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. poly_rep_space p 4)"
 
   define s\<^sub>1_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>1_from = fst"
   define s\<^sub>2_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
   define p_from :: "f2_space \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
-  define h_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
+  define h_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> nat list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
   define sketch_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
 
 
@@ -706,6 +882,9 @@ proof -
 
   have p_ge_3: "p \<ge> 3"
     using find_prime_above_min by (simp add:p_def)
+
+  have p_prime: "prime p"
+    by (simp add:p_def find_prime_above_is_prime)
 
   have s2_nonzero: "s\<^sub>2 > 0"
     using assms by (simp add:s\<^sub>2_def)
@@ -725,9 +904,8 @@ proof -
 
   have prob_space_1: "prob_space \<Omega>\<^sub>1"
     apply (simp add:\<Omega>\<^sub>1_def, rule prob_space_PiM)
-    by (metis fin_poly' ex_poly prob_space_uniform_count_measure)
+    by (metis prob_space_poly_rep_space)
 
-  
   have split_f2_space: "\<And>x. x = (s\<^sub>1_from x, s\<^sub>2_from x, p_from x, h_from x, sketch_from x)"
     by (simp add:prod_eq_iff s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def sketch_from_def)
 
@@ -780,7 +958,7 @@ proof -
     (\<lambda>r. r \<le> 2 * (real_of_rat (f2_value xs))\<^sup>2)"
     apply (simp add:\<Omega>\<^sub>1_def f3_def)
     apply (rule lift_has_variance, simp, simp)
-     apply (metis prob_space_uniform_count_measure fin_poly' ex_poly)
+     apply (metis prob_space_poly_rep_space)
     apply (rule var_f2)
       apply (simp add:p_def find_prime_above_is_prime)
     using p_ge_3 apply linarith
@@ -830,9 +1008,10 @@ proof -
     apply (rule prob_space.has_variance_sum [where r="(\<lambda>_ r. r \<le> (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / (8 * real s\<^sub>1))"])
           apply (metis prob_space_1, simp)
     apply (simp add:\<Omega>\<^sub>1_def, rule indep_pim [where f="\<lambda>j. {(j,i)}"])
-                 apply (metis prob_space_uniform_count_measure fin_poly' ex_poly)
-         apply (rule measurable_pim, simp, metis fin_poly', simp, simp add:f3_def)
-       apply (simp add:disjoint_family_on_def, simp add:s1_nonzero, simp add:a, simp add:s1_nonzero s2_nonzero)
+              apply (metis prob_space_poly_rep_space)
+      apply (simp add:poly_rep_space_def)
+             apply (rule measurable_pim, simp, simp add:fin_poly_rep, simp, simp add:f3_def)
+           apply (simp add:disjoint_family_on_def, simp add:s1_nonzero, simp add:a, simp add:s1_nonzero s2_nonzero)
       using f3_var' a apply simp
       using s1_nonzero sum_mono[where g="\<lambda>_. (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / (8 * real s\<^sub>1)" and K="{0..<s\<^sub>1}"]
       by simp
@@ -850,7 +1029,7 @@ proof -
     apply (rule has_bochner_integral_sum)
     apply (simp add:f3_def)
     apply (simp add:\<Omega>\<^sub>1_def)
-    apply (rule lift_has_bochner_integral, simp, simp, metis fin_poly' ex_poly prob_space_uniform_count_measure)
+    apply (rule lift_has_bochner_integral, simp, simp, simp add:prob_space_poly_rep_space)
     apply (rule exp_f2)
       apply (simp add:p_def find_prime_above_is_prime)
     using p_ge_3 apply linarith
@@ -863,7 +1042,7 @@ proof -
     using s2_nonzero apply (simp add:f'_def f2_def f3_def f_def median_rat cong:restrict_cong)
     by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
 
-  have "sketch \<bind> f2_result = map_pmf f (pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4))"
+  have "sketch \<bind> f2_result = map_pmf f (pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E poly_rep p 4))"
     apply (simp add:sketch_eq s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:eval_hash_function.simps)
       apply (subst bind_assoc_pmf)
     apply (subst bind_return_pmf)
@@ -887,8 +1066,8 @@ proof -
   have median_bound_2: "prob_space.indep_vars \<Omega>\<^sub>1 (\<lambda>_. borel) (\<lambda>i \<omega>. f2 \<omega> i) {0..<s\<^sub>2}"
     apply (simp add:f2_def \<Omega>\<^sub>1_def)
     apply (rule indep_pim[where f="\<lambda>j. {0..<s\<^sub>1} \<times> {j}"] ) (* X i1 i x = x (i1,i)  *)
-          apply (metis fin_poly' ex_poly prob_space_uniform_count_measure)
-         apply (rule measurable_pim, simp, metis fin_poly', simp, simp add:f3_def)
+          apply (metis  prob_space_poly_rep_space, simp add:poly_rep_space_def)
+         apply (rule measurable_pim, simp, simp add:fin_poly_rep, simp, simp add:f3_def)
        apply (simp add:disjoint_family_on_def, fastforce, simp add:s2_nonzero)
      apply (rule subsetI, force)
     by (simp add:s1_nonzero s2_nonzero)
@@ -911,7 +1090,7 @@ proof -
     moreover have "integrable \<Omega>\<^sub>1 (\<lambda>\<omega>. f2 \<omega> i^2)"
       using f2_var has_variance_def a by metis 
     moreover have "(\<lambda>\<omega>. f2 \<omega> i) \<in> borel_measurable \<Omega>\<^sub>1"
-      by (simp add:\<Omega>\<^sub>1_def, rule measurable_pim, simp, metis fin_poly', simp)
+      by (simp add:\<Omega>\<^sub>1_def poly_rep_space_def, rule measurable_pim, simp, simp add:fin_poly_rep, simp)
     ultimately have "?lhs i \<le> var / (real_of_rat (\<delta> * f2_value xs))\<^sup>2"
       using prob_space.Chebyshev_inequality[where M="\<Omega>\<^sub>1" and a="real_of_rat (\<delta> * f2_value xs)"
           and f="\<lambda>\<omega>. f2 \<omega> i"] assms(2) prob_space_1 f2_value_nonzero
@@ -930,18 +1109,25 @@ proof -
       apply (simp add:g_def)
      apply (simp add:f_def)
     apply (simp add:real_f f'_def \<Omega>\<^sub>0_def)
-    apply (subst pmf_product)
-    apply (metis ex_poly, simp, metis fin_poly', simp)
+    apply (subst pmf_product, simp add:poly_rep_def, blast, simp, simp add:fin_poly_rep, simp)
        apply (subst measure_distr)
-         apply (rule measurable_pim, simp)
-    apply (metis fin_poly')
+         apply (rule measurable_pim, simp add:fin_poly_rep, simp add:fin_poly_rep)
     apply simp
     apply (simp add:g_def)
     using prob_space.median_bound[where M="\<Omega>\<^sub>1" and 
           \<delta>="real_of_rat (\<delta> * f2_value xs)" and \<mu>="real_of_rat (f2_value xs)" and
           \<epsilon>="real_of_rat \<epsilon>" and n ="s\<^sub>2" and X="(\<lambda>i \<omega>. f2 \<omega> i)"]
-    assms(1) prob_space_1 median_bound_2 median_bound_3 median_bound_4 \<Omega>\<^sub>1_def[symmetric]
+    assms(1) prob_space_1 median_bound_2 median_bound_3 median_bound_4 \<Omega>\<^sub>1_def[symmetric] poly_rep_space_def[symmetric]
     by (simp add:measure_inters g_def)
 qed
+
+
+lemma f2_alg_space:
+  assumes "\<epsilon> < 1 \<and> \<epsilon> > 0"
+  assumes "\<delta> > 0"
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
+  defines "state \<equiv> foldr (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
+  shows "AE \<omega> in state. length (encode state) \<le> 12"
+  sorry
 
 end
