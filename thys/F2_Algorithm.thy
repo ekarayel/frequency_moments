@@ -2,8 +2,8 @@ section \<open>Frequency Moment 2\<close>
 
 theory F2_Algorithm
   imports Main "HOL-Probability.Giry_Monad" "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
-    Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext
-    "HOL-Library.Rewrite"
+    Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext "HOL-Library.Extended_Nat"
+    "HOL-Library.Rewrite" "Encoding"
 begin
 
 definition f2_value where
@@ -18,6 +18,51 @@ fun eval_hash_function where
   )"
 
 type_synonym f2_space = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
+
+fun zfact\<^sub>S where "zfact\<^sub>S p x = (
+    if x \<in> zfact_embed p ` {0..<p} then
+      N\<^sub>S (the_inv_into {0..<p} (zfact_embed p) x)
+    else
+     None
+  )"
+
+lemma zfact_encoding : 
+  "is_encoding (zfact\<^sub>S p)"
+proof -
+  define d where "d = (\<lambda>x. let (r1,r2) = decode N\<^sub>S x in (zfact_embed p r1, r2))"
+  have a: "dom N\<^sub>S = UNIV"
+    by (simp add:dom_def)
+
+  have b:" dom (zfact\<^sub>S p) = zfact_embed p ` {0..< p}" 
+    by (simp add:dom_def)
+
+  have c:"dom (zfact\<^sub>S 0) = {}"
+    by (simp add:dom_def)
+
+  show ?thesis
+    apply (rule encoding_by_witness [where g="d"])
+    apply (cases "p > 0")
+    using f_the_inv_into_f[OF zfact_embed_inj] b decode_elim_2[OF nat_encoding]
+     apply (simp add:d_def a del:N\<^sub>S.simps)
+    by (simp add:c)
+qed
+
+definition encode_state where
+  "encode_state = 
+    N\<^sub>S \<times>\<^sub>S 
+    N\<^sub>S \<times>\<^sub>S 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
+    ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) \<rightarrow>\<^sub>S list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
+    ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) \<rightarrow>\<^sub>S I\<^sub>S))"
+
+lemma "is_encoding encode_state"
+  apply (simp add:encode_state_def)
+  apply (rule prod_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis fun_encoding prod_encoding nat_encoding list_encoding zfact_encoding)
+  by (metis fun_encoding prod_encoding nat_encoding int_encoding)
+
 
 fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
   "f2_init \<delta> \<epsilon> n =
@@ -228,12 +273,12 @@ proof -
   define f where "f = (\<lambda>\<omega>. indicator A \<omega> * (real p-1)^m)"
   define g where "g = (\<lambda>\<omega>. indicator B \<omega> * (-real p-1)^m)"
 
-  have g:"p > 1" using assms(1) prime_gt_1_nat by auto
+  have g:"p > 0" using assms(1) prime_gt_0_nat by auto
 
   have a1:"finite (carrier (ZFact p))"  using zfact_finite g by auto
   have a2:"ring (ZFact p)"  using ZFact_is_cring cring_def by blast
-  have "zfact_embed p k \<in> carrier (ZFact p)" using zfact_embed_ran assms g 
-    by (metis image_eqI mem_Collect_eq)
+  have g1:"zfact_embed p k \<in> carrier (ZFact p)" using zfact_embed_ran[OF g] assms
+    by auto
   hence g4:"\<And>\<omega>. \<omega> \<in> bounded_degree_polynomials (ZFact p) 4 \<Longrightarrow> ring.eval (ZFact (int p)) \<omega> (zfact_embed p k) \<in> carrier (ZFact p)"
     using a2 ring.polynomial_in_carrier[where K="carrier (ZFact p)" and R="ZFact p"] 
     by (simp add: bounded_degree_polynomials_def ring.carrier_is_subring ring.eval_in_carrier univ_poly_carrier)
@@ -251,7 +296,7 @@ proof -
   proof -
     fix x
     assume "x \<in> carrier (ZFact p)"
-    hence a:"x \<in> zfact_embed p ` {k. k < p}" 
+    hence a:"x \<in> zfact_embed p ` {0..<p}" 
       using zfact_embed_ran g by presburger
     moreover have "?lhs \<inter> ?rhs = {}"
     proof (rule Int_emptyI)
@@ -262,14 +307,14 @@ proof -
       assume "x \<in> zfact_embed p ` {k. p \<le> 2*k \<and> k < p}"
       then obtain k2 where x_def_2: "x = zfact_embed p k2" and k2_bound: "p \<le> 2*k2 \<and> k2 < p"
         by blast
-      have "k1 \<in> {k. k < p}" using k1_bound by auto
-      moreover have "k2 \<in> {k. k < p}" using k2_bound by auto
+      have "k1 \<in> {0..<p}" using k1_bound by auto
+      moreover have "k2 \<in> {0..<p}" using k2_bound by auto
       ultimately have "k1 = k2" using g zfact_embed_inj x_def_1 x_def_2 inj_onD
         by metis
       thus "False" using k1_bound k2_bound 
         using not_less by blast
     qed
-    moreover have "?lhs \<union> ?rhs = zfact_embed p ` {k. k < p}"
+    moreover have "?lhs \<union> ?rhs = zfact_embed p ` {0..<p}"
       apply (simp add: image_Un[symmetric])
       apply (rule arg_cong2 [where f="(\<lambda>x y. x ` y)"], simp)
       by (rule order_antisym, rule subsetI, simp, linarith, rule subsetI, simp, meson not_le)
@@ -304,11 +349,14 @@ proof -
     apply (subst poly_card_set)
     using zfact_prime_is_field assms apply force
     using zfact_finite g apply simp
-    using g assms zfact_embed_ran apply blast
+    using  g1 apply blast
       apply simp
     apply (rule image_subsetI, simp) using zfact_embed_ran g 
      apply (simp add: ZFact_defs(1) ZFact_defs(2) int.a_rcosetsI zfact_embed_def)
-    apply (subst card_image) using g zfact_embed_inj inj_on_subset[where B="{k. 2 * k < p}"] apply force
+    apply (subst card_image)
+    apply (rule inj_on_subset[where B="{k. 2 * k < p}" and A="{0..<p}"])
+    using g zfact_embed_inj apply blast
+    apply (rule subsetI, simp)
     using g apply (simp add: card_B zfact_card nonzero_divide_eq_eq nonzero_eq_divide_eq)
     by (simp add: power3_eq_cube power4_eq_xxxx)
   ultimately have r1:"has_bochner_integral (poly_hash_family (ZFact p) 4) f (real (p+1)/ real(2*p) * (real p-1)^m)"
@@ -326,11 +374,14 @@ proof -
     apply (subst poly_card_set)
     using zfact_prime_is_field assms apply force
     using zfact_finite g apply simp
-    using g assms zfact_embed_ran apply blast
+    using g1 apply blast
       apply simp
     apply (rule image_subsetI, simp) using zfact_embed_ran g 
      apply (simp add: ZFact_defs(1) ZFact_defs(2) int.a_rcosetsI zfact_embed_def)
-    apply (subst card_image) using g zfact_embed_inj inj_on_subset[where B="{k. p \<le> 2 * k \<and> k < p}"] apply force
+    apply (subst card_image)
+     apply (rule inj_on_subset[where B="{k. p \<le> 2 * k \<and> k < p}" and A="{0..<p}"])
+      apply (metis zfact_embed_inj[OF g])
+    apply (rule subsetI, simp)
     using g apply (simp add:card_A zfact_card nonzero_divide_eq_eq nonzero_eq_divide_eq)
     by (simp add: power3_eq_cube power4_eq_xxxx)
   ultimately have r2:"has_bochner_integral (poly_hash_family (ZFact p) 4) g ((real p-1)/ real(2*p) * (-real p-1)^m)"
@@ -429,7 +480,7 @@ lemma eval_4_indep:
     (poly_hash_family (ZFact p) 4) 4 (\<lambda>_. borel)
     (\<lambda>k \<omega>. eval_hash_function p \<omega> k/ sqrt (real p^2-1)) {0..<p}"
 proof -
-  have a1:"p > 1" using assms(2) by auto
+  have a1:"p > 0" using assms(2) by auto
   have a:"prob_space (poly_hash_family (ZFact p) 4)" 
     apply (rule prob_space_poly_family)
     using assms zfact_prime_is_field apply simp
@@ -442,7 +493,7 @@ proof -
     by (simp add:prob_space.k_wise_indep_vars_def)
 
   have c1:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> zfact_embed p ` J \<subseteq> carrier (ZFact (int p))"
-    using zfact_embed_ran a1 by fastforce
+    using zfact_embed_ran[OF a1] by fastforce
   have c2:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow> card (zfact_embed p ` J) \<le> 4"
     by (meson card_image_le le_trans)
   have c3:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> finite J \<Longrightarrow> finite (zfact_embed p ` J)"
@@ -453,7 +504,7 @@ proof -
     J"
     apply (subst prob_space.indep_vars_reindex [where f="zfact_embed p" and X'="hash_function (ZFact (int p))"])
        apply (simp add:a)
-      apply (metis zfact_embed_inj a1 inj_on_subset atLeastLessThan_iff mem_Collect_eq subset_eq)
+      apply (metis zfact_embed_inj a1 inj_on_subset)
      using a2 c1 c2 c3 apply presburger
     by simp
   have b:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow>
@@ -488,7 +539,7 @@ lemma fin_poly:
    apply (rule zfact_prime_is_field)
    apply (simp add:assms)
   apply (rule zfact_finite)
-  using assms  prime_gt_1_nat by blast
+  using assms  prime_gt_0_nat by blast
 
 lemma 
   assumes "prime p"
@@ -657,9 +708,6 @@ lemma map_sort:
    apply simp
   by (rule sorted_mono_map, simp, simp add:assms)
 
-lemma "map (\<lambda>i. f (g i)) xs  = map f (map g xs)"
-  by simp
-
 lemma median_rat: 
   assumes "n > 0"
   shows "real_of_rat (median f n) = median (\<lambda>i \<in> {0..<n}. real_of_rat (f i)) n"
@@ -676,6 +724,35 @@ proof -
      apply (rule arg_cong2[where f="(!)"])
     by (rule arg_cong[where f="sort"], simp, simp)
 qed
+
+lemma f2_alg_sketch:
+  fixes n :: nat
+  fixes xs :: "nat list"
+  assumes "\<epsilon> < 1 \<and> \<epsilon> > 0"
+  assumes "\<delta> > 0"
+  defines "s\<^sub>1 \<equiv> nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
+  defines "s\<^sub>2 \<equiv> nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
+  defines "p \<equiv> find_odd_prime_above n"
+  defines "sketch \<equiv> foldr (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
+  defines "\<Omega> \<equiv> pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4)" 
+  shows "sketch = \<Omega> \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, 
+      \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. sum_list (map (eval_hash_function p (h i)) xs)))"
+proof (subst sketch_def, induction xs)
+  case Nil
+  then show ?case 
+    by (simp add:s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] \<Omega>_def restrict_def) 
+next
+  case (Cons a xs)
+  have a:"f2_update a = (\<lambda>x. f2_update a (fst x, fst (snd x), fst (snd (snd x)), fst (snd (snd (snd x))), 
+      snd (snd (snd (snd x)))))" by simp
+  show ?case
+    using Cons apply (simp del:eval_hash_function.simps f2_init.simps)
+    apply (subst a)
+    apply (subst bind_assoc_pmf)
+    apply (subst bind_return_pmf)
+    by (simp add:restrict_def del:eval_hash_function.simps f2_init.simps cong:restrict_cong)
+qed
+
 
 lemma f2_alg_correct:
   assumes "\<epsilon> < 1 \<and> \<epsilon> > 0"
@@ -733,39 +810,6 @@ proof -
 
   have f2_result_conv: "f2_result = (\<lambda>x. f2_result (s\<^sub>1_from x, s\<^sub>2_from x, p_from x, h_from x, sketch_from x))"
     by (simp add:split_f2_space[symmetric] del:f2_result.simps)
-  have sketch_eq:
-    "sketch = f2_init \<delta> \<epsilon> n \<bind> (\<lambda>state. 
-       return_pmf (s\<^sub>1, s\<^sub>2, p, h_from state, \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
-       sum_list (map (eval_hash_function p (h_from state i)) xs)))"
-  proof (subst sketch_def, induction xs)
-    case Nil
-    then show ?case apply (simp add:s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
-      apply (subst bind_assoc_pmf)
-      apply (rule bind_pmf_cong, simp)
-      apply (subst bind_return_pmf)
-      by (simp add:restrict_def h_from_def)
-  next
-    case (Cons a xs)
-    have a:"f2_update a = (\<lambda>state. 
-      return_pmf (
-        s\<^sub>1_from state,
-        s\<^sub>2_from state, 
-        p_from state, 
-        h_from state, 
-        \<lambda>i \<in> {0..<s\<^sub>1_from state} \<times> {0..<s\<^sub>2_from state}. 
-          eval_hash_function (p_from state) (h_from state i) a + sketch_from state i
-      ))"
-      apply (rule ext)
-      by (subst split_f2_space, simp del:eval_hash_function.simps) 
-    show ?case using Cons 
-      apply (simp add:s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:eval_hash_function.simps f2_init.simps)
-      apply (subst bind_assoc_pmf)
-      apply (rule bind_pmf_cong, simp, simp add:a del:eval_hash_function.simps)
-      apply (subst bind_return_pmf)
-      apply (simp add:restrict_def s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def sketch_from_def del:eval_hash_function.simps)
-      apply (rule ext)
-      by ( simp add:restrict_def h_from_def del:eval_hash_function.simps)
-  qed
 
   define f where "f = (\<lambda>x. median
            (\<lambda>i\<in>{0..<s\<^sub>2}.
@@ -864,12 +908,11 @@ proof -
     by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
 
   have "sketch \<bind> f2_result = map_pmf f (pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4))"
-    apply (simp add:sketch_eq s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:eval_hash_function.simps)
+      using f2_alg_sketch[OF assms(1) assms(2), where xs="xs" and n="n"]
+    apply (simp add:sketch_def Let_def s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
       apply (subst bind_assoc_pmf)
     apply (subst bind_return_pmf)
     apply (subst f2_result_conv, simp)
-      apply (subst bind_assoc_pmf)
-    apply (subst bind_return_pmf)
     apply (simp add:s\<^sub>2_from_def s\<^sub>1_from_def p_from_def h_from_def sketch_from_def cong:restrict_cong)
     by (simp add:map_pmf_def[symmetric] f_def)
   hence distr: "measure_pmf (sketch \<bind> f2_result) = distr (measure_pmf \<Omega>\<^sub>0) (count_space UNIV) f"
@@ -942,6 +985,134 @@ proof -
           \<epsilon>="real_of_rat \<epsilon>" and n ="s\<^sub>2" and X="(\<lambda>i \<omega>. f2 \<omega> i)"]
     assms(1) prob_space_1 median_bound_2 median_bound_3 median_bound_4 \<Omega>\<^sub>1_def[symmetric]
     by (simp add:measure_inters g_def)
+qed
+
+lemma f2_space:
+  assumes "\<epsilon> < 1 \<and> \<epsilon> > 0"
+  assumes "\<delta> > 0"
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
+  defines "sketch \<equiv> foldr (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
+  shows "AE \<omega> in sketch. encoding_length (encode_state \<omega>) < 3"
+proof -
+  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
+  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
+  define p where "p = find_odd_prime_above n"
+  define s\<^sub>1_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>1_from = fst"
+  define s\<^sub>2_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
+  define p_from :: "f2_space \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
+  define h_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
+  define sketch_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
+
+  define R where "R = {(n::int). abs n \<le> length xs * (int p+1)}"
+  define M where "M = {\<omega>. s\<^sub>1_from \<omega> = s\<^sub>1 \<and> s\<^sub>2_from \<omega> = s\<^sub>2 \<and> p_from \<omega> = p \<and>
+    h_from \<omega> \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact p) 4 \<and>
+    sketch_from \<omega> \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E R}"
+
+  have b3: "abs (int p - 1) \<le> int p + 1"  
+    using p_def find_prime_above_min by linarith
+  have b2:"\<And>y. y \<in> bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
+    sum_list (map (eval_hash_function p y) xs) \<in> R"
+  proof -
+    fix y
+    assume "y \<in> bounded_degree_polynomials (ZFact (int p)) 4"
+    have "abs (sum_list (map (eval_hash_function p y) xs)) \<le> sum_list (map (abs \<circ> eval_hash_function p y) xs)"
+      by (subst map_map[symmetric], rule sum_list_abs)
+    also have "... \<le> sum_list (map (\<lambda>_. int p + 1) xs)"
+      apply (rule sum_list_mono)
+      by (simp add:comp_def b3)
+    finally have "abs (sum_list (map (eval_hash_function p y) xs)) \<le> length xs * (int p +1)"
+      by (simp add:sum_list_triv)
+    thus "sum_list (map (eval_hash_function p y) xs) \<in> R" by (simp add:R_def)
+  qed
+  have b1:"\<And>y. y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
+         (\<lambda>i. sum_list (map (eval_hash_function p (y i)) xs)) \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow> R"
+    using b2 by blast
+  have b:"{y. y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<longrightarrow>
+         (\<lambda>i. sum_list (map (eval_hash_function p (y i)) xs)) \<notin> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow> R} = UNIV - {
+    y. y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4}"
+    apply (rule order_antisym)
+    by (rule subsetI, simp add: b1 cong:imp_cong)+
+
+
+  define b1 where "b1 = (3::enat)"
+  define b2 where "b2 = (3::enat)"
+  define b3 where "b3 = (3::enat)"
+  define b4 where "b4 = (3::enat)"
+  define b5 where "b5 = (3::enat)"
+  define b6 where "b6 = b1 + b2"
+  define b7 where "b7 = 4*(eSuc b3)+1"
+  define b8 where "b8 = (3::enat)"
+
+  have c1: "encoding_length (N\<^sub>S s\<^sub>1) \<le> b1" sorry
+  have c2: "encoding_length (N\<^sub>S s\<^sub>2) \<le> b2" sorry
+  have c3: "encoding_length (N\<^sub>S p) \<le> b3" sorry
+
+  have "\<And>y. y \<in> carrier (ZFact (int p))  \<Longrightarrow> encoding_length (zfact\<^sub>S p y) + 1 \<le> eSuc b3" sorry
+  hence "\<And>x y. x \<in> bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow> y \<in> set x  \<Longrightarrow> encoding_length (zfact\<^sub>S p y) + 1 \<le> eSuc b3" 
+    apply (simp add:bounded_degree_polynomials_def del:zfact\<^sub>S.simps)
+    using univ_poly_carrier 
+    by (metis length_greater_0_conv length_pos_if_in_set polynomial_def subsetD)
+  hence "\<And>x. x \<in>  bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow> 
+    encoding_length (list\<^sub>S (zfact\<^sub>S p) x) \<le> length x*(eSuc b3)+1"
+    using  sum_list_mono[where g="\<lambda>_. eSuc b3" and f ="\<lambda>y. encoding_length (zfact\<^sub>S p y) + 1"] 
+    by (simp add:list_encoding_length of_nat_eq_enat sum_list_triv b7_def del:zfact\<^sub>S.simps)
+  moreover have "\<And>x. x \<in>  bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow> enat (length x) \<le> 4"
+    apply (simp add:bounded_degree_polynomials_def) 
+    by (metis Suc_pred bot_nat_0.extremum bot_nat_0.not_eq_extremum enat_ord_simps(1) length_0_conv 
+        less_Suc_eq_le linorder_not_le of_nat_eq_enat of_nat_numeral)
+  ultimately have c4_ran: "\<And>x. x \<in>  bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow> 
+    encoding_length (list\<^sub>S (zfact\<^sub>S p) x) \<le> b7" apply (simp add:b7_def)
+    using add_right_mono[where c="1::enat"] mult_right_mono[OF _ i0_lb, where c="eSuc b3"] order_trans 
+    by (smt (verit, del_insts))
+   
+  have c4_dom: "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<Longrightarrow> encoding_length ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) x) \<le> b6" sorry
+  have "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
+    encoding_length (((N\<^sub>S \<times>\<^sub>S N\<^sub>S) \<rightarrow>\<^sub>S list\<^sub>S (zfact\<^sub>S p)) x) \<le> enat (card ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})) * (b6+b7+1) + 1"
+    apply (rule fun_encoding_length_est[OF _ _ _ c4_dom c4_ran, where B="bounded_degree_polynomials (ZFact (int p)) 4"])
+    apply (metis prod_encoding nat_encoding)
+        apply (metis list_encoding zfact_encoding)
+    by simp+
+  also have "enat (card ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})) * (b6+b7+1) + 1 \<le> b4" sorry
+  finally have c4: "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
+    encoding_length (((N\<^sub>S \<times>\<^sub>S N\<^sub>S) \<rightarrow>\<^sub>S list\<^sub>S (zfact\<^sub>S p)) x) \<le> b4"
+    by blast
+  
+  have c5_ran: "\<And>x. x \<in> R \<Longrightarrow> encoding_length (I\<^sub>S x) \<le> b8"
+    using R_def int_encoding_length sorry
+    
+  have "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E R \<Longrightarrow>
+    encoding_length (((N\<^sub>S \<times>\<^sub>S N\<^sub>S) \<rightarrow>\<^sub>S I\<^sub>S) x) \<le> enat (card ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})) * (b6+b8+1) + 1" 
+    apply (rule fun_encoding_length_est[OF _ _ _ c4_dom c5_ran, where B="R"])
+    sorry
+  also have "enat (card ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})) * (b6+b8+1) + 1 \<le> b5"
+    sorry
+  finally have c5:"\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E R \<Longrightarrow> encoding_length (((N\<^sub>S \<times>\<^sub>S N\<^sub>S) \<rightarrow>\<^sub>S I\<^sub>S) x) \<le> b5"
+    by blast
+  have c:"\<And>x. x \<in> M \<Longrightarrow> encoding_length (encode_state x) \<le> b1 + (b2 + (b3 + (b4 + b5)))"
+    apply (simp add:M_def)
+    apply (simp add: encode_state_def   del:N\<^sub>S.simps encode_fun.simps encode_prod.simps encode_dependent_sum.simps)
+    apply (simp add: prod_encoding_length dependent_encoding_length  s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def
+        sketch_from_def
+       del:N\<^sub>S.simps encode_fun.simps encode_prod.simps encode_dependent_sum.simps)
+    apply (rule add_mono, metis c1)
+    apply (rule add_mono, metis c2)
+    apply (rule add_mono, metis c3)
+    by (rule add_mono, metis c4, metis c5)
+  show ?thesis
+    apply (rule AE_I [where N="{x. x \<notin> M}"])
+      apply (rule subsetI, simp) defer
+      using f2_alg_sketch[OF assms(1) assms(2), where n="n" and xs="xs"]
+      apply (simp only:sketch_def Let_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
+      apply (subst map_pmf_def[symmetric])
+      apply (subst map_pmf_rep_eq)
+      apply (subst emeasure_distr, simp, simp)
+      apply (simp add:M_def indicator_def p_from_def s\<^sub>2_from_def h_from_def s\<^sub>1_from_def sketch_from_def b)
+      apply (subst emeasure_pmf_of_set)
+        apply (simp add:PiE_eq_empty_iff, metis ex_poly)
+       apply (rule finite_PiE, simp, rule fin_poly, simp add:p_def find_prime_above_is_prime)
+      apply simp
+     apply simp
+    using c by blast
 qed
 
 end

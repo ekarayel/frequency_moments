@@ -21,19 +21,19 @@ definition zfact_embed :: "nat \<Rightarrow> nat \<Rightarrow> int set" where
   "zfact_embed p k = Idl\<^bsub>\<Z>\<^esub> {int p} +>\<^bsub>\<Z>\<^esub> (int k)"
 
 lemma zfact_embed_ran:
-  assumes "p > 1"
-  shows "zfact_embed p ` {m. m < p} = carrier (ZFact p)"
+  assumes "p > 0"
+  shows "zfact_embed p ` {0..<p} = carrier (ZFact p)"
 proof -
-  have "zfact_embed p ` {m. m < p} \<subseteq> carrier (ZFact p)"
+  have "zfact_embed p ` {0..<p} \<subseteq> carrier (ZFact p)"
   proof (rule subsetI)
     fix x
-    assume "x \<in> zfact_embed p ` {m. m < p}"
+    assume "x \<in> zfact_embed p ` {0..<p}"
     then obtain m where m_def: "zfact_embed p m = x" by blast
     have "zfact_embed p m \<in> carrier (ZFact p)" 
       by (simp add: ZFact_def ZFact_defs(2) int.a_rcosetsI zfact_embed_def)
     thus "x \<in> carrier (ZFact p)" using m_def by auto
   qed
-  moreover have "carrier (ZFact p) \<subseteq> zfact_embed p ` {m. m < p}"
+  moreover have "carrier (ZFact p) \<subseteq> zfact_embed p ` {0..<p}"
   proof (rule subsetI)
     define I where "I = Idl\<^bsub>\<Z>\<^esub> {int p}"
     fix x
@@ -57,19 +57,19 @@ proof -
     obtain w::nat  where y_4: "int w = y \<oplus>\<^bsub>\<Z>\<^esub> y'" 
       using y_2 nonneg_int_cases by metis
     have "x = I +>\<^bsub>\<Z>\<^esub> (int w)" and "w < p" using y_2 a3 y_0 y_4 by presburger+  
-    thus "x \<in> zfact_embed p ` {m. m < p}" by (simp add:zfact_embed_def I_def)
+    thus "x \<in> zfact_embed p ` {0..<p}" by (simp add:zfact_embed_def I_def)
   qed
   ultimately show ?thesis using order_antisym by auto
 qed
 
 lemma zfact_embed_inj:
-  assumes "p > 1"
-  shows "inj_on (zfact_embed p) {m. m < p}"
+  assumes "p > 0"
+  shows "inj_on (zfact_embed p) {0..<p}"
 proof
   fix x
   fix y
-  assume a1: "x \<in> {m. m < p}"
-  assume a2: "y \<in> {m. m < p}"
+  assume a1: "x \<in> {0..<p}"
+  assume a2: "y \<in> {0..<p}"
   assume "zfact_embed p x = zfact_embed p y"
   hence "Idl\<^bsub>\<Z>\<^esub> {int p} +>\<^bsub>\<Z>\<^esub> int x = Idl\<^bsub>\<Z>\<^esub> {int p} +>\<^bsub>\<Z>\<^esub> int y"
     by (simp add:zfact_embed_def)
@@ -78,28 +78,28 @@ proof
     by (metis UNIV_I int.cgenideal_eq_genideal int.cgenideal_ideal int.ring_axioms int_carrier_eq)
   hence "p dvd (int x - int y)" apply (simp add:int_Idl) 
     using int_a_minus_eq by force
-  thus "x = y" using a1 a2 
-    by (metis diffs0_imp_equal dvd_0_right dvd_diff_commute gr_implies_not_zero 
-        int_ops(6) less_imp_diff_less mem_Collect_eq nat_dvd_not_less 
-        nat_neq_iff of_nat_dvd_iff) 
+  thus "x = y" using a1 a2
+    apply (simp) 
+    by (metis (full_types) cancel_comm_monoid_add_class.diff_cancel diff_less_mono2 dvd_0_right dvd_diff_commute less_imp_diff_less less_imp_of_nat_less linorder_neqE_nat of_nat_0_less_iff zdiff_int_split zdvd_not_zless)
 qed
 
 lemma zfact_embed_bij:
-  assumes "p > 1"
-  shows "bij_betw (zfact_embed p) {m. m < p} (carrier (ZFact p))"
+  assumes "p > 0"
+  shows "bij_betw (zfact_embed p) {0..<p} (carrier (ZFact p))"
   apply (rule bij_betw_imageI)
   using zfact_embed_inj zfact_embed_ran assms by auto 
 
 lemma zfact_card:
-  assumes "(p :: nat) > 1"
+  assumes "(p :: nat) > 0"
   shows "card (carrier (ZFact (int p))) = p"
-  by (metis assms card_Collect_less_nat card_image zfact_embed_inj zfact_embed_ran)
+  apply (subst zfact_embed_ran[OF assms, symmetric])
+  by (metis card_atLeastLessThan card_image diff_zero zfact_embed_inj[OF assms])
 
 lemma zfact_finite:
-  assumes "(p :: nat) > 1"
+  assumes "(p :: nat) > 0"
   shows "finite (carrier (ZFact (int p)))"
   using zfact_card 
-  by (metis One_nat_def Suc_lessD assms card_ge_0_finite)
+  by (metis assms card_ge_0_finite)
 
 lemma finite_domains_are_fields:
   assumes "domain R"
@@ -146,7 +146,7 @@ lemma zfact_prime_is_field:
   shows "field (ZFact (int p))"
 proof -
   define q where "q = int p"
-  have "finite (carrier (ZFact q))" using zfact_finite assms q_def prime_gt_1_nat by blast
+  have "finite (carrier (ZFact q))" using zfact_finite assms q_def prime_gt_0_nat by blast
   moreover have "domain (ZFact q)" using ZFact_prime_is_domain assms q_def by auto
   ultimately show ?thesis using finite_domains_are_fields q_def by blast
 qed
