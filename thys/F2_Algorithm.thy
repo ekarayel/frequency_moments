@@ -55,37 +55,22 @@ lemma encode_prod_fun:
   apply (rule inj_onI, simp)
   using extensionalityI by fastforce
 
-definition encode_state_2 where
-  "encode_state_2 = 
+definition encode_state where
+  "encode_state = 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
     encode_prod_fun s\<^sub>1 s\<^sub>2 (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
     encode_prod_fun s\<^sub>1 s\<^sub>2 I\<^sub>S)))"
 
-lemma "is_encoding encode_state_2"
-  apply (simp add:encode_state_2_def)
+lemma "is_encoding encode_state"
+  apply (simp add:encode_state_def)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule prod_encoding, metis encode_prod_fun list_encoding zfact_encoding)
   by (metis encode_prod_fun int_encoding)
 
-definition encode_state where
-  "encode_state = 
-    N\<^sub>S \<times>\<^sub>S 
-    N\<^sub>S \<times>\<^sub>S 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
-    ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) \<rightarrow>\<^sub>S list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
-    ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) \<rightarrow>\<^sub>S I\<^sub>S))"
-
-lemma "is_encoding encode_state"
-  apply (simp add:encode_state_def)
-  apply (rule prod_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis fun_encoding prod_encoding nat_encoding list_encoding zfact_encoding)
-  by (metis fun_encoding prod_encoding nat_encoding int_encoding)
 
 
 fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
@@ -1042,7 +1027,7 @@ lemma f2_space:
   assumes "\<delta> > 0 \<and> \<delta> < 1"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> foldr (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
-  shows "AE \<omega> in sketch. bit_count (encode_state_2 \<omega>) \<le> 3128 *
+  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> 3128 *
     (1 - ln (real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2 * (ln (real n+1) + ln (real (length xs) + 1) + 1)"
     (is "AE \<omega> in sketch. _ \<le> ?rhs")
 proof -
@@ -1143,7 +1128,7 @@ proof -
     by blast
 
   have "\<And>(x::nat). ereal (2 * log 2 (real (x+ 1)) + 1) \<le> ereal (2 * real x + 1)"
-    using log_est 
+    using log_est
     by (simp add: add.commute)
   hence "\<And>(x::nat). bit_count (N\<^sub>S x) \<le> 2 * real x + 1"
     using nat_bit_count order_trans by blast
@@ -1252,18 +1237,17 @@ proof -
   define b_total where "b_total = ereal ((s\<^sub>1 * s\<^sub>2) * (18*log_n + 3*log_m + 42) + 4)"
 
 
-  have c_aux:"\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state_2 x) \<le> b1 + (b2 + (b3 + (b4 + b5)))"
+  have c_aux:"\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state x) \<le> b1 + (b2 + (b3 + (b4 + b5)))"
     apply (simp add:M_def)
-    apply (simp add: encode_state_2_def   del:N\<^sub>S.simps encode_fun.simps encode_prod.simps encode_dependent_sum.simps)
+    apply (simp add: encode_state_def del:N\<^sub>S.simps encode_dependent_sum.simps)
     apply (simp add: dependent_bit_count prod_bit_count  s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def
         sketch_from_def
-       del:N\<^sub>S.simps encode_fun.simps encode_prod.simps encode_dependent_sum.simps encode_prod_fun.simps)
+       del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps encode_prod_fun.simps)
     apply (rule add_mono, metis c1)
     apply (rule add_mono, metis c2)
     apply (rule add_mono, metis c3)
     apply (rule add_mono, metis c4)
     by (metis c5)
-
 
   have "b_total \<le> ereal ((s\<^sub>1 * s\<^sub>2) * (18*log_n + 3*log_m + 46))"
     apply (simp add:algebra_simps b_total_def) using s1_nonzero s2_nonzero 
@@ -1276,9 +1260,9 @@ proof -
     by (simp add:algebra_simps)
   finally have "b_total \<le> ?rhs"
     by (simp add: log_n_def log_m_def add.commute)
-  moreover have "\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state_2 x) \<le> b_total" using c_aux
+  moreover have "\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state x) \<le> b_total" using c_aux
     by (simp add:b1_def b2_def b3_def b4_def b5_def b_total_def algebra_simps)
-  ultimately have c:"\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state_2 x) \<le> ?rhs"
+  ultimately have c:"\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state x) \<le> ?rhs"
     using order_trans by blast
 
   have delta_gr_0: "\<delta> >0 " using assms by auto
