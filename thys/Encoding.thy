@@ -102,6 +102,10 @@ proof -
   thus ?thesis by (simp add:is_encoding_def)
 qed
 
+fun bit_count where
+  "bit_count None = \<infinity>" |
+  "bit_count (Some x) = ereal (length x)"
+
 fun encoding_length where 
   "encoding_length None = \<infinity>" |
   "encoding_length (Some x) = enat (length x)"
@@ -118,6 +122,8 @@ fun append_encoding :: "bool list option \<Rightarrow> bool list option \<Righta
     "append_encoding (Some x) (Some y) = Some (x@y)" |
     "append_encoding _ _ = None"
 
+lemma bit_count_append: "bit_count (x1@\<^sub>Sx2) = bit_count x1 + bit_count x2"
+  by (cases x1, simp, cases x2, simp, simp)
 
 lemma encoding_length_sum: "encoding_length (x1@\<^sub>Sx2) = encoding_length x1 + encoding_length x2"
   by (cases x1, simp, cases x2, simp, simp)
@@ -149,6 +155,45 @@ lemma list_encoding_dom:
 lemma list_encoding_length:
   "encoding_length (list\<^sub>S f xs) = sum_list (map (\<lambda>x. encoding_length (f x) + 1) xs) + 1"
   by (induction xs, simp add:one_enat_def, simp add:encoding_length_sum one_enat_def)
+
+lemma list_bit_count:
+  "bit_count (list\<^sub>S f xs) = sum_list (map (\<lambda>x. bit_count (f x) + 1) xs) + 1"
+  apply (induction xs, simp, simp add:bit_count_append) 
+  by (metis add.commute add.left_commute one_ereal_def)
+
+lemma list_encoding_length_est:
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> encoding_length (f x) \<le> a"
+  shows "encoding_length (list\<^sub>S f xs) \<le> enat (length xs) * (a+1) + 1"
+  using assms sum_list_mono[where g="\<lambda>_. a+1" and f="\<lambda>x. encoding_length (f x)+1" and xs="xs"]
+  by (simp add:sum_list_triv of_nat_eq_enat list_encoding_length)
+
+lemma list_bit_count_est:
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> bit_count (f x) \<le> a"
+  shows "bit_count (list\<^sub>S f xs) \<le> ereal (length xs) * (a+1) + 1"
+proof -
+  have a:"sum_list (map (\<lambda>_. (a+1)) xs) = length xs * (a+1)"
+    apply (induction xs, simp)
+    by (simp, subst plus_ereal.simps(1)[symmetric], subst ereal_left_distrib, simp+)
+
+  have b: "\<And>x. x \<in> set xs \<Longrightarrow> bit_count (f x) +1 \<le> a+1"
+    using assms add_right_mono by blast
+
+  show ?thesis  
+    using assms a  b sum_list_mono[where g="\<lambda>_. a+1" and f="\<lambda>x. bit_count (f x)+1" and xs="xs"]
+    by (simp add:list_bit_count ereal_add_le_add_iff2)
+qed
+
+lemma list_bit_count_estI:
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> bit_count (f x) \<le> a"
+  assumes "ereal (real (length xs)) * (a+1) + 1 \<le> h"
+  shows "bit_count (list\<^sub>S f xs) \<le> h"
+  using list_bit_count_est[OF assms(1)] assms(2) order_trans by fastforce 
+
+lemma list_encoding_lengthI:
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> encoding_length (f x) \<le> a"
+  assumes "enat (length xs) * (a+1) + 1 \<le> h"
+  shows "encoding_length (list\<^sub>S f xs) \<le> h"
+  using list_encoding_length_est[OF assms(1)] assms(2) order_trans by fastforce 
 
 lemma list_encoding_aux:
   assumes "is_encoding f"
@@ -238,6 +283,54 @@ proof -
   show ?thesis using a b assms by linarith
 qed
 
+lemma log2_floor_mono:
+  assumes "n \<le> m"
+  shows "log2_floor n \<le> log2_floor m"
+proof -
+  have "real (log2_floor n) \<le> real (log2_floor m)"
+    apply (cases "n > 0")
+    using assms apply (simp add:real_log2_floor floor_mono)
+    by (simp, subst log2_floor.simps, simp)
+  thus ?thesis
+    using of_nat_le_iff by blast
+qed
+
+lemma log2_floor_mult:
+  "log2_floor (n*m) \<le> log2_floor n + log2_floor m + 1"
+proof -
+  have "n = 0 \<Longrightarrow> ?thesis" by simp
+  moreover have "m = 0 \<Longrightarrow> ?thesis" by simp
+  moreover have "n > 0 \<Longrightarrow> m > 0 \<Longrightarrow> real (log2_floor (n*m)) \<le> real (log2_floor n) + real (log2_floor m) + 1"
+    by (simp add: log_mult real_log2_floor floor_add)
+  hence "n > 0 \<Longrightarrow> m > 0 \<Longrightarrow> ?thesis"
+    by force
+  ultimately show ?thesis by blast
+qed
+
+lemma nat_bit_count:
+  "bit_count (N\<^sub>S n) \<le> 2 * log 2 (n+1) + 1"
+proof (induction n rule:nat_encoding_aux.induct)
+  case 1
+  then show ?case by simp
+next
+  case (2 n)
+  have "log 2 2 + log 2 (1 + real (n div 2)) \<le> log 2 (2 + real n)"
+    apply (subst log_mult[symmetric], simp, simp, simp)
+    by (subst log_le_cancel_iff, simp+)
+  hence "1 + 2 * log 2 (1 + real (n div 2)) + 1 \<le> 2 * log 2 (2 + real n)"
+    by simp
+  thus ?case using 2 by simp 
+qed
+
+lemma nat_bit_count_est:
+  assumes "n \<le> m"
+  shows "bit_count (N\<^sub>S n) \<le> 2 * log 2 (m+1) + 1"
+proof -
+  have "2 * log 2 (n+1) + 1 \<le> 2 * log 2 (m+1) + 1" 
+    using assms by simp
+  thus ?thesis using nat_bit_count assms le_ereal_le by blast
+qed
+
 lemma nat_encoding_length:
   "encoding_length (N\<^sub>S n) = 2*enat (log2_floor (n + 1))+1"
   apply (induction n rule:nat_encoding_aux.induct)
@@ -247,24 +340,28 @@ lemma nat_encoding_length:
   apply (simp add:eSuc_enat[symmetric])
   by (metis distrib_left_numeral iadd_Suc_right mult_2 plus_1_eSuc(2))
 
+lemma nat_encoding_length_est:
+  assumes "n \<le> m"
+  shows "encoding_length (N\<^sub>S n) \<le> 2*enat (log2_floor (m + 1))+1"
+  apply (simp add:nat_encoding_length del:N\<^sub>S.simps)
+  using log2_floor_mono of_nat_mono of_nat_eq_enat 
+  by (simp add: assms mult_left_mono)
+
 section \<open>Integers\<close>
 
 fun I\<^sub>S :: "int \<Rightarrow> bool list option"
   where 
-    "I\<^sub>S n = Some (if n \<ge> 0 then True#the (N\<^sub>S (nat n)) else False#the (N\<^sub>S (nat (-n-1))))" 
+    "I\<^sub>S n = (if n \<ge> 0 then Some [True]@\<^sub>SN\<^sub>S (nat n) else Some [False]@\<^sub>S (N\<^sub>S (nat (-n-1))))" 
 
 fun decode_int :: "bool list \<Rightarrow> (int \<times> bool list)"
   where 
-    "decode_int (True#xs) = (\<lambda>(x::nat,y). (int x, y)) (decode N\<^sub>S xs)" | 
-    "decode_int (False#xs) = (\<lambda>(x::nat,y). (-(int x)-1, y)) (decode N\<^sub>S xs)" |
+    "decode_int (True#xs) = (\<lambda>(x::nat,y). (int x, y)) (decode_nat xs)" | 
+    "decode_int (False#xs) = (\<lambda>(x::nat,y). (-(int x)-1, y)) (decode_nat xs)" |
     "decode_int [] = undefined"
 
 lemma int_encoding: "is_encoding I\<^sub>S"
   apply (rule encoding_by_witness[where g="decode_int"])
-  apply (simp del: N\<^sub>S.simps)
-  apply (subst decode_elim_2[OF nat_encoding], simp add:dom_def)
-  apply (subst decode_elim_2[OF nat_encoding], simp add:dom_def)
-  by (rule conjI, simp+)
+  by (simp add:nat_encoding_aux)
 
 lemma int_encoding_length:
   "encoding_length (I\<^sub>S n) \<le> 2*enat (log2_floor (nat (abs n) + 1))+2"
@@ -290,6 +387,37 @@ proof -
   using nat_encoding_length[where n="nat (-n-1)"]
   apply (simp add:eSuc_enat[symmetric] eSuc_plus_1 a)
   using b d by fastforce
+qed
+
+lemma int_bit_count:
+  "bit_count (I\<^sub>S x) \<le> 2 * log 2 (abs x+1) + 2"
+proof -
+  have a:"\<not>(0 \<le> x) \<Longrightarrow> 1 + 2 * log 2 (- real_of_int x) \<le> 1 + 2 * log 2 (1 - real_of_int x)"
+    by simp
+  show ?thesis
+    apply (cases "x \<ge> 0")
+     using nat_bit_count[where n="nat x"] apply (simp add: bit_count_append add.commute)
+     using nat_bit_count[where n="nat (-x-1)"] apply (simp add: bit_count_append add.commute)
+     using a order_trans by blast
+qed
+
+lemma int_bit_count_est:
+  assumes "abs n \<le> m"
+  shows "bit_count (I\<^sub>S n) \<le> 2 * log 2 (m+1) + 2"
+proof -
+  have "2 * log 2 (abs n+1) + 2 \<le> 2 * log 2 (m+1) + 2" using assms by simp
+  thus ?thesis using assms le_ereal_le int_bit_count by blast
+qed
+
+lemma int_encoding_length_est:
+  assumes "nat (abs n) \<le> m"
+  shows "encoding_length (I\<^sub>S n) \<le> 2*enat (log2_floor (m + 1))+2"
+proof -
+  have "encoding_length (I\<^sub>S n) \<le> 2*enat (log2_floor (nat (abs n) + 1))+2"
+    by (metis int_encoding_length)
+  also have "... \<le> 2*enat (log2_floor (m + 1))+2"
+    by (metis assms add_mono add_right_mono enat_ord_simps(1) log2_floor_mono mult_2)
+  finally show ?thesis by blast
 qed
 
 section \<open>Cartesian Product\<close>
@@ -333,6 +461,11 @@ lemma prod_encoding_length:
   "encoding_length ((e1 \<times>\<^sub>S e2) x) = encoding_length (e1 (fst x)) + encoding_length (e2 (snd x))"
   by (simp add:encoding_length_sum)
 
+lemma prod_bit_count:
+  "bit_count ((e1 \<times>\<^sub>S e2) x) = bit_count (e1 (fst x)) + bit_count (e2 (snd x))"
+  by (simp add:bit_count_append)
+
+
 section \<open>Dependent Product>\<close>
 
 fun encode_dependent_sum :: "'a encoding \<Rightarrow> ('a \<Rightarrow> 'b encoding) \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>D" 65)
@@ -367,6 +500,11 @@ qed
 lemma dependent_encoding_length:
   "encoding_length ((e1 \<times>\<^sub>D e2) x) = encoding_length (e1 (fst x)) + encoding_length (e2 (fst x) (snd x))"
   by (simp add:encoding_length_sum)
+
+lemma dependent_bit_count:
+  "bit_count ((e1 \<times>\<^sub>D e2) x) = bit_count (e1 (fst x)) + bit_count (e2 (fst x) (snd x))"
+  by (simp add:bit_count_append)
+
 
 section \<open>Set\<close>
 
@@ -451,6 +589,14 @@ proof -
   qed
   ultimately show ?thesis by blast
 qed
+
+section \<open>Composition\<close>
+
+lemma encoding_compose:
+  assumes "is_encoding f"
+  assumes "inj_on g A"
+  shows "is_encoding (\<lambda>x. if x \<in> A then f (g x) else None)"
+  using assms by (simp add: inj_onD is_encoding_def)
 
 
 section \<open>Maps\<close>
@@ -556,5 +702,16 @@ proof -
    apply (rule finite_subset[OF _ assms(3)], metis subsetI a1)
   by (metis a)
 
+qed
+
+lemma log_est: "log 2 (real n + 1) \<le> n"
+proof -
+  have "n + 1 \<le> 2 ^ ( n)"
+    by (induction n, simp, simp)
+  hence "real n + 1 \<le> 2 powr (real n)"
+    apply (simp add: powr_realpow)
+    by (metis add.commute numeral_power_eq_of_nat_cancel_iff of_nat_Suc of_nat_mono)
+  thus ?thesis 
+    by (simp add: log_le_iff)
 qed
 end

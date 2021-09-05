@@ -3,7 +3,7 @@ section \<open>Primes\<close>
 text \<open>In this section we introduce a function that retrieves the next larger odd prime.\<close>
 
 theory Primes_Ext
-imports Main "HOL-Computational_Algebra.Primes"
+imports Main "HOL-Computational_Algebra.Primes" "Bertrands_Postulate.Bertrand"
 begin
 
 lemma bigger_odd_prime:
@@ -74,5 +74,43 @@ lemma find_prime_above_lower_bound:
   "find_odd_prime_above n \<ge> n"
   apply (induction n rule:find_odd_prime_above.induct)
   by (metis find_odd_prime_above.simps linorder_le_cases not_less_eq_eq)
+
+lemma find_odd_prime_above_upper_bound:
+  assumes "odd m"
+  assumes "prime m"
+  shows "n \<le> m \<Longrightarrow> find_odd_prime_above n \<le> m"
+proof (induction n rule:find_odd_prime_above.induct)
+  case (1 n)
+  have a:"\<not>(prime n \<and> odd n) \<Longrightarrow> Suc n \<le> m"
+    using assms  "1.prems" not_less_eq_eq by fastforce
+  show ?case using 1 
+    apply (cases "prime n \<and> odd n")
+     apply (subst find_odd_prime_above.simps)
+    using assms(1)  apply simp
+    by (metis a find_odd_prime_above.simps)
+qed
+
+lemma find_prime_above_upper_bound:
+  "find_odd_prime_above n \<le> 2*n+3"
+proof (cases "n \<le> 1")
+  case True
+  have "find_odd_prime_above n \<le> 3"
+    apply (rule find_odd_prime_above_upper_bound, simp, simp) using True by linarith 
+  then show ?thesis using trans_le_add2 by blast
+next
+  case False
+  hence a:"n > 1" by auto
+  then obtain p where p_bound: "p \<in> {n<..<2*n}" and p_prime: "prime p" 
+    using bertrand by metis
+  have "p > 2" using a p_bound by simp
+  hence "odd p" 
+    by (metis p_prime order_less_asym' primes_dvd_imp_eq two_is_prime_nat)
+  hence "find_odd_prime_above n \<le> p"
+    apply (rule find_odd_prime_above_upper_bound)
+     apply (metis p_prime)
+    using p_bound by simp
+  thus ?thesis using p_bound 
+    by (metis greaterThanLessThan_iff nat_le_iff_add nat_less_le trans_le_add1)
+qed
 
 end
