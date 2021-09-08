@@ -742,33 +742,43 @@ lemma f2_alg_sketch:
   defines "s\<^sub>1 \<equiv> nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
   defines "s\<^sub>2 \<equiv> nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
   defines "p \<equiv> find_odd_prime_above n"
-  defines "sketch \<equiv> foldr (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
+  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
   defines "\<Omega> \<equiv> pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4)" 
   shows "sketch = \<Omega> \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, 
       \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. sum_list (map (eval_hash_function p (h i)) xs)))"
-proof (subst sketch_def, induction xs)
-  case Nil
-  then show ?case 
-    by (simp add:s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] \<Omega>_def restrict_def) 
-next
-  case (Cons a xs)
-  have a:"f2_update a = (\<lambda>x. f2_update a (fst x, fst (snd x), fst (snd (snd x)), fst (snd (snd (snd x))), 
-      snd (snd (snd (snd x)))))" by simp
-  show ?case
-    using Cons apply (simp del:eval_hash_function.simps f2_init.simps)
-    apply (subst a)
-    apply (subst bind_assoc_pmf)
-    apply (subst bind_return_pmf)
-    by (simp add:restrict_def del:eval_hash_function.simps f2_init.simps cong:restrict_cong)
+proof -
+  define ys where "ys = rev xs"
+  have b:"sketch = foldr (\<lambda>x state. state \<bind> f2_update x) ys (f2_init \<delta> \<epsilon> n)"
+    by (simp add: foldr_conv_fold ys_def sketch_def)
+  also have "... = \<Omega> \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, 
+      \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. sum_list (map (eval_hash_function p (h i)) ys)))"
+  proof (induction ys)
+    case Nil
+    then show ?case 
+      by (simp add:s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] \<Omega>_def restrict_def) 
+  next
+    case (Cons a xs)
+    have a:"f2_update a = (\<lambda>x. f2_update a (fst x, fst (snd x), fst (snd (snd x)), fst (snd (snd (snd x))), 
+        snd (snd (snd (snd x)))))" by simp
+    show ?case
+      using Cons apply (simp del:eval_hash_function.simps f2_init.simps)
+      apply (subst a)
+      apply (subst bind_assoc_pmf)
+      apply (subst bind_return_pmf)
+      by (simp add:restrict_def del:eval_hash_function.simps f2_init.simps cong:restrict_cong)
+  qed
+  also have "... = \<Omega> \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, 
+      \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. sum_list (map (eval_hash_function p (h i)) xs)))"
+    by (simp add: ys_def rev_map[symmetric])
+  finally show ?thesis by auto
 qed
-
 
 lemma f2_alg_correct:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
-  defines "sketch \<equiv> foldr (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
+  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
   shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). abs (\<omega> - f2_value xs) \<ge> (\<delta> * f2_value xs)) \<le> real_of_rat \<epsilon>"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
@@ -813,7 +823,6 @@ proof -
     apply (simp add:\<Omega>\<^sub>1_def, rule prob_space_PiM)
     by (metis fin_poly' ex_poly prob_space_uniform_count_measure)
 
-  
   have split_f2_space: "\<And>x. x = (s\<^sub>1_from x, s\<^sub>2_from x, p_from x, h_from x, sketch_from x)"
     by (simp add:prod_eq_iff s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def sketch_from_def)
 
@@ -927,7 +936,6 @@ proof -
   hence distr: "measure_pmf (sketch \<bind> f2_result) = distr (measure_pmf \<Omega>\<^sub>0) (count_space UNIV) f"
     by (simp add:map_pmf_rep_eq \<Omega>\<^sub>0_def)
 
-
   define g where "g = (\<lambda>\<omega>. real_of_rat (\<delta> * f2_value xs) \<le> \<bar>\<omega> - real_of_rat (f2_value xs)\<bar>)"
   have e: "{\<omega>. \<delta> * f2_value xs \<le> \<bar>\<omega> - f2_value xs\<bar>} = {\<omega>. (g \<circ> real_of_rat) \<omega>}"
     apply (simp add:g_def)
@@ -1026,7 +1034,7 @@ lemma f2_space:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0 \<and> \<delta> < 1"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  defines "sketch \<equiv> foldr (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
+  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
   shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> 3128 *
     (1 - ln (real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2 * (ln (real n+1) + ln (real (length xs) + 1) + 1)"
     (is "AE \<omega> in sketch. _ \<le> ?rhs")
