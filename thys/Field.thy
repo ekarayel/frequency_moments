@@ -101,6 +101,7 @@ lemma zfact_finite:
   using zfact_card 
   by (metis assms card_ge_0_finite)
 
+
 lemma finite_domains_are_fields:
   assumes "domain R"
   assumes "finite (carrier R)"

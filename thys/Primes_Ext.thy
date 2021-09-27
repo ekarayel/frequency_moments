@@ -3,7 +3,7 @@ section \<open>Primes\<close>
 text \<open>In this section we introduce a function that retrieves the next larger odd prime.\<close>
 
 theory Primes_Ext
-imports Main "HOL-Computational_Algebra.Primes" "Bertrands_Postulate.Bertrand"
+imports Main "HOL-Computational_Algebra.Primes" "Bertrands_Postulate.Bertrand" 
 begin
 
 lemma bigger_odd_prime:

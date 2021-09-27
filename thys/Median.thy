@@ -1,7 +1,7 @@
 section \<open>Median\<close>
 
 theory Median
-  imports Main "HOL-Probability.Hoeffding" "HOL-Library.Multiset" Probability_Ext
+  imports Main "HOL-Probability.Hoeffding" "HOL-Library.Multiset" Probability_Ext "HOL.List"
 begin
 
 fun median_list where 
@@ -180,6 +180,44 @@ proof -
     by simp
   show ?thesis
     using finite_measure_mono[OF m1 m2] d by linarith
+qed
+
+lemma sorted_mono_map: 
+  assumes "sorted xs"
+  assumes "mono f"
+  shows "sorted (map f xs)"
+  using assms apply (simp add:sorted_wrt_map)
+  apply (rule sorted_wrt_mono_rel[where P="(\<le>)"])
+  by (simp add:mono_def, simp)
+
+lemma map_sort:
+  assumes "mono f"
+  shows "sort (map f xs) = map f (sort xs)"
+  apply (rule properties_for_sort)
+   apply simp
+  by (rule sorted_mono_map, simp, simp add:assms)
+
+lemma median_restrict: 
+  assumes "n > 0"
+  shows "median (\<lambda>i \<in> {0..<n}.f i) n = median f n"
+  apply (simp add:median_def cong:map_cong)
+  apply (rule arg_cong2[where f="(!)"])
+  apply (rule arg_cong[where f="sort"])
+    by (rule map_cong, simp, simp, simp)
+
+lemma median_rat:
+  assumes "n > 0"
+  shows "real_of_rat (median f n) = median (\<lambda>i. real_of_rat (f i)) n"
+proof -
+  have a:"map (\<lambda>i. real_of_rat (f i)) [0..<n] = 
+    map real_of_rat (map (\<lambda>i. f i) [0..<n])"
+    by (simp)
+  show ?thesis 
+    apply (simp add:a median_def del:map_map)
+    apply (subst map_sort[where f="real_of_rat"], simp add:mono_def of_rat_less_eq)
+    apply (subst nth_map[where f="real_of_rat"]) using assms 
+    apply fastforce
+    by simp
 qed
 
 end

@@ -244,15 +244,12 @@ proof -
     apply (simp add: has_eq_relation_elim)
     by (simp add: sum_collapse rev_ineq of_rat_sum of_rat_mult)
 
-  have t:"\<And>x. ((x::real)^2)^2=x^4"
-    by simp
-
   show "?A"
     apply (simp add:has_variance_def)
     apply (rule conjI) apply (metis int_var_f2)
     apply (rule conjI) apply (metis int_exp_f2)
     apply (rule conjI, simp add: prob_space_axioms)
-    apply (subst variance_eq, metis int_exp_f2, simp add:t int_var_f2)
+    apply (subst variance_eq, metis int_exp_f2, simp add: int_var_f2)
     using exp_2 apply (simp add: has_bochner_integral_iff f2_value_def)
     apply (simp add: f2_sketch_elim power4_eq_xxxx power2_eq_square)
     apply (simp add: sum_distrib_left sum_distrib_right c1 c2)
@@ -263,7 +260,6 @@ proof -
     apply (rule sum_mono)
     by (simp add: h_power_4_estimate mult_nonneg_nonpos2 algebra_simps)
 qed
-
 
 lemma eval_exp:
   assumes "prime p"
@@ -702,38 +698,6 @@ proof -
     by (rule arg_cong[where f="card"], blast)
 qed
 
-lemma sorted_mono_map: 
-  assumes "sorted xs"
-  assumes "mono f"
-  shows "sorted (map f xs)"
-  using assms apply (simp add:sorted_wrt_map)
-  apply (rule sorted_wrt_mono_rel[where P="(\<le>)"])
-  by (simp add:mono_def, simp)
-
-lemma map_sort:
-  assumes "mono f"
-  shows "sort (map f xs) = map f (sort xs)"
-  apply (rule properties_for_sort)
-   apply simp
-  by (rule sorted_mono_map, simp, simp add:assms)
-
-lemma median_rat: 
-  assumes "n > 0"
-  shows "real_of_rat (median f n) = median (\<lambda>i \<in> {0..<n}. real_of_rat (f i)) n"
-proof -
-  have a:"map (\<lambda>i\<in>{0..<n}. real_of_rat (f i)) [0..<n] = 
-    map real_of_rat (map (\<lambda>i\<in>{0..<n}. f i) [0..<n])"
-    by (simp)
-  show ?thesis 
-    apply (simp add:a median_def del:map_map)
-    apply (subst map_sort[where f="real_of_rat"], simp add:mono_def of_rat_less_eq)
-    apply (subst nth_map[where f="real_of_rat"]) using assms 
-    apply fastforce
-    apply simp
-     apply (rule arg_cong2[where f="(!)"])
-    by (rule arg_cong[where f="sort"], simp, simp)
-qed
-
 lemma f2_alg_sketch:
   fixes n :: nat
   fixes xs :: "nat list"
@@ -922,7 +886,7 @@ proof -
   define f' where "f' = (\<lambda>x. median (f2 x) s\<^sub>2)"
   have real_f: "real_of_rat \<circ> f = f'"
     apply (rule ext)
-    using s2_nonzero apply (simp add:f'_def f2_def f3_def f_def median_rat cong:restrict_cong)
+    using s2_nonzero apply (simp add:f'_def f2_def f3_def f_def median_rat median_restrict cong:restrict_cong)
     by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
 
   have "sketch \<bind> f2_result = map_pmf f (pmf_of_set ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4))"
