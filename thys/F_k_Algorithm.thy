@@ -1,5 +1,6 @@
 theory F_k_Algorithm
   imports Main "HOL-Probability.Probability_Mass_Function" Median "HOL-Probability.Stream_Space" Prod_PMF "Lp.Lp"
+  List_Ext Encoding "HOL-Library.Landau_Symbols"
 begin
 
 definition if_then_else where "if_then_else p q r = (if p then q else r)"
@@ -26,6 +27,22 @@ fun fk_update :: "nat \<Rightarrow> fk_space \<Rightarrow> fk_space pmf" where
         )
       )
     }"
+
+definition encode_state where
+  "encode_state = 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
+    N\<^sub>S \<times>\<^sub>S  
+    N\<^sub>S \<times>\<^sub>S  
+    encode_prod_fun s\<^sub>1 s\<^sub>2 (N\<^sub>S \<times>\<^sub>S N\<^sub>S)))"
+
+lemma "is_encoding encode_state"
+  apply (simp add:encode_state_def)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis nat_encoding)
+  by (metis encode_prod_fun prod_encoding nat_encoding)
 
 fun fk_result :: "fk_space \<Rightarrow> rat pmf" where
   "fk_result (s\<^sub>1, s\<^sub>2, k, m, r) = 
@@ -66,9 +83,6 @@ fun fk_update'' :: "'a \<Rightarrow> nat \<Rightarrow> ('a \<times> nat) \<Right
 lemma bernoulli_pmf_1: "bernoulli_pmf 1 = return_pmf True"
     by (rule pmf_eqI, simp add:indicator_def)
 
-lemma count_list_append: "count_list (xs@ys) v = count_list xs v + count_list ys v"
-  by (induction xs, simp, simp)
-
 lemma split_space:
   "(\<Sum>a\<in>{(u, v). v < count_list xs u}. (f (snd a))) = 
   (\<Sum>u \<in> set xs. (\<Sum>v \<in>{0..<count_list xs u}. (f v)))" (is "?lhs = ?rhs")
@@ -76,7 +90,7 @@ proof -
   define A where "A = (\<lambda>u. {u} \<times> {v. v < count_list xs u})"
 
   have a :"\<And>u v. u < count_list xs v \<Longrightarrow> v \<in> set xs" 
-    by (subst count_list_gr_1', force)
+    by (subst count_list_gr_1, force)
 
   have "?lhs = sum (f \<circ> snd)  (\<Union> (A ` set xs))"
     apply (rule sum.cong, rule order_antisym)
@@ -104,7 +118,7 @@ lemma
 proof -
 
   have "{(u, v). v < count_list xs u} \<subseteq> set xs \<times> {k. k < length xs}"
-    apply (rule subsetI, simp add:case_prod_beta mem_Times_iff count_list_gr_1')
+    apply (rule subsetI, simp add:case_prod_beta mem_Times_iff count_list_gr_1)
     by (metis count_le_length order_less_le_trans)
 
   thus fin_space: "finite  {(u, v). v < count_list xs u}"
@@ -144,7 +158,7 @@ proof -
         count_list (drop (Suc y) xs) (xs ! y)"
       using a3_3 by (subst a3_4, simp add:count_list_append)
     moreover have "count_list (take (y-x) (drop (Suc x) xs)) (xs ! y) \<ge> 1"
-      apply (rule count_list_gr_1)
+      apply (subst count_list_gr_1[symmetric])  
       apply (simp add:set_conv_nth)
       apply (rule exI[where x="y-x-1"])
       apply (subst nth_take, meson diff_less a3_2  zero_less_diff zero_less_one)
@@ -173,7 +187,7 @@ proof -
     fix x
     assume a:"x < length xs"
     have "1 \<le> count_list (take (Suc x) xs) (xs ! x)"
-      apply (rule count_list_gr_1)
+      apply (subst count_list_gr_1[symmetric])
       using a by (simp add: take_Suc_conv_app_nth)
     hence "count_list (drop (Suc x) xs) (xs ! x) < count_list (take (Suc x) xs) (xs ! x) +count_list (drop (Suc x) xs) (xs ! x)"
       by (simp)
@@ -834,6 +848,29 @@ proof -
      using d by simp
 qed
 
+
+lemma fk_alg_space:
+  assumes "k \<ge> 2"
+  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
+  assumes "\<delta> > 0"
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
+  assumes "xs \<noteq> []"
+  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
+  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> 3128"
+proof -
+  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
+  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil>"
+
+  (* log 2 s1 + log 2 s2 + log 2 k + log 2 m + s1*s2*(log 2 m + log 2 n) 
+
+      k can be arbitrarily large
+      doesn't matter because k < s1
+
+  *)
+
+
+  show ?thesis sorry
+qed
 
 
 

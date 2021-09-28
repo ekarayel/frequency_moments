@@ -537,7 +537,6 @@ proof -
     by (simp add:has_variance_def, metis c d e prob_space_measure_pmf)
 qed
 
-
 lemma pmf_of_set_prod:
   assumes "finite I"
   assumes "\<And>x. x \<in> I \<Longrightarrow> finite (M x)"

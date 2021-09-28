@@ -3,7 +3,7 @@ section \<open>Frequency Moment 2\<close>
 theory F2_Algorithm
   imports Main "HOL-Probability.Giry_Monad" "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
     Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext "HOL-Library.Extended_Nat"
-    "HOL-Library.Rewrite" "Encoding" "HOL-Analysis.Complex_Transcendental"
+    "HOL-Library.Rewrite" "Encoding" "HOL-Analysis.Complex_Transcendental" List_Ext Prod_PMF
 begin
 
 definition f2_value where
@@ -39,21 +39,6 @@ proof -
   ultimately show ?thesis by blast
 qed
 
-fun encode_prod_fun where
-  "encode_prod_fun s\<^sub>1 s\<^sub>2 e f = (
-    if f \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) then 
-      list\<^sub>S e (map f (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))
-    else
-      None)"
-
-lemma encode_prod_fun:
-  assumes "is_encoding e"
-  shows "is_encoding (\<lambda>x. encode_prod_fun  s\<^sub>1 s\<^sub>2 e x)"
-  apply simp
-  apply (rule encoding_compose[where f="list\<^sub>S e"])
-   apply (metis list_encoding assms)
-  apply (rule inj_onI, simp)
-  using extensionalityI by fastforce
 
 definition encode_state where
   "encode_state = 
@@ -70,7 +55,6 @@ lemma "is_encoding encode_state"
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule prod_encoding, metis encode_prod_fun list_encoding zfact_encoding)
   by (metis encode_prod_fun int_encoding)
-
 
 
 fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
@@ -780,7 +764,7 @@ proof -
   also have "... \<le> f2_value xs"
     apply (simp add:f2_value_def)
     apply (rule sum_mono[where K="set xs" and f="\<lambda>_.(1::rat)", simplified])
-    by (metis  count_list_gr_1  of_nat_1 of_nat_power_le_of_nat_cancel_iff one_le_power)
+    by (metis count_list_gr_1 of_nat_1 of_nat_power_le_of_nat_cancel_iff one_le_power)
   finally have f2_value_nonzero: "f2_value xs > 0" by (simp)
 
   have prob_space_1: "prob_space \<Omega>\<^sub>1"

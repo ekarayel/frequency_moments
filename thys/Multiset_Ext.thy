@@ -79,14 +79,5 @@ proof -
     by (simp add:M_def sum_mset_sum_list[symmetric])
 qed
 
-lemma count_list_gr_1:
-  assumes "x \<in> set xs"
-  shows "count_list xs x \<ge> 1"
-  using assms by (induction xs, simp, simp, fastforce) 
-
-lemma count_list_gr_1':
-  "(x \<in> set xs) = (count_list xs x \<ge> 1)"
-  by (induction xs, simp, simp)
-
 
 end

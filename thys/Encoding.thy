@@ -55,7 +55,6 @@ proof -
     using c d assms(2) by  (simp add: decode_def)
 qed
 
-
 lemma decode_elim_2:
   assumes "is_encoding f"
   assumes "x \<in> dom f"
@@ -367,5 +366,21 @@ proof -
   thus ?thesis 
     by (simp add: log_le_iff)
 qed
+
+fun encode_prod_fun where
+  "encode_prod_fun s\<^sub>1 s\<^sub>2 e f = (
+    if f \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) then 
+      list\<^sub>S e (map f (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))
+    else
+      None)"
+
+lemma encode_prod_fun:
+  assumes "is_encoding e"
+  shows "is_encoding (\<lambda>x. encode_prod_fun  s\<^sub>1 s\<^sub>2 e x)"
+  apply simp
+  apply (rule encoding_compose[where f="list\<^sub>S e"])
+   apply (metis list_encoding assms)
+  apply (rule inj_onI, simp)
+  using extensionalityI by fastforce
 
 end
