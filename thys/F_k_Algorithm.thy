@@ -867,8 +867,6 @@ proof -
       doesn't matter because k < s1
 
   *)
-
-
   show ?thesis sorry
 qed
 

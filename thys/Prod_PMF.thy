@@ -184,7 +184,6 @@ lemma range_inter: "range ((\<inter>) F) = Pow F"
 
 
 lemma indep_vars_pmf:
-  assumes "I \<noteq> {}"
   assumes "\<And>a J. J \<subseteq> I \<Longrightarrow> finite J \<Longrightarrow> 
     \<P>(\<omega> in measure_pmf M. \<forall>i \<in> J. X i \<omega> = a i) = (\<Prod>i \<in> J. \<P>(\<omega> in measure_pmf M. X i \<omega> = a i))"
   shows "prob_space.indep_vars (measure_pmf M) (\<lambda>i. measure_pmf ( M' i)) X I"
@@ -267,7 +266,7 @@ proof -
         using h2 h6 h7 apply (simp add:vimage_def measure_Int_set_pmf)
         by (rule arg_cong2 [where f="measure"], simp, blast)
       also have "... = (\<Prod> j\<in> J. Sigma_Algebra.measure (measure_pmf M) (A j))"
-        using h6 h7 h2 assms(2)[OF h1 h3] by (simp add:vimage_def measure_Int_set_pmf)
+        using h6 h7 h2 assms(1)[OF h1 h3] by (simp add:vimage_def measure_Int_set_pmf)
       also have "... = (\<Prod>j\<in>J. Sigma_Algebra.measure (restrict_space (measure_pmf M) (set_pmf M)) (A j))"
         by (rule prod.cong, simp, subst measure_restrict_space, simp, metis h5, simp)
       finally show ?thesis by blast
@@ -314,7 +313,7 @@ lemma indep_vars_restrict:
   assumes "\<And>i. i \<in> J \<Longrightarrow> f i \<subseteq> I"
   assumes "finite I"
   shows "prob_space.indep_vars (measure_pmf (prod_pmf I M)) (\<lambda>i. measure_pmf (prod_pmf (f i) M)) (\<lambda>i \<omega>. restrict \<omega> (f i)) J"
-proof (rule indep_vars_pmf[OF assms(2), simplified])
+proof (rule indep_vars_pmf[simplified])
   fix a :: "'c \<Rightarrow> 'a \<Rightarrow> 'b"
   fix J'
   assume e:"J' \<subseteq> J"
