@@ -1,7 +1,7 @@
 theory Encoding
   imports Main "HOL-Library.Sublist" "HOL-Library.Monad_Syntax" "HOL-Library.List_Lexorder"
     "HOL-Library.Option_ord" "HOL-Library.Extended_Nat" "Multiset_Ext"
-  "HOL-Library.Extended_Nonnegative_Real" "HOL-Library.FuncSet"
+  "HOL-Library.Extended_Nonnegative_Real" "HOL-Library.FuncSet"  "HOL-Analysis.Complex_Transcendental"
 begin
 
 fun is_prefix where 
@@ -228,9 +228,9 @@ qed
 
 lemma nat_bit_count_est:
   assumes "n \<le> m"
-  shows "bit_count (N\<^sub>S n) \<le> 2 * log 2 (m+1) + 1"
+  shows "bit_count (N\<^sub>S n) \<le> 2 * log 2 (1+real m) + 1"
 proof -
-  have "2 * log 2 (n+1) + 1 \<le> 2 * log 2 (m+1) + 1" 
+  have "2 * log 2 (n+1) + 1 \<le> 2 * log 2 (1+real m) + 1" 
     using assms by simp
   thus ?thesis using nat_bit_count assms le_ereal_le by blast
 qed
@@ -356,15 +356,42 @@ lemma encoding_compose:
   shows "is_encoding (\<lambda>x. if x \<in> A then f (g x) else None)"
   using assms by (simp add: inj_onD is_encoding_def)
 
-lemma log_est: "log 2 (real n + 1) \<le> n"
+lemma log_est: "log 2 (1 + real n) \<le> n"
 proof -
   have "n + 1 \<le> 2 ^ ( n)"
     by (induction n, simp, simp)
-  hence "real n + 1 \<le> 2 powr (real n)"
+  hence "1 + real n \<le> 2 powr (real n)"
     apply (simp add: powr_realpow)
-    by (metis add.commute numeral_power_eq_of_nat_cancel_iff of_nat_Suc of_nat_mono)
+    by (metis numeral_power_eq_of_nat_cancel_iff of_nat_Suc of_nat_mono)
   thus ?thesis 
-    by (simp add: log_le_iff)
+    by (simp add: Transcendental.log_le_iff)
+qed
+
+
+lemma log_2_ln: 
+  assumes "x \<ge> 1"
+  shows "2 * log 2 x \<le> 3 * ln (x::real)"
+proof -
+  have "exp (2::real) = exp (1+(1::real))" by simp
+  also have "... \<le> (272/100::real)*(272/100)"
+    apply (subst exp_add)
+    apply (rule mult_mono) 
+    apply (metis e_less_272 order_less_imp_le)
+    apply (metis e_less_272 order_less_imp_le)
+    by simp+
+  also have "... \<le> 8"
+    by simp
+  finally have b:"exp (2::real) \<le> 8" by auto
+
+  have a:"2 \<le> 3 * ln (2::real)"
+    apply (subst ln_powr[symmetric], simp, simp)
+    by (subst ln_ge_iff, simp, simp add:b)
+
+  show ?thesis
+  apply (simp add:log_def)
+  apply (subst pos_divide_le_eq, simp)
+    using mult_left_mono[OF a ln_ge_zero[OF assms]]
+    by simp
 qed
 
 fun encode_prod_fun where

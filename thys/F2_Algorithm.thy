@@ -3,7 +3,7 @@ section \<open>Frequency Moment 2\<close>
 theory F2_Algorithm
   imports Main "HOL-Probability.Giry_Monad" "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
     Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext "HOL-Library.Extended_Nat"
-    "HOL-Library.Rewrite" "Encoding" "HOL-Analysis.Complex_Transcendental" List_Ext Prod_PMF
+    "HOL-Library.Rewrite" "Encoding" List_Ext Prod_PMF
 begin
 
 definition f2_value where
@@ -797,32 +797,6 @@ proof -
     using  median_bound_4 by simp
 qed
 
-
-lemma log_2_ln: 
-  assumes "x \<ge> 1"
-  shows "2 * log 2 x \<le> 3 * ln (x::real)"
-proof -
-  have "exp (2::real) = exp (1+(1::real))" by simp
-  also have "... \<le> (272/100::real)*(272/100)"
-    apply (subst exp_add)
-    apply (rule mult_mono) 
-    apply (metis e_less_272 order_less_imp_le)
-    apply (metis e_less_272 order_less_imp_le)
-    by simp+
-  also have "... \<le> 8"
-    by simp
-  finally have b:"exp (2::real) \<le> 8" by auto
-
-  have a:"2 \<le> 3 * ln (2::real)"
-    apply (subst ln_powr[symmetric], simp, simp)
-    by (subst ln_ge_iff, simp, simp add:b)
-
-  show ?thesis
-  apply (simp add:log_def)
-  apply (subst pos_divide_le_eq, simp)
-    using mult_left_mono[OF a ln_ge_zero[OF assms]]
-    by simp
-qed
 
 lemma f2_space:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
