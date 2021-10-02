@@ -212,7 +212,7 @@ lemma nat_encoding:
   by (rule encoding_by_witness[where g="decode_nat"], simp add:nat_encoding_aux)
 
 lemma nat_bit_count:
-  "bit_count (N\<^sub>S n) \<le> 2 * log 2 (n+1) + 1"
+  "bit_count (N\<^sub>S n) \<le> 2 * log 2 (1 + real n) + 1"
 proof (induction n rule:nat_encoding_aux.induct)
   case 1
   then show ?case by simp
@@ -230,7 +230,7 @@ lemma nat_bit_count_est:
   assumes "n \<le> m"
   shows "bit_count (N\<^sub>S n) \<le> 2 * log 2 (1+real m) + 1"
 proof -
-  have "2 * log 2 (n+1) + 1 \<le> 2 * log 2 (1+real m) + 1" 
+  have "2 * log 2 (1 + real n) + 1 \<le> 2 * log 2 (1+real m) + 1" 
     using assms by simp
   thus ?thesis using nat_bit_count assms le_ereal_le by blast
 qed
@@ -409,5 +409,22 @@ lemma encode_prod_fun:
    apply (metis list_encoding assms)
   apply (rule inj_onI, simp)
   using extensionalityI by fastforce
+
+
+instantiation rat :: linorder_topology
+begin
+
+definition open_rat :: "rat set \<Rightarrow> bool"
+  where "open_rat = generate_topology (range (\<lambda>a. {..< a}) \<union> range (\<lambda>a. {a <..}))"
+
+instance
+  by standard (rule open_rat_def)
+end
+
+lemma eventually_prod_I2:
+  assumes "eventually Q F1"
+  assumes "eventually (\<lambda>y. \<forall>x. \<not>(Q x) \<or> (P (x, y))) F2"
+  shows "eventually P (F1 \<times>\<^sub>F F2)"
+  using assms apply (simp add:eventually_prod_filter) by blast
 
 end

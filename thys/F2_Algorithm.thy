@@ -3,7 +3,7 @@ section \<open>Frequency Moment 2\<close>
 theory F2_Algorithm
   imports Main "HOL-Probability.Giry_Monad" "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
     Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext "HOL-Library.Extended_Nat"
-    "HOL-Library.Rewrite" "Encoding" List_Ext Prod_PMF
+    "HOL-Library.Rewrite" "Encoding" List_Ext Prod_PMF  "HOL-Library.Landau_Symbols"
 begin
 
 definition f2_value where
@@ -39,7 +39,6 @@ proof -
   ultimately show ?thesis by blast
 qed
 
-
 definition encode_state where
   "encode_state = 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
@@ -55,7 +54,6 @@ lemma "is_encoding encode_state"
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule prod_encoding, metis encode_prod_fun list_encoding zfact_encoding)
   by (metis encode_prod_fun int_encoding)
-
 
 fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
   "f2_init \<delta> \<epsilon> n =
@@ -797,260 +795,329 @@ proof -
     using  median_bound_4 by simp
 qed
 
+fun f2_complexity :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
+  "f2_complexity (n, m, \<epsilon>, \<delta>) = (
+    let s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2 \<rceil> in
+    let s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil> in 
+    5 +
+    2 * log 2 (1 + s\<^sub>1) +
+    2 * log 2 (1 + s\<^sub>2) +
+    2 * log 2 (4 + 2 * real n) +
+    s\<^sub>1 * s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1 )))"
 
-lemma f2_space:
+lemma f2_complexity:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
-  assumes "\<delta> > 0 \<and> \<delta> < 1"
+  assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
-  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> 3128 *
-    (1 - ln (real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2 * (ln (real n+1) + ln (real (length xs) + 1) + 1)"
-    (is "AE \<omega> in sketch. _ \<le> ?rhs")
+  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f2_complexity (n, length xs, \<epsilon>, \<delta>)"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
   define p where "p = find_odd_prime_above n"
-  define s\<^sub>1_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>1_from = fst"
-  define s\<^sub>2_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
-  define p_from :: "f2_space \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
-  define h_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
-  define sketch_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
 
-  define R where "R = {(n::int). abs n \<le> length xs * (int p+1)}"
-  define M where "M = {\<omega>. s\<^sub>1_from \<omega> = s\<^sub>1 \<and> s\<^sub>2_from \<omega> = s\<^sub>2 \<and> p_from \<omega> = p \<and>
-    h_from \<omega> \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact p) 4 \<and>
-    sketch_from \<omega> \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E R}"
+  have p_ge_0: "p > 0" 
+    by (metis find_prime_above_min p_def gr0I not_numeral_le_zero)
 
-  have b3: "abs (int p - 1) \<le> int p + 1"
-    using p_def find_prime_above_min by linarith
-  have b2:"\<And>y. y \<in> bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
-    sum_list (map (eval_hash_function p y) xs) \<in> R"
+  have a: "\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
+       bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
+      sum_list (map (eval_hash_function p (y i)) xs)))
+       \<le> ereal (f2_complexity (n, length xs, \<epsilon>, \<delta>))"
   proof -
     fix y
-    assume "y \<in> bounded_degree_polynomials (ZFact (int p)) 4"
-    have "abs (sum_list (map (eval_hash_function p y) xs)) \<le> sum_list (map (abs \<circ> eval_hash_function p y) xs)"
-      by (subst map_map[symmetric], rule sum_list_abs)
-    also have "... \<le> sum_list (map (\<lambda>_. int p + 1) xs)"
-      apply (rule sum_list_mono)
-      by (simp add:comp_def b3)
-    finally have "abs (sum_list (map (eval_hash_function p y) xs)) \<le> length xs * (int p +1)"
-      by (simp add:sum_list_triv)
-    thus "sum_list (map (eval_hash_function p y) xs) \<in> R" by (simp add:R_def)
+    assume a_1:"y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4"
+
+    have a_2: "y \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})" using a_1  PiE_iff by blast
+
+    have a_3: "\<And>x. x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> bit_count (list\<^sub>S (zfact\<^sub>S p) x) 
+      \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
+    proof -
+      fix x 
+      assume a_5: "x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})"
+      have a_4: "\<And>z. z \<in> set x \<Longrightarrow> z \<in> zfact_embed p ` {0..<p}"
+        apply (subst zfact_embed_ran[OF p_ge_0])
+        using a_5 a_1 apply (simp add:PiE_def Pi_def image_def bounded_degree_polynomials_def)
+        by (metis (no_types, opaque_lifting) atLeastLessThan_iff length_pos_if_in_set less_nat_zero_code list.size(3) polynomial_def subsetD univ_poly_carrier)
+
+      have "length x - 1 < 4" 
+        using a_5 a_1 apply (simp add:PiE_def Pi_def image_def bounded_degree_polynomials_def) 
+        by fastforce
+      hence a_6: "length x \<le> 4" by linarith
+      have "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le>  ereal (real (length x)) * (ereal (2 * log 2 (4 + 2 * real n) + 1) + 1) + 1"
+        apply (rule list_bit_count_est[where a="2 * log 2 (4 + 2 * real n) + 1"])
+        using a_4 apply (simp)
+        apply (rule nat_bit_count_est[where m="2*n+3", simplified])
+        apply (rule order_trans[where y="p"])
+        using the_inv_into_into[OF zfact_embed_inj[OF p_ge_0], where B="{0..<p}", simplified] less_imp_le_nat apply presburger
+        by (metis p_def find_prime_above_upper_bound)
+      also have "... \<le> ereal 4 * (ereal (2 * log 2 (4 + 2 * real n) + 1) + 1) + 1"
+        apply (rule add_mono)
+         apply (rule ereal_mult_mono, simp, simp)
+        using  a_6 by simp+
+      also have "... = ereal (9 + 8 * log 2 (4 + 2 * real n))"
+        by simp
+      finally show "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le>  ereal (9 + 8 * log 2 (4 + 2 * real n))"
+        by blast
+    qed
+
+    have a_7: "\<And>x. 
+      x \<in> (\<lambda>x. sum_list (map (eval_hash_function p (y x)) xs)) ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow>
+         \<bar>x\<bar> \<le> (4 + 2 * int n) * int (length xs)"
+    proof -
+      fix x
+      assume "x \<in> (\<lambda>x. sum_list (map (eval_hash_function p (y x)) xs)) ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})"
+      then obtain i where "i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}" and x_def: "x = sum_list (map (eval_hash_function p (y i)) xs)"
+        by blast
+      have "abs x \<le> sum_list (map abs (map (eval_hash_function p (y i)) xs))"
+        by (subst x_def, rule sum_list_abs)
+      also have "... \<le> sum_list (map (\<lambda>_. (int p+1)) xs)"
+        apply (simp add:comp_def del:eval_hash_function.simps)
+        apply (rule sum_list_mono)
+        using p_ge_0 by simp 
+      also have "... = int (length xs) * (int p+1)"
+        by (simp add: sum_list_triv)
+      also have "... \<le> int (length xs) * (4+2*(int n))"
+        apply (rule mult_mono, simp)
+        apply (simp add:p_def) 
+          apply (metis add.commute mult_2 find_prime_above_upper_bound of_nat_add of_nat_le_iff of_nat_numeral)
+         apply simp
+        by simp
+      finally show "abs x \<le>  (4 + 2 * int n) * int (length xs)"
+        by (simp add: mult.commute)
+    qed
+    
+    have "bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}.
+      sum_list (map (eval_hash_function p (y i)) xs)))
+       \<le> ereal (2 * (log 2 (1 + real s\<^sub>1)) + 1) 
+       + (ereal (2 * (log 2 (1 + real s\<^sub>2)) + 1)
+       + (ereal (2 * (log 2 (1 + real (2*n+3))) + 1) 
+       + ((ereal (real s\<^sub>1 * real s\<^sub>2) * (10 + 8 * log 2 (4 + 2 * real n)) + 1) 
+       + (ereal (real s\<^sub>1 * real s\<^sub>2) * (3 + 2 * log 2 (real (length xs) * (4 + 2 * real n) + 1) ) + 1))))"
+      using a_2
+      apply (simp add: encode_state_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] 
+        dependent_bit_count prod_bit_count
+          del:encode_dependent_sum.simps encode_prod.simps N\<^sub>S.simps plus_ereal.simps of_nat_add)
+      apply (rule add_mono, rule nat_bit_count)
+      apply (rule add_mono, rule nat_bit_count)
+      apply (rule add_mono, rule nat_bit_count_est, metis p_def find_prime_above_upper_bound)
+      apply (rule add_mono)
+       apply (rule list_bit_count_estI[where a="9 + 8 * log 2 (4 + 2 * real n)"], rule a_3, simp, simp)
+      apply (rule list_bit_count_estI[where a="2* log 2 (real_of_int (int ((4+2*n) * length xs)+1))+2"])
+       apply (rule int_bit_count_est)
+       apply (simp add:a_7)
+      by (simp add:algebra_simps)
+    also have "... = ereal (f2_complexity (n, length xs, \<epsilon>, \<delta>))"
+      by (simp add:distrib_left[symmetric] s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
+    finally show "bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}.
+      sum_list (map (eval_hash_function p (y i)) xs)))
+       \<le> ereal (f2_complexity (n, length xs, \<epsilon>, \<delta>))" by blast
   qed
-  have b1:"\<And>y. y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
-         (\<lambda>i. sum_list (map (eval_hash_function p (y i)) xs)) \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow> R"
-    using b2 by blast
 
-  define log_m where "log_m = ln (length xs + 1)"
-  define log_n where "log_n = ln (n + 1)"
-
-  have s2_nonzero: "s\<^sub>2 > 0"
-    using assms by (simp add:s\<^sub>2_def)
-
-  have s1_nonzero: "s\<^sub>1 > 0"  
-    using assms by (simp add:s\<^sub>1_def)
-
-  define b1 where "b1 = ereal ((s\<^sub>1 * s\<^sub>2) * 2 + 1)"
-  define b2 where "b2 = ereal ((s\<^sub>1 * s\<^sub>2) * 2 + 1)"
-  define b3 where "b3 = ereal ((s\<^sub>1 * s\<^sub>2) * (3*log_n+5))"
-  define b4 where "b4 = ereal ((s\<^sub>1 * s\<^sub>2) * (12*log_n+26) + 1)"
-  define b5 where "b5 = ereal ((s\<^sub>1 * s\<^sub>2) * (3*log_m+3*log_n+7) + 1)"
-  define b7 where "b7 = ereal (12*log_n+25)"
-  define b8 where "b8 = ereal (3*log_m+3*log_n+6)"
-
-
-  have "\<And>x. x \<ge> 0 \<Longrightarrow> real (nat x) = real_of_int x" 
-    using of_nat_nat by blast
-  moreover 
-  have "\<lceil> 16 / \<delta>\<^sup>2 \<rceil> \<ge> 0"  apply (simp add: power2_eq_square) 
-    using  assms(2) divide_pos_pos[where x="16" and y="\<delta>*\<delta>"] mult_pos_pos[where a="\<delta>" and b="\<delta>"]
-    by linarith
-  ultimately have "real s\<^sub>1 = \<lceil>16/ (real_of_rat \<delta>)\<^sup>2\<rceil>" apply (simp add:s\<^sub>1_def) 
-    by (metis (no_types, opaque_lifting) of_rat_ceiling of_rat_divide of_rat_numeral_eq of_rat_power)
-  hence "real s\<^sub>1 < 16/ (real_of_rat \<delta>)\<^sup>2 + 1" 
-    by linarith
-  also have " 16/ (real_of_rat \<delta>)\<^sup>2 + 1 \<le> 17/ (real_of_rat \<delta>)\<^sup>2"
-    apply (subst pos_le_divide_eq) using assms(2) apply simp
-    apply (simp add:algebra_simps) using assms(3) assms(2) 
-    by (simp add: power_le_one)
-  finally have s1_est: "real s\<^sub>1 \<le> 17 / (real_of_rat \<delta>)\<^sup>2"
-    by auto
-
-  have "real s\<^sub>2 = \<lceil>-32 * (ln (real_of_rat \<epsilon>))/9\<rceil>"
-    apply (simp add:s\<^sub>2_def) using s2_nonzero s\<^sub>2_def by linarith
-  also have  "... \<le> (-32 * (ln (real_of_rat \<epsilon>))/9)+1"
-    using of_int_ceiling_le_add_one by blast
-  also have "... \<le> 4 * (1-ln (real_of_rat \<epsilon>))" 
-    apply (simp add:algebra_simps)
-    by (metis assms(1) ln_less_zero less_eq_real_def mult_right_mono mult_zero_left of_rat_less_1_iff order_trans zero_le_numeral zero_less_of_rat_iff)
-  finally have s2_est: "real s\<^sub>2 \<le> 4 * (1-ln (real_of_rat \<epsilon>))"
-    by blast
-
-  have "real (s\<^sub>1 * s\<^sub>2) \<le> (17 / (real_of_rat \<delta>)\<^sup>2) * (4 * (1-ln (real_of_rat \<epsilon>)))"
-    apply (subst of_nat_mult)
-    apply (subst mult_mono)
-        apply (metis s1_est, metis s2_est)
-    using s\<^sub>1_def s1_nonzero apply force
-    using s\<^sub>2_def s2_nonzero apply force
-    by simp
-  also have "... =  68 * (1-ln (real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2"
-    by (simp)
-  finally have s1_s2_est: "real (s\<^sub>1 * s\<^sub>2) \<le> 68 * (1-ln (real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2"
-    by blast
-
-  have "\<And>(x::nat). ereal (2 * log 2 (real (x+ 1)) + 1) \<le> ereal (2 * real x + 1)"
-    using log_est
-    by (simp add: add.commute)
-  hence "\<And>(x::nat). bit_count (N\<^sub>S x) \<le> 2 * real x + 1"
-    using nat_bit_count order_trans by blast
-  moreover have "\<And>(x::nat). x \<le> s\<^sub>1 * s\<^sub>2 \<Longrightarrow> 2 * real x + 1 \<le> ereal ((s\<^sub>1 * s\<^sub>2) * 2 + 1)"
-    using of_nat_mono by fastforce
-  ultimately have c1_1: "\<And>(x::nat). x \<le> s\<^sub>1 * s\<^sub>2 \<Longrightarrow> bit_count (N\<^sub>S x) \<le> ereal ((s\<^sub>1 * s\<^sub>2) * 2 + 1)"
-    by (meson ereal_less_eq(3) le_ereal_le)
-
-  have c1: "bit_count (N\<^sub>S s\<^sub>1) \<le> b1" apply (subst b1_def, rule c1_1) using s2_nonzero by simp
-  have c2: "bit_count (N\<^sub>S s\<^sub>2) \<le> b2" apply (subst b2_def, rule c1_1) using s1_nonzero by simp
-
-  have p_gr_0: "p > 0"
-    apply (simp add:p_def) using find_prime_above_min 
-    by (meson order_less_le_trans zero_less_numeral)
-
-  have "2*log 2 (p+1) \<le> 2*log 2 (2*n+4)"
-    apply (simp add:p_def)
-    by (metis find_prime_above_upper_bound add.commute mult_2 of_nat_add of_nat_le_iff of_nat_numeral)
-  also have "... \<le> 2*log 2 (real 4*(n+1))"
-    by simp
-  also have "... \<le> 2*log 2 (n+1) + 4"
-    apply (subst log_mult, simp, simp, simp, simp, simp)
-    by (metis dual_order.refl log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
-  also have "... \<le> 3*ln (n+1) + 4"
-    apply simp
-    by (rule log_2_ln, simp)
-  finally have log_n_of_p: "2*log 2 (p+1) \<le> 3*log_n + 4"
-    by (simp add:log_n_def)
-
-  have log_m: "2*log 2 (length xs +1) \<le> 3 * log_m"
-    by (simp add:log_m_def, rule log_2_ln, simp)
-
-  have "\<And>x. x \<le> p \<Longrightarrow> bit_count (N\<^sub>S x) \<le> 2*log 2 (p+1)+1"
-    using nat_bit_count_est by (simp del:N\<^sub>S.simps)
-  hence b3_est: "\<And>x. x \<le> p \<Longrightarrow> bit_count (N\<^sub>S x) \<le> 3*log_n+5" using log_n_of_p by fastforce
-
-  have "bit_count (N\<^sub>S p) \<le> 3*log_n+5" using b3_est by blast
-  moreover have "real (s\<^sub>1 * s\<^sub>2) * (3*log_n+5) \<ge> real 1 * (3*log_n+5)" 
-    apply (subst mult_le_cancel_iff1)
-    apply (simp add: log_n_def) using ln_ge_zero 
-    apply (smt (z3) of_nat_less_0_iff)
-    using s1_nonzero s2_nonzero 
-    by (metis One_nat_def Suc_leI nat_0_less_mult_iff of_nat_1 real_of_nat_ge_one_iff)
-  ultimately have c3: "bit_count (N\<^sub>S p) \<le> b3"
-    apply (simp add:  b3_def del:N\<^sub>S.simps)  using le_ereal_le by blast
-
-  have "\<And>y. y \<in> carrier (ZFact (int p)) \<Longrightarrow> bit_count (zfact\<^sub>S p y) \<le> 3*log_n+5" 
-    using zfact_embed_ran[OF p_gr_0,symmetric] apply (simp del:N\<^sub>S.simps)
-    apply (rule b3_est)
-    using the_inv_into_into[OF zfact_embed_inj[OF p_gr_0], where B="{0..<p}"]
-    by (meson atLeastLessThan_iff less_imp_le_nat subset_refl)
-  hence c4_ran_1: "\<And>x y. x \<in> bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow> y \<in> set x  \<Longrightarrow> bit_count (zfact\<^sub>S p y) \<le> 3*log_n+5" 
-    apply (simp add:bounded_degree_polynomials_def del:zfact\<^sub>S.simps)
-    using univ_poly_carrier 
-    by (metis length_greater_0_conv length_pos_if_in_set polynomial_def subsetD)
-  have c4_ran_2: "\<And>x. x \<in>  bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow> ereal (real (length x)) \<le> 4"
-    apply (simp add:bounded_degree_polynomials_def) 
-    by (metis Suc_leI Suc_pred length_greater_0_conv less_nat_zero_code linorder_not_less 
-        list.size(3) numeral_less_real_of_nat_iff)
-
-  have c4_ran_3: "0 \<le> 6+3*log_n" by (simp add:log_n_def)
-  have c4_ran: "\<And>x. x \<in>  bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow> 
-    bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le> b7"
-    apply (rule list_bit_count_estI[where a="3*log_n+5"], metis c4_ran_1)
-    using b7_def c4_ran_2 c4_ran_3 mult_right_mono[where b="4::real" and c="6+3*log_n"] by simp
-
-  have "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
-    bit_count (encode_prod_fun s\<^sub>1 s\<^sub>2 (list\<^sub>S (zfact\<^sub>S p)) x) \<le> ereal (real (s\<^sub>1 * s\<^sub>2)) * (b7+1) + 1"
-    apply (simp add:PiE_iff)
-    apply (rule list_bit_count_estI[where a="b7"])
-     apply (simp) using c4_ran apply blast
-    by simp
-  also have "ereal (real (s\<^sub>1 * s\<^sub>2)) * (b7+1) + 1 \<le> b4" 
-    by (simp add:b7_def b4_def add.commute)  
-  finally have c4: "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
-    bit_count (encode_prod_fun s\<^sub>1 s\<^sub>2 (list\<^sub>S (zfact\<^sub>S p)) x) \<le> b4"
-    by blast
-
-  have c5_ran_1: "\<And>x. x \<in> R \<Longrightarrow> bit_count (I\<^sub>S x) \<le> 2*log 2 (length xs * (int p+1) +1) + 2"
-    using int_bit_count_est[where m="int (length xs) * (int p+1)"] R_def by auto
-  have "2*log 2 (length xs * (int p+1) +1) + 2 \<le> 2*log 2 (real (length xs + 1) * (p+1)) + 2" 
-    apply (rule add_mono)
-     apply (rule mult_left_mono)
-      apply (subst log_le_cancel_iff, simp, simp) 
-    apply (metis add.commute add_less_same_cancel1 linorder_neqE_linordered_idom of_nat_Suc of_nat_less_0_iff of_nat_mult zero_less_one)
-       apply (simp) 
-    by (simp add:algebra_simps, simp, simp) 
-  also have "... \<le> 2* (log 2 (length xs +1) + log 2 (p+1)) + 2"
-    by (subst log_mult, simp, simp, simp, simp, simp add:log_m_def)
-  also have "... \<le> 3* log_m + 3* log_n + 6"
-    using log_n_of_p log_m by simp
-  finally have c5_ran_2: "2*log 2 (length xs * (int p+1) +1) + 2 \<le>  3* log_m + 3* log_n + 6"
-    by blast
-  have c5_ran: "\<And>x. x \<in> R \<Longrightarrow> bit_count (I\<^sub>S x) \<le> b8"
-    using c5_ran_1 c5_ran_2 b8_def le_ereal_le by blast
-  have "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E R \<Longrightarrow>
-    bit_count (encode_prod_fun s\<^sub>1 s\<^sub>2 I\<^sub>S x) \<le> ereal (real (s\<^sub>1 * s\<^sub>2)) * (b8+1) + 1" 
-    apply (simp add:PiE_iff)
-    apply (rule list_bit_count_estI[where a="b8"]) 
-     apply (simp del:I\<^sub>S.simps) using c5_ran apply blast
-    by simp
-  also have "ereal (real (s\<^sub>1 * s\<^sub>2)) * (b8+1) + 1 \<le> b5" by (simp add:b8_def b5_def algebra_simps)
-  finally have c5:"\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E R \<Longrightarrow> bit_count (encode_prod_fun s\<^sub>1 s\<^sub>2 I\<^sub>S x) \<le> b5"
-    by blast
-
-  define b_total where "b_total = ereal ((s\<^sub>1 * s\<^sub>2) * (18*log_n + 3*log_m + 42) + 4)"
-
-
-  have c_aux:"\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state x) \<le> b1 + (b2 + (b3 + (b4 + b5)))"
-    apply (simp add:M_def)
-    apply (simp add: encode_state_def del:N\<^sub>S.simps encode_dependent_sum.simps)
-    apply (simp add: dependent_bit_count prod_bit_count  s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def
-        sketch_from_def
-       del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps encode_prod_fun.simps)
-    apply (rule add_mono, metis c1)
-    apply (rule add_mono, metis c2)
-    apply (rule add_mono, metis c3)
-    apply (rule add_mono, metis c4)
-    by (metis c5)
-
-  have "b_total \<le> ereal ((s\<^sub>1 * s\<^sub>2) * (18*log_n + 3*log_m + 46))"
-    apply (simp add:algebra_simps b_total_def) using s1_nonzero s2_nonzero 
-    by (metis less_nat_zero_code less_one linorder_not_le nat_0_less_mult_iff of_nat_mult real_of_nat_ge_one_iff)
-  also have "... \<le> ereal ((s\<^sub>1 * s\<^sub>2) * (46 * (log_n + log_m + 1)))"
-    by (simp add: log_m_def log_n_def algebra_simps)
-  also have "... \<le> ereal (68 * (1-ln (real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2 * (46*(log_n + log_m + 1)))"
-    using s1_s2_est log_m_def log_n_def mult_right_mono by fastforce
-  also have "... = ereal (3128 * (1-ln (real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2 * (log_n + log_m + 1))"
-    by (simp add:algebra_simps)
-  finally have "b_total \<le> ?rhs"
-    by (simp add: log_n_def log_m_def add.commute)
-  moreover have "\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state x) \<le> b_total" using c_aux
-    by (simp add:b1_def b2_def b3_def b4_def b5_def b_total_def algebra_simps)
-  ultimately have c:"\<And>x. x \<in> M \<Longrightarrow> bit_count (encode_state x) \<le> ?rhs"
-    using order_trans by blast
-
-  have delta_gr_0: "\<delta> >0 " using assms by auto
   show ?thesis
     apply (subst AE_measure_pmf_iff)
-     using f2_alg_sketch[OF assms(1) delta_gr_0, where n="n" and xs="xs"]
-     apply (simp only:sketch_def Let_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
-     apply (subst set_bind_pmf)
-     apply (subst set_prod_pmf, simp)
-     apply simp
-     apply (subst set_pmf_of_set) defer defer
-       apply (rule ballI)
-     apply (rule c[simplified])
-     apply (simp add:M_def s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def sketch_from_def b1)
-      apply (rule ex_poly)
-     apply (rule fin_poly)
-     by (simp add:p_def find_prime_above_is_prime)
+    apply (subst sketch_def)
+    apply (subst f2_alg_sketch[OF assms(1) assms(2), where n="n" and xs="xs"])
+    apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:f2_complexity.simps)
+    apply (subst set_prod_pmf, simp)
+    apply (simp add: PiE_iff  del:f2_complexity.simps)
+    apply (subst set_pmf_of_set, metis ex_poly, metis fin_poly p_def find_prime_above_is_prime(1))
+    by (metis a)
 qed
+
+lemma f2_asympotic_space_complexity:
+  "f2_complexity \<in> 
+  O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right (0::rat) \<times>\<^sub>F at_right (0::rat)](\<lambda> (n, m, \<epsilon>, \<delta>).
+  (ln (1 / real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2 * (ln (real n) + ln (real m)))"
+  (is "?lhs \<in> O[?evt](?rhs)")
+proof -
+  define c where "c=(5865::real)"
+
+  have b:"\<And>n m \<epsilon> \<delta>.  n \<ge> 4  \<Longrightarrow> m \<ge> 1 \<Longrightarrow> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<Longrightarrow> (0 < \<delta> \<and> \<delta> < 1) \<Longrightarrow>
+     abs (f2_complexity  (n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, m, \<epsilon>, \<delta>))"
+  proof -
+    fix n m \<epsilon> \<delta>
+    assume n_ge_4: "n \<ge> (4::nat)"
+    assume m_ge_1: "m \<ge> (1::nat)"
+    assume eps_bound: "(0::rat) < \<epsilon> \<and> \<epsilon> < 1/3"
+    assume delta_bound: "(0::rat) < \<delta> \<and> \<delta> < 1"
+    define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
+    define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
+    define s\<^sub>1' where "s\<^sub>1' = 17/ (real_of_rat \<delta>)\<^sup>2"
+    define s\<^sub>2' where "s\<^sub>2' = 5 * ln (1 / real_of_rat  \<epsilon>)"
+
+    have n_ge_1: "n \<ge> 1" using n_ge_4 by simp
+    have \<epsilon>_inv_ge_1: "1/ real_of_rat \<epsilon> \<ge> 1" using eps_bound by simp
+
+    have "s\<^sub>1 > 0"
+      apply (simp add:s\<^sub>1_def) using delta_bound by blast
+    hence s1_ge_1: "s\<^sub>1 \<ge> 1" by simp
+
+    have "s\<^sub>2 > 0" using eps_bound by (simp add:s\<^sub>2_def)
+    hence s2_ge_1: "s\<^sub>2 \<ge> 1" by simp
+
+    have "real_of_rat \<epsilon> * exp 1 \<le> (1/3) * 3"
+      apply (rule mult_mono)
+         apply (metis (mono_tags, opaque_lifting) eps_bound less_eq_rat_def of_rat_divide of_rat_less_eq of_rat_numeral_eq one_eq_of_rat_iff)
+      using exp_le by simp+
+    also have "... = 1"
+      by simp
+    finally have \<epsilon>_le_1_over_e: "real_of_rat \<epsilon> * exp 1 \<le> 1"
+      by blast
+
+    have "s\<^sub>1 \<le> 16/ (real_of_rat \<delta>)\<^sup>2 + 1"
+      apply (simp add:s\<^sub>1_def, subst of_nat_nat, simp)
+       apply (rule order_less_le_trans[where y="0"], simp)
+      using delta_bound apply simp
+      by (metis (no_types, opaque_lifting) of_int_ceiling_le_add_one of_rat_ceiling of_rat_divide of_rat_numeral_eq of_rat_power)
+    also have "... \<le> (16+1)/(real_of_rat \<delta>)\<^sup>2"
+      apply (subst add_divide_distrib)
+      apply (rule add_mono, simp)
+      using delta_bound 
+      by (simp add: power_le_one_iff)
+    also have "... = s\<^sub>1'"
+      by (simp add:s\<^sub>1'_def)
+    finally have s1_le_s1': "s\<^sub>1 \<le> s\<^sub>1'"
+      by blast
+
+    have "s\<^sub>2 = real_of_int \<lceil>(32 * ln (1 / real_of_rat \<epsilon>) / 9)\<rceil> "
+      apply (simp add:s\<^sub>2_def, subst of_nat_nat, simp)
+       apply (rule order_less_le_trans[where y="0"], simp)
+      using  eps_bound apply simp
+       apply simp
+      apply simp
+      apply (rule arg_cong[where f="\<lambda>x. \<lceil>x\<rceil>"])
+      using eps_bound by (simp add: ln_div)
+    also have "... \<le>  (32 * ln (1 / real_of_rat  \<epsilon>)/ 9) + 1"
+      by (simp add:s\<^sub>2'_def)
+    also have  "... \<le> (4+1) * ln (1 / real_of_rat \<epsilon>)"
+      apply (subst distrib_right)
+      apply (rule add_mono)
+      using eps_bound apply simp
+      apply simp
+      apply (subst ln_ge_iff)
+      using \<epsilon>_inv_ge_1 apply linarith
+      apply (subst pos_le_divide_eq)
+      using eps_bound apply simp
+      using \<epsilon>_le_1_over_e by (simp add:mult.commute)
+    also have "... = s\<^sub>2'"
+      by (simp add:s\<^sub>2'_def)
+    finally have s2_le_s2':"s\<^sub>2 \<le> s\<^sub>2'"
+      by blast
+
+    have b_3: "4 + real n * 2 \<le> (real n)\<^sup>2" 
+       apply (rule order_trans[where y="real n * 2 + real n * 2"])
+        apply (rule add_mono) using n_ge_4 apply linarith
+       using n_ge_4 m_ge_1 by (simp add: power2_eq_square)+
+
+    have "real m * (4 + 2 * real n) + 1 \<le> real m * ((4 + 2 * real n) + 1)"
+      apply (subst (2) distrib_left)
+      using m_ge_1 by simp
+    also have "... \<le> real m * (real n)^2"
+      apply (rule mult_left_mono)
+       apply (simp)
+       apply (rule order_trans[where y="2*real n + 2*real n"])
+        apply (rule add_mono) using n_ge_4 apply linarith
+       using n_ge_4 m_ge_1 by (simp add: power2_eq_square)+
+    finally have b_4: "real m * (4 + 2 * real n) + 1 \<le> real m * (real n)\<^sup>2" by auto
+
+    have "22 + (10 * log 2 (4 + real n * 2) + 2 * log 2 (real m * (4 + 2 * real n)+1))
+      \<le> 22 * log 2 n + (10 * log 2 (n powr 2) + 2 * log 2 (real m * n powr 2))"
+      apply (rule add_mono)
+       using n_ge_4 apply simp
+      apply (rule add_mono)
+       using n_ge_4 b_3 apply simp 
+      apply simp
+      apply (subst log_le_cancel_iff)
+         apply simp
+        using m_ge_1 n_ge_1 apply (auto intro!: mult_pos_pos add_pos_pos)[1]
+       using m_ge_1 n_ge_1 apply (auto intro!: mult_pos_pos add_pos_pos)[1]
+      by (metis b_4)       
+    also have "... \<le> 23 * (2 * (log 2 n + log 2 m))"
+      using n_ge_1 apply (subst log_powr, simp)
+      apply (subst log_mult, simp, simp)
+      using m_ge_1 apply simp
+       apply simp
+      apply (subst log_powr, simp)
+      using m_ge_1 by simp
+    also have "... \<le> 23 * (3 * (ln n + ln m))"
+      apply (rule mult_left_mono)
+      apply (simp add:distrib)
+       apply (rule add_mono, rule log_2_ln) using n_ge_1 apply simp
+      apply (rule log_2_ln) using m_ge_1 by simp+
+    finally have b_7: "22 + (10 * log 2 (4 + real n * 2) + 2 * log 2 (real m * (4 + 2 * real n)+1))
+      \<le> 69 * (ln n + ln m)"
+      by simp
+
+    have b_8: " 0 \<le> log 2 (real m * (4 + 2 * real n) + 1)" 
+      apply (subst zero_le_log_cancel_iff, simp)
+      using n_ge_1 m_ge_1 by (simp add: add_pos_pos)+
+
+    have
+      "5 + 2 * log 2 (1 + real s\<^sub>1) + 2 * log 2 (1 + real s\<^sub>2) + 2 * log 2 (4 + 2 * real n) +
+      real s\<^sub>1 * real s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1))
+    \<le> 5 * real s\<^sub>1 * real s\<^sub>2 + 2 * real s\<^sub>1 * real s\<^sub>2 + 2 * real s\<^sub>1 * real s\<^sub>2 + 
+      real s\<^sub>1 * real s\<^sub>2 * 2 * log 2 (4 + 2 * real n) +
+      real s\<^sub>1 * real s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1))"
+      apply (rule add_mono)
+       apply (rule add_mono)
+        apply (rule add_mono)
+         apply (rule add_mono)
+          using s1_ge_1 s2_ge_1 
+          apply (simp add: ln_ge_zero_imp_ge_one ln_mult real_of_nat_ge_one_iff)
+         apply (rule order_trans [where y="2*real s\<^sub>1"]) using mult_left_mono log_est apply force
+         using s1_ge_1 s2_ge_1 
+         apply (simp add: ln_ge_zero_imp_ge_one ln_mult real_of_nat_ge_one_iff)
+        apply (rule order_trans [where y="2*real s\<^sub>2"]) using mult_left_mono log_est apply force
+        using s1_ge_1 s2_ge_1 
+        apply (simp add: ln_ge_zero_imp_ge_one ln_mult real_of_nat_ge_one_iff)
+       using s1_ge_1 s2_ge_1 
+       apply (simp add: ln_ge_zero_imp_ge_one ln_mult real_of_nat_ge_one_iff)
+      by simp
+    also have "... \<le> real s\<^sub>1 * (real s\<^sub>2 * (22 + (10 * log 2 (4 + real n * 2) + 2 * log 2 (real m * (4 + 2 * real n) + 1))))"
+      by (simp add:algebra_simps)
+    also have "... \<le> s\<^sub>1' * (s\<^sub>2' * (69 * (ln n + ln m)))"
+      apply (rule mult_mono, simp add:s1_le_s1')
+        apply (rule mult_mono, simp add:s2_le_s2')
+      apply (metis b_7)
+      using s2_ge_1 s2_le_s2' apply linarith
+      using b_8 n_ge_1 m_ge_1 apply (auto intro!:add_nonneg_nonneg)[1]
+      using s1_ge_1 s1_le_s1' apply linarith
+      using b_8 n_ge_1 m_ge_1 by (auto intro!:add_nonneg_nonneg)[1]
+    also have "... \<le> c * (ln (1 / real_of_rat \<epsilon>) * (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
+      apply (simp add:s\<^sub>1'_def s\<^sub>2'_def c_def)
+      apply (rule divide_right_mono)
+       apply (subst distrib_left[symmetric])
+      apply (subst (2) mult.assoc[symmetric])
+       apply (subst (2) mult.commute)
+       apply simp
+      using delta_bound zero_compare_simps(12) by blast
+    finally have b_1: "5 + 2 * log 2 (1 + real s\<^sub>1) + 2 * log 2 (1 + real s\<^sub>2) + 2 * log 2 (4 + 2 * real n) +
+      real s\<^sub>1 * real s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1))
+      \<le> c * (ln (1 / real_of_rat \<epsilon>) * (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
+      by blast
+
+    show "abs (f2_complexity  (n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, m, \<epsilon>, \<delta>))"
+      apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
+      apply (subst abs_of_nonneg)
+       using b_8 n_ge_1 m_ge_1 apply (auto intro!: add_nonneg_nonneg zero_le_log_cancel_iff mult_nonneg_nonneg)[1]
+      apply (subst abs_of_nonneg)
+       using n_ge_1 m_ge_1 \<epsilon>_inv_ge_1 apply (auto intro!: add_nonneg_nonneg mult_nonneg_nonneg)[1]
+      by (metis b_1)
+  qed
+
+  have a:"eventually 
+    (\<lambda>x. abs (f2_complexity x) \<le> c * abs (?rhs x)) ?evt"
+    apply (rule eventually_mono[where P="\<lambda>(n, m, \<epsilon>, \<delta>).  n \<ge> 4  \<and> m \<ge> 1 \<and> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<and> (0 < \<delta> \<and> \<delta> < 1)"])
+    apply (rule eventually_prod_I2[where Q="\<lambda>n. n \<ge> 4"], simp)
+    apply (rule eventually_prod_I2[where Q="\<lambda>m. m \<ge> 1"], simp)
+    apply (rule eventually_prod_I2[where Q="\<lambda>\<epsilon>. 0 < \<epsilon> \<and> \<epsilon> < 1/3"])
+    apply (rule eventually_at_rightI[where b="1/3"], simp, simp)
+    apply (rule eventually_at_rightI[where b="1"], simp, simp)
+    using b by blast
+  show ?thesis
+    apply (rule landau_o.bigI[where c="c"], simp add:c_def, simp)
+    using a by simp
+qed
+
 
 end
