@@ -178,6 +178,13 @@ proof -
     using assms(2) by blast
 qed
 
+lemma prob_prod_pmf_slice:
+  assumes "finite I"
+  assumes "i \<in> I"
+  shows "measure (measure_pmf (prod_pmf I M)) {\<omega>. P (\<omega> i)} = measure (M i) {\<omega>. P \<omega>}"
+  using prob_prod_pmf'[OF assms(1), where J="{i}" and M="M" and A="\<lambda>_. Collect P"]
+  by (simp add:assms Pi_def)
+
 lemma range_inter: "range ((\<inter>) F) = Pow F"
   apply (rule order_antisym, rule subsetI, simp add:image_def, blast)
   by (rule subsetI, simp add:image_def, blast)

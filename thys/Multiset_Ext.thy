@@ -79,5 +79,10 @@ proof -
     by (simp add:M_def sum_mset_sum_list[symmetric])
 qed
 
+lemma sorted_sorted_list_of_multiset: "sorted (sorted_list_of_multiset M)"
+  by (induction M, simp, simp add:sorted_insort) 
+
+lemma count_mset: "count (mset xs) a = count_list xs a"
+  by (induction xs, simp, simp)
 
 end

@@ -117,32 +117,44 @@ lemma set_Suc_split: " {k. k < Suc n \<and> p k} = {k. k < n \<and> p k} \<union
   apply (rule subsetI, simp) using less_Suc_eq apply blast
   by (rule subsetI, cases "p n", simp, force, simp) 
 
-lemma (in prob_space) median_bound:
+lemma (in prob_space) median_bound_gen:
   fixes \<mu> :: real
   fixes \<delta> :: real
+  fixes \<alpha> :: real
+  assumes "\<alpha> > 0"
   assumes "\<epsilon> > 0"
   assumes "\<epsilon> < 1"
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
-  assumes "n \<ge> -32/9 * ln \<epsilon>"
-  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) \<ge> \<delta>) \<le> 1/8" 
+  assumes "n \<ge> - ln \<epsilon> / (2 * \<alpha>^2)"
+  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) \<ge> \<delta>) \<le> 1/2-\<alpha>" 
   shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<ge> \<delta>) \<le> \<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<le> ?C") 
 proof -
   define E where "E = (\<lambda>i \<omega>. (if abs (X i \<omega> - \<mu>) \<ge> \<delta> then 1 else 0::real))"
   have E_indep: "indep_vars (\<lambda>_. borel) E {0..<n}"
-    using indep_vars_compose[OF assms(3), where Y = "(\<lambda>i v. if abs (v - \<mu>) \<ge> \<delta> then 1 else 0::real)"] 
+    using indep_vars_compose[OF assms(4), where Y = "(\<lambda>i v. if abs (v - \<mu>) \<ge> \<delta> then 1 else 0::real)"] 
     by (simp add:comp_def E_def)
   have b:"Hoeffding_ineq M {0..<n} E (\<lambda>i. 0) (\<lambda>i. 1)" 
     apply (simp add:Hoeffding_ineq_def indep_interval_bounded_random_variables_def)
     apply (simp add:prob_space_axioms indep_interval_bounded_random_variables_axioms_def E_indep)
     by (simp add:E_def)
-  have c:"n > 0" apply (rule ccontr) using assms(2) assms(4) assms(1) ln_ge_zero_iff by simp
-  have "prob {x \<in> space M. (\<Sum>i = 0..<n. expectation (E i)) + 3 * real n / 8 \<le> (\<Sum>i = 0..<n. E i x)}
-    \<le> exp (- (9 * (real n)\<^sup>2 / (32 * real n)))" (is "prob ?A \<le> _")
-    using c Hoeffding_ineq.Hoeffding_ineq_ge[OF b,where \<epsilon>="3*n/8", simplified]
+  have "0 < - ln \<epsilon> / (2* \<alpha>^2)" 
+    apply (rule divide_pos_pos)
+    using assms(3) 
+     apply (simp add: assms(2))
+    using assms(1) by force
+  hence c:"n > 0"  using assms by linarith
+  have d:"\<alpha> * real n \<ge> 0" using assms by simp
+  have "prob {x \<in> space M. (\<Sum>i = 0..<n. expectation (E i)) + \<alpha> * n \<le> (\<Sum>i = 0..<n. E i x)}
+    \<le> exp (- (2 * (\<alpha> * real n)\<^sup>2 / (real n)))" (is "prob ?A \<le> _")
+    using c d Hoeffding_ineq.Hoeffding_ineq_ge[OF b,where \<epsilon>="\<alpha>*n", simplified]
     by (simp add:power_divide)
   also have "... \<le> \<epsilon>"
-    apply (subst ln_ge_iff[symmetric], metis assms(1))
-    using assms(4) by (simp add:power2_eq_square)
+    apply (subst ln_ge_iff[symmetric], metis assms(2))
+    using c assms(5) apply (simp add:algebra_simps power2_eq_square[where a="real n"])
+    apply (subst (asm) minus_divide_left)
+    apply (subst (asm) pos_divide_le_eq)
+    using assms apply simp
+    by simp
 
   finally have d:"prob ?A \<le> \<epsilon>" 
     by blast
@@ -165,22 +177,50 @@ proof -
     moreover 
     have "\<And>i \<omega>. i < n \<Longrightarrow> \<omega> \<in> space M \<Longrightarrow> E i \<omega> = indicat_real {\<omega>. abs (X i \<omega> - \<mu>) \<ge> \<delta>} \<omega>" 
       by (simp add:E_def split:split_indicator)
-    hence "\<And>i. i < n \<Longrightarrow> expectation (\<lambda>\<omega>. E i \<omega>) \<le> 1/8"
-      using assms(5) by (simp add:measure_inters cong:Bochner_Integration.integral_cong) 
-    hence"(\<Sum>i = 0..<n. expectation (E i)) \<le> n/8"
-      using sum_mono[where K="{0..<n}" and g="\<lambda>_. (1::real)/8"]
+    hence "\<And>i. i < n \<Longrightarrow> expectation (\<lambda>\<omega>. E i \<omega>) \<le> 1/2-\<alpha>"
+      using assms(6) by (simp add:measure_inters cong:Bochner_Integration.integral_cong) 
+    hence "(\<Sum>i = 0..<n. expectation (E i)) \<le> n*(1/2-\<alpha>)"
+      using sum_mono[where K="{0..<n}" and g="\<lambda>_.  1/2-\<alpha>"]
       by simp 
+    hence "(\<Sum>i = 0..<n. expectation (E i)) + \<alpha> * n \<le> n /2"
+      by (simp add:algebra_simps)
     ultimately show "x \<in> ?A"
       using a by (simp)
   qed
   have m2:"?A \<in> events" 
     apply measurable
     apply (simp add:E_def, measurable)
-    using assms(3) apply (simp add:indep_vars_def)
+    using assms(4) apply (simp add:indep_vars_def)
     by simp
   show ?thesis
     using finite_measure_mono[OF m1 m2] d by linarith
 qed
+
+lemma (in prob_space) median_bound:
+  fixes \<mu> :: real
+  fixes \<delta> :: real
+  assumes "\<epsilon> > 0"
+  assumes "\<epsilon> < 1"
+  assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
+  assumes "n \<ge> -32/9 * ln \<epsilon>"
+  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) \<ge> \<delta>) \<le> 1/8" 
+  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<ge> \<delta>) \<le> \<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<le> ?C") 
+  apply (rule median_bound_gen[where \<alpha>="3/8"], simp, simp add:assms, simp add:assms, simp add:assms)
+  using assms(4) apply (simp add:algebra_simps power2_eq_square) 
+  using assms(5) by simp
+
+lemma (in prob_space) median_bound_3:
+  fixes \<mu> :: real
+  fixes \<delta> :: real
+  assumes "\<epsilon> > 0"
+  assumes "\<epsilon> < 1"
+  assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
+  assumes "n \<ge> -18 * ln \<epsilon>"
+  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) \<ge> \<delta>) \<le> 1/3" 
+  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<ge> \<delta>) \<le> \<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<le> ?C") 
+  apply (rule median_bound_gen[where \<alpha>="1/6"], simp, simp add:assms, simp add:assms, simp add:assms)
+  using assms(4) apply (simp add:algebra_simps power2_eq_square) 
+  using assms(5) by simp
 
 lemma sorted_mono_map: 
   assumes "sorted xs"
@@ -197,13 +237,18 @@ lemma map_sort:
    apply simp
   by (rule sorted_mono_map, simp, simp add:assms)
 
+lemma median_cong:
+  assumes "\<And>i. i < n \<Longrightarrow> f i = g i"
+  shows "median f n = median g n"
+  apply (simp add:median_def)
+  apply (rule arg_cong2[where f="(!)"])
+   apply (rule arg_cong[where f="sort"])
+  by (rule map_cong, simp, simp add:assms, simp)
+
 lemma median_restrict: 
   assumes "n > 0"
   shows "median (\<lambda>i \<in> {0..<n}.f i) n = median f n"
-  apply (simp add:median_def cong:map_cong)
-  apply (rule arg_cong2[where f="(!)"])
-  apply (rule arg_cong[where f="sort"])
-    by (rule map_cong, simp, simp, simp)
+  by (rule median_cong, simp)
 
 lemma median_rat:
   assumes "n > 0"

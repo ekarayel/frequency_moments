@@ -23,7 +23,7 @@ fun fk_update :: "nat \<Rightarrow> fk_space \<Rightarrow> fk_space pmf" where
         if coins i then 
           (x,0) 
         else (
-          let (a,l) = r i in (a, l + (if a=x then 1 else 0))
+          let (a,l) = r i in (a, l + of_bool (a=x))
         )
       )
     }"
@@ -62,7 +62,7 @@ fun fk_update' :: "'a \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Ri
         if coins i then 
           (x,0) 
         else (
-          let (a,l) = r i in (a, l + (if a=x then 1 else 0))
+          let (a,l) = r i in (a, l + of_bool (a=x))
         )
       )
     }"
@@ -75,7 +75,7 @@ fun fk_update'' :: "'a \<Rightarrow> nat \<Rightarrow> ('a \<times> nat) \<Right
         if coin then 
           (x,0) 
         else (
-          (a, l + (if a=x then 1 else 0))
+          (a, l + of_bool (a=x))
         )
       )
     }"
@@ -235,7 +235,7 @@ next
   have c:"\<And>c. fk_update'' x c = (\<lambda>a. fk_update'' x c (fst a,snd a))" 
     by auto
   have a: "\<And>y. pmf_of_set {k. k < length xs} \<bind> (\<lambda>k. return_pmf (xs ! k, count_list (drop (Suc k) xs) (xs ! k)) \<bind>
-          (\<lambda>xa. return_pmf (if y then (x, 0) else (fst xa, snd xa + (if fst xa = x then 1 else 0)))))
+          (\<lambda>xa. return_pmf (if y then (x, 0) else (fst xa, snd xa + (of_bool (fst xa = x))))))
       = pmf_of_set {k. k < length xs} \<bind> (\<lambda>k. return_pmf (if y then (length xs) else k) \<bind> (\<lambda>k. return_pmf ((xs@[x]) ! k, count_list (drop (Suc k) (xs@[x])) ((xs@[x]) ! k))))"
     apply (simp add:bind_return_pmf)
     apply (rule bind_pmf_cong, simp)

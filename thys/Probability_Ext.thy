@@ -4,6 +4,7 @@ text \<open>Some additional results about probabilities and independent families
 
 theory Probability_Ext
   imports Main "HOL-Probability.Independent_Family" Multiset_Ext "HOL-Probability.Stream_Space"
+ "HOL-Probability.Probability_Mass_Function"
 begin
 
 lemma measure_inters: "measure M (E \<inter> space M) = \<P>(x in M. x \<in> E)"
@@ -168,7 +169,7 @@ lemma (in prob_space) indep_vars_reindex:
   shows "indep_vars (M' \<circ> f) (\<lambda>k \<omega>. X' (f k) \<omega>) I"
   using assms by (simp add:indep_vars_def2 indep_sets_reindex)
 
-
+(*TODO Remove *)
 definition has_variance where
   "has_variance M f r = (integrable M (\<lambda>\<omega>. f \<omega>^2) \<and> integrable M f \<and> prob_space M \<and> r ((prob_space.variance M f) ::real))"
 
@@ -189,7 +190,7 @@ lemma has_variance_divide:
   apply (rule has_variance_scale[where a="1/a", simplified])
   using assms by (simp add:power_divide)
 
-
+(*TODO Remove except var_sum_int - which should not need indep assumption *)
 lemma (in prob_space)
   assumes "finite I"
   assumes "indep_vars (\<lambda>_. borel ::real measure) X' I" 
@@ -285,5 +286,195 @@ proof -
     by (meson sigma_algebra.sigma_sets_subset sigma_algebra_Pow)
   ultimately show ?thesis by force
 qed
+
+lemma pmf_eq:
+  assumes "\<And>x. x \<in> set_pmf \<Omega> \<Longrightarrow> (x \<in> P) = (x \<in> Q)"
+  shows "measure (measure_pmf \<Omega>) P = measure (measure_pmf \<Omega>) Q"
+    apply (rule measure_eq_AE)
+      apply (subst AE_measure_pmf_iff)
+    using assms by auto
+
+lemma pmf_mono_1:
+  assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q"
+  shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q"
+proof -
+  have "measure (measure_pmf \<Omega>) P = measure (measure_pmf \<Omega>) (P \<inter> set_pmf \<Omega>)" 
+    by (rule pmf_eq, simp)
+  also have "... \<le>  measure (measure_pmf \<Omega>) Q"
+  apply (rule finite_measure.finite_measure_mono, simp)
+     apply (rule subsetI) using assms apply blast
+    by simp
+  finally show ?thesis by simp
+qed
+
+definition (in prob_space) covariance where 
+  "covariance f g = expectation (\<lambda>\<omega>. (f \<omega> - expectation f) * (g \<omega> - expectation g))"
+
+lemma (in prob_space) real_prod_integrable:
+  fixes f :: "'a \<Rightarrow> real"
+  fixes g :: "'a \<Rightarrow> real"
+  assumes "integrable M f"
+  assumes "integrable M g"
+  assumes "integrable M (\<lambda>\<omega>. f \<omega>^2)"
+  assumes "integrable M (\<lambda>\<omega>. g \<omega>^2)"
+  shows "integrable M (\<lambda>\<omega>. f \<omega> * g \<omega>)"
+proof -
+  have b1:"(\<lambda>\<omega>. ennreal (abs (f \<omega>))) \<in> borel_measurable M" 
+    using assms(1) assms(2) by measurable
+  have b2:"(\<lambda>\<omega>. ennreal (abs (g \<omega>))) \<in> borel_measurable M" 
+    using assms(1) assms(2) by measurable
+  have b:"(\<lambda>\<omega>. f \<omega> * g \<omega>) \<in> borel_measurable M" 
+    using assms(1) assms(2) by measurable
+
+  have a1: "integral\<^sup>N M (\<lambda>\<omega>. (ennreal \<bar>f \<omega>\<bar>)\<^sup>2) < \<infinity>" using assms(3) 
+    apply (subst (asm) integrable_iff_bounded) by (simp add:ennreal_power)
+  have a2: "integral\<^sup>N M (\<lambda>\<omega>. (ennreal \<bar>g \<omega>\<bar>)\<^sup>2) < \<infinity>" using assms(4)
+    apply (subst (asm) integrable_iff_bounded) by (simp add:ennreal_power)
+  show "integrable M (\<lambda>\<omega>. f \<omega> * g \<omega>)" 
+    apply (subst integrable_iff_bounded)
+    apply (rule conjI, metis b)
+    apply (simp add:abs_mult)
+    apply (subst ennreal_mult, simp, simp)
+    using Cauchy_Schwarz_nn_integral[OF b1 b2] a1 a2 
+    by (metis (no_types, lifting) ennreal_0 ennreal_mult_less_top infinity_ennreal_def 
+          linorder_not_le neq_top_trans power2_eq_square top_neq_ennreal)
+qed
+
+lemma (in prob_space) covariance_eq:
+  fixes f :: "'a \<Rightarrow> real"
+  assumes "integrable M f"
+  assumes "integrable M g"
+  assumes "integrable M (\<lambda>\<omega>. f \<omega>^2)"
+  assumes "integrable M (\<lambda>\<omega>. g \<omega>^2)"
+  shows "covariance f g = expectation (\<lambda>\<omega>. f \<omega> * g \<omega>) - expectation f * expectation g"
+  using real_prod_integrable assms
+  by (simp add:covariance_def algebra_simps prob_space)
+
+
+lemma (in prob_space) covar_integrable:
+  fixes f :: "'a \<Rightarrow> real"
+  fixes g :: "'a \<Rightarrow> real"
+  assumes "integrable M f"
+  assumes "integrable M (\<lambda>\<omega>. f \<omega>^2)"
+  assumes "integrable M g"
+  assumes "integrable M (\<lambda>\<omega>. g \<omega>^2)"
+  shows "integrable M (\<lambda>\<omega>. (f \<omega> - expectation f) * (g \<omega> - expectation g))"
+  apply (rule real_prod_integrable)
+  using assms by (simp add:power2_eq_square right_diff_distrib left_diff_distrib)+
+
+lemma (in prob_space) var_sum_1:
+  fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
+  assumes "finite I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
+  shows 
+    "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. (\<Sum>j \<in> I. covariance (f i) (f j)))" (is "?lhs = ?rhs")
+proof -
+  have a:"\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. (f i \<omega> - expectation (f i)) * (f j \<omega> - expectation (f j)))" 
+    using assms covar_integrable by simp
+  have "?lhs = expectation (\<lambda>\<omega>. (\<Sum>i\<in>I. f i \<omega> - expectation (f i))\<^sup>2)"
+    apply (subst Bochner_Integration.integral_sum, simp add:assms)
+    by (subst sum_subtractf[symmetric], simp)
+  also have "... = expectation (\<lambda>\<omega>. (\<Sum>i \<in> I. (\<Sum>j \<in> I. (f i \<omega> - expectation (f i)) *  (f j \<omega> - expectation (f j)))))"
+    apply (simp add: power2_eq_square sum_distrib_right sum_distrib_left)
+    apply (rule Bochner_Integration.integral_cong, simp)
+    apply (rule sum.cong, simp)+
+    by (simp add:mult.commute)
+  also have "... = (\<Sum>i \<in> I. (\<Sum>j \<in> I. covariance (f i) (f j)))"
+    using a by (simp add: Bochner_Integration.integral_sum covariance_def) 
+  finally show ?thesis by simp
+qed
+
+lemma (in prob_space) covar_self_eq:
+  fixes f :: "'a \<Rightarrow> real"
+  shows "covariance f f = variance f"
+  using indep_var_def
+  by (simp add:covariance_def power2_eq_square)
+
+lemma (in prob_space) covar_indep_eq_zero:
+  fixes f :: "'a \<Rightarrow> real"
+  assumes "integrable M f"
+  assumes "integrable M g"
+  assumes "indep_var borel f borel g"
+  shows "covariance f g = 0"
+proof -
+  have a:"indep_var borel ((\<lambda>t. t - expectation f) \<circ> f) borel  ((\<lambda>t. t - expectation g) \<circ> g)"
+    by (rule indep_var_compose[OF assms(3)], simp, simp)
+
+  show ?thesis
+    apply (simp add:covariance_def)
+    apply (subst indep_var_lebesgue_integral)
+    using a assms by (simp add:comp_def prob_space)+
+qed
+
+lemma (in prob_space) var_sum_2:
+  fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
+  assumes "finite I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
+  shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = 
+      (\<Sum>i \<in> I. variance (f i)) + (\<Sum>i \<in> I. \<Sum>j \<in> I - {i}. covariance (f i) (f j))"
+  apply (subst var_sum_1[OF assms(1) assms(2) assms(3)], simp)
+  apply (subst covar_self_eq[symmetric])
+  apply (subst sum.distrib[symmetric])
+  apply (rule sum.cong, simp)
+  apply (subst sum.insert[symmetric], simp add:assms, simp)
+  by (rule sum.cong, simp add:insert_absorb, simp)
+
+lemma sum_zero_all: 
+  assumes "\<And>i. i \<in> I \<Longrightarrow> f i = (0 :: 'a :: ab_group_add)"
+  shows "sum f I = 0"
+  using assms by simp
+
+lemma (in prob_space) var_sum_pairwise_indep:
+  fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
+  assumes "finite I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
+  assumes "\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> i \<noteq> j \<Longrightarrow> indep_var borel (f i) borel (f j)"
+  shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
+proof -
+  have a:" (\<Sum>i \<in> I. \<Sum>j \<in> I - {i}. covariance (f i) (f j)) = 0"
+    apply (rule sum_zero_all)
+    apply (rule sum_zero_all)
+    using covar_indep_eq_zero assms by auto
+
+  show ?thesis
+    by (subst var_sum_2[OF assms(1) assms(2) assms(3)], simp, simp add:a)
+qed
+
+lemma (in prob_space) indep_var_from_indep_vars:
+  assumes "i \<noteq> j"
+  assumes "indep_vars (\<lambda>_. M') f {i, j}" 
+  shows "indep_var M' (f i) M' (f j)"
+proof -
+  have a:"inj (case_bool i j)" using assms(1) 
+    by (simp add: bool.case_eq_if inj_def)
+  have b:"range (case_bool i j) = {i,j}" 
+    by (simp add: UNIV_bool insert_commute)
+  have c:"indep_vars (\<lambda>_. M') f (range (case_bool i j))" using assms(2) b by simp
+
+  have "True = indep_vars (\<lambda>x. M') (\<lambda>x. f (case_bool i j x)) UNIV" 
+    using indep_vars_reindex[OF a c]
+    by (simp add:comp_def)
+  also have "... = indep_vars (\<lambda>x. case_bool M' M' x) (\<lambda>x. case_bool (f i) (f j) x) UNIV"
+    apply (rule indep_vars_cong, simp)
+    apply (metis bool.case_distrib)
+    by (simp add: bool.case_eq_if)
+  also have "... = ?thesis"
+    apply (subst indep_var_def) by simp
+  finally show ?thesis by simp
+qed
+
+lemma (in prob_space) var_sum_pairwise_indep_2:
+  fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
+  assumes "finite I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
+  assumes "\<And>J. J \<subseteq> I \<Longrightarrow> card J = 2 \<Longrightarrow> indep_vars (\<lambda> _. borel) f J"
+  shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
+  apply (rule var_sum_pairwise_indep[OF assms(1) assms(2) assms(3)], simp, simp)
+  apply (rule indep_var_from_indep_vars, simp)
+  by (rule assms(4), simp, simp)
 
 end

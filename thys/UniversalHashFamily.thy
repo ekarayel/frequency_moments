@@ -23,6 +23,16 @@ text \<open>The space of polynomials of degree less than $k$ forms a probability
 definition poly_hash_family where
   "poly_hash_family F k = uniform_count_measure (bounded_degree_polynomials F k)"
 
+lemma non_empty_bounded_degree_polynomials:
+  assumes "ring F"
+  shows "bounded_degree_polynomials F k \<noteq> {}"
+proof -
+  have "\<zero>\<^bsub>poly_ring F\<^esub> \<in> bounded_degree_polynomials F k"
+    using assms
+    by (simp add: bounded_degree_polynomials_def univ_poly_zero univ_poly_zero_closed)
+  thus ?thesis by auto
+qed
+
 lemma prob_space_poly_family:
   assumes "field F"
   assumes "finite (carrier F)"
@@ -39,6 +49,17 @@ qed
 
 text \<open>A hash function is just polynomial evaluation.\<close>
 definition hash_function where "hash_function F x \<omega> = ring.eval F \<omega> x"
+
+definition hash where "hash F x \<omega> = ring.eval F \<omega> x"
+
+lemma hash_range:
+  assumes "ring F"
+  assumes "\<omega> \<in> bounded_degree_polynomials F n"
+  assumes "x \<in> carrier F"
+  shows "hash F x \<omega> \<in> carrier F"
+  using assms 
+  apply (simp add:hash_def bounded_degree_polynomials_def)
+  by (metis ring.eval_in_carrier ring.polynomial_incl univ_poly_carrier)
 
 lemma hash_functions_are_random_variables:
   assumes "field F"
@@ -75,6 +96,40 @@ lemma poly_cards_single:
          card (carrier F)^(n-1)"
   using poly_cards[OF assms(1) assms(2), where K="{k}" and y="\<lambda>_. y", simplified] assms(3) assms(4)[simplified]
   by (simp add: assms(5))
+
+
+lemma expand_subset_filter: "{x \<in> A. P x} = A \<inter> {x. P x}"
+  by force
+
+lemma hash_prob:
+  assumes "field F"
+  assumes "finite (carrier F)"
+  assumes "K \<subseteq> carrier F"
+  assumes "card K \<le> n"
+  assumes "y ` K \<subseteq> carrier F"
+  shows "\<P>(\<omega> in pmf_of_set (bounded_degree_polynomials F n). (\<forall>x \<in> K. hash F x \<omega> = y x)) = 1/(real (card (carrier F)))^card K" 
+proof -
+  have "\<zero>\<^bsub>F\<^esub> \<in> carrier F"
+    using assms(1) field.is_ring ring.ring_simprules(2) by blast
+
+  hence a:"card (carrier F) > 0"
+    apply (subst card_gt_0_iff) 
+    using assms(2) by blast
+
+  show ?thesis
+    apply (subst measure_pmf_of_set)
+      apply (rule non_empty_bounded_degree_polynomials[OF field.is_ring[OF assms(1)]])
+     apply (rule fin_degree_bounded[OF field.is_ring[OF assms(1)] assms(2)])
+    apply (simp add:hash_def expand_subset_filter[symmetric])
+    apply (subst poly_cards[OF assms(1) assms(2) assms(3) assms(4) assms(5)])
+    apply (subst bounded_degree_polynomials_count[OF field.is_ring[OF assms(1)] assms(2)])
+    apply (subst frac_eq_eq)
+    using a apply simp
+    using a apply simp
+    apply (simp)
+    by (metis assms(4) le_add_diff_inverse2 power_add)
+qed
+
 
 lemma bounded_poly_indep_pmf:
   assumes "field F"
@@ -212,6 +267,23 @@ proof -
     apply (simp add:c card_Union_disjoint)
     apply (simp add:d)
     using e card_image by blast
+qed
+
+lemma hash_indep_pmf:
+  assumes "field F"
+  assumes "finite (carrier F)"
+  assumes "J\<subseteq>carrier F"
+  assumes "finite J" 
+  assumes "card J \<le> n"
+  assumes "1 \<le> n"
+  shows "prob_space.indep_vars (pmf_of_set (bounded_degree_polynomials F n)) 
+    (\<lambda>_. pmf_of_set (carrier F)) (hash F) J"
+proof -
+  have a: "hash = hash_function"
+    apply (rule ext, rule ext, rule ext)
+    by (simp add:hash_def hash_function_def)
+  show ?thesis
+    using bounded_poly_indep_pmf assms apply (simp add:a) by blast
 qed
 
 lemma poly_card_set':
