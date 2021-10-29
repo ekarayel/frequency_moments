@@ -10,7 +10,7 @@ fun f0_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f0_space p
     do {
       let s = nat \<lceil>-18 * ln (real_of_rat \<epsilon>)\<rceil>;
       let t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>;
-      let p = find_odd_prime_above (max n 19);
+      let p = find_prime_above (max n 19);
       let r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24); 
       h \<leftarrow> prod_pmf {0..<s} (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2));
       return_pmf (s, t, p, r, h, (\<lambda>_ \<in> {0..<s}. {}))
@@ -39,7 +39,7 @@ lemma f0_alg_sketch:
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
   defines "t \<equiv> nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
   defines "s \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
-  defines "p \<equiv> find_odd_prime_above (max n 19)"
+  defines "p \<equiv> find_prime_above (max n 19)"
   defines "r \<equiv> nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
   shows "sketch = map_pmf (\<lambda>x. (s,t,p,r, x, \<lambda>i \<in> {0..<s}. f0_sketch p r t (x i) xs))
     (prod_pmf {0..<s} (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2)))" 
@@ -474,13 +474,10 @@ proof -
   finally show ?thesis by simp
 qed
 
-lemma mult_ge_1: "x \<ge> (1::real) \<Longrightarrow> y \<ge> 1 \<Longrightarrow> x*y \<ge> 1" 
-  using mult_mono' by fastforce
-
-lemma inters_compr: "A \<inter> {x. P x} = { x\<in> A. P x}"
+lemma inters_compr: "A \<inter> {x. P x} = {x \<in> A. P x}"
   by blast
 
-lemma of_bool_square :"(of_bool x)\<^sup>2 = ((of_bool x)::real)"
+lemma of_bool_square: "(of_bool x)\<^sup>2 = ((of_bool x)::real)"
   by (cases x, simp, simp)
 
 lemma f0_alg_correct:
@@ -493,7 +490,7 @@ lemma f0_alg_correct:
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  define p where "p =  find_odd_prime_above (max n 19)"
+  define p where "p =  find_prime_above (max n 19)"
   define r where "r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
   define g where "g = (\<lambda>S. if card S < t then rat_of_nat (card S) else of_nat t * rat_of_nat p / rat_of_float (Max S))"
   define g' where "g' = (\<lambda>S. if card S < t then real (card S) else real t * real p / Max S)"

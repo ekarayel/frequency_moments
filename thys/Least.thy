@@ -238,9 +238,9 @@ definition count_less where "count_less x M = size {#y \<in># M. y < x#}"
 definition nth_mset :: "nat \<Rightarrow> ('a :: linorder) multiset \<Rightarrow> 'a" where
   "nth_mset k M = sorted_list_of_multiset M ! (k-1)"
 
+(* TODO Switch to using this one directly. *)
 definition nth_mset2 :: "nat \<Rightarrow> ('a :: linorder) multiset \<Rightarrow> 'a" where
   "nth_mset2 k M = sorted_list_of_multiset M ! k"
-
 
 lemma nth_mset2_bound_left:
   assumes "k < size M"

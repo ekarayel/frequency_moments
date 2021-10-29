@@ -60,7 +60,7 @@ fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space p
     do {
       let s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>;
       let s\<^sub>2 = nat \<lceil>-32/9 * ln (real_of_rat \<epsilon>)\<rceil>;
-      let p = find_odd_prime_above n;
+      let p = find_prime_above (max n 3);
       h \<leftarrow> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4));
       return_pmf (s\<^sub>1, s\<^sub>2, p, h, (\<lambda>_ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0 :: int)))
     }"
@@ -547,7 +547,7 @@ lemma f2_alg_sketch:
   assumes "\<delta> > 0"
   defines "s\<^sub>1 \<equiv> nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
   defines "s\<^sub>2 \<equiv> nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
-  defines "p \<equiv> find_odd_prime_above n"
+  defines "p \<equiv> find_prime_above (max n 3)"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
   defines "\<Omega> \<equiv> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))" 
   shows "sketch = \<Omega> \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, 
@@ -589,7 +589,7 @@ lemma f2_alg_correct:
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
-  define p where "p = find_odd_prime_above n"
+  define p where "p = find_prime_above (max n 3)"
   define \<Omega>\<^sub>0 where 
     "\<Omega>\<^sub>0 = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set ( bounded_degree_polynomials (ZFact (int p)) 4))"
   define \<Omega>\<^sub>1 where 
@@ -607,7 +607,8 @@ proof -
     by (simp add:p_def find_prime_above_is_prime)
 
   have p_ge_3: "p \<ge> 3"
-    using find_prime_above_min by (simp add:p_def)
+    apply (simp add:p_def)
+    by (meson find_prime_above_lower_bound dual_order.trans max.cobounded2)
 
   have s2_nonzero: "s\<^sub>2 > 0"
     using assms by (simp add:s\<^sub>2_def)
@@ -648,7 +649,7 @@ proof -
       apply (simp add:p_def find_prime_above_is_prime)
     using p_ge_3 apply linarith
     using assms(3) find_prime_above_lower_bound apply (simp add:p_def)
-    using order_less_le_trans by blast
+    by (metis max_def order_less_le_trans)
 
   have f3_var_2: " 2 * (real_of_rat (f2_value xs))\<^sup>2 \<le>  (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / (8 * real s\<^sub>1) * (real s\<^sub>1)\<^sup>2"
     using s1_nonzero apply (simp add:of_rat_mult)
@@ -718,7 +719,7 @@ proof -
       apply (simp add:p_def find_prime_above_is_prime)
     using p_ge_3 apply linarith
     using assms(3) find_prime_above_lower_bound apply (simp add:p_def)
-    using order_less_le_trans by blast
+    by (metis max_def order_less_le_trans)
 
   define f' where "f' = (\<lambda>x. median (f2 x) s\<^sub>2)"
   have real_f: "\<And>x. real_of_rat (f x) = f' x"
@@ -814,10 +815,18 @@ lemma f2_complexity:
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
-  define p where "p = find_odd_prime_above n"
+  define p where "p = find_prime_above (max n 3)"
+
+  have find_prime_above_3: "find_prime_above 3 = 3" 
+    by (simp add:find_prime_above.simps)
 
   have p_ge_0: "p > 0" 
     by (metis find_prime_above_min p_def gr0I not_numeral_le_zero)
+  have p_le_n: "p \<le> 2 * n + 3" 
+    apply (cases "n \<le> 3")
+    apply (simp add: p_def find_prime_above_3) 
+    apply (simp add: p_def) 
+    by (metis One_nat_def find_prime_above_upper_bound Suc_1 add_Suc_right linear not_less_eq_eq numeral_3_eq_3)
 
   have a: "\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
        bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
@@ -849,7 +858,7 @@ proof -
         apply (rule nat_bit_count_est[where m="2*n+3", simplified])
         apply (rule order_trans[where y="p"])
         using the_inv_into_into[OF zfact_embed_inj[OF p_ge_0], where B="{0..<p}", simplified] less_imp_le_nat apply presburger
-        by (metis p_def find_prime_above_upper_bound)
+        by (simp add:p_le_n)
       also have "... \<le> ereal 4 * (ereal (2 * log 2 (4 + 2 * real n) + 1) + 1) + 1"
         apply (rule add_mono)
          apply (rule ereal_mult_mono, simp, simp)
@@ -878,10 +887,8 @@ proof -
         by (simp add: sum_list_triv)
       also have "... \<le> int (length xs) * (4+2*(int n))"
         apply (rule mult_mono, simp)
-        apply (simp add:p_def) 
-          apply (metis add.commute mult_2 find_prime_above_upper_bound of_nat_add of_nat_le_iff of_nat_numeral)
-         apply simp
-        by simp
+        using p_le_n apply linarith
+        by simp+
       finally show "abs x \<le>  (4 + 2 * int n) * int (length xs)"
         by (simp add: mult.commute)
     qed
@@ -899,7 +906,7 @@ proof -
           del:encode_dependent_sum.simps encode_prod.simps N\<^sub>S.simps plus_ereal.simps of_nat_add)
       apply (rule add_mono, rule nat_bit_count)
       apply (rule add_mono, rule nat_bit_count)
-      apply (rule add_mono, rule nat_bit_count_est, metis p_def find_prime_above_upper_bound)
+      apply (rule add_mono, rule nat_bit_count_est, metis p_le_n)
       apply (rule add_mono)
        apply (rule list_bit_count_estI[where a="9 + 8 * log 2 (4 + 2 * real n)"], rule a_3, simp, simp)
       apply (rule list_bit_count_estI[where a="2* log 2 (real_of_int (int ((4+2*n) * length xs)+1))+2"])

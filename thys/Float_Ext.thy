@@ -85,26 +85,6 @@ proof -
 qed
 
 
-lemma truncate_down_rule:
-  assumes "x \<ge> 0"
-  assumes "prec > 0"
-  assumes "truncate_down prec x \<le> y"
-  shows "x \<le> y / (1-2 powr (-real prec))"
-proof -
-  have a: "2 powr - real prec < 2 powr 0"
-    by (rule powr_less_mono, simp add:assms, simp)
-  also have "...  = 1" by simp
-  finally have a:"2 powr - real prec < 1" by simp
-  have "x \<le> truncate_down prec x / (1-2 powr (-real prec))"
-    apply (subst pos_le_divide_eq)
-     apply (simp add:a)
-    by (rule truncate_down_pos[OF assms(1)])
-  also have "... \<le> y / (1-2 powr (-real prec))"
-    apply (rule divide_right_mono, simp add:assms)
-    using a by fastforce
-  finally show ?thesis by simp
-qed
-
 definition rat_of_float :: "float \<Rightarrow> rat" where "rat_of_float f = of_int (mantissa f) * (
   if exponent f \<ge> 0 then 2 ^ (nat (exponent f)) else 1 / 2 ^ (nat (-exponent f)))" 
 
