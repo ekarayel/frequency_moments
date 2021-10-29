@@ -236,16 +236,12 @@ definition count_le where "count_le x M = size {#y \<in># M. y \<le> x#}"
 definition count_less where "count_less x M = size {#y \<in># M. y < x#}"
 
 definition nth_mset :: "nat \<Rightarrow> ('a :: linorder) multiset \<Rightarrow> 'a" where
-  "nth_mset k M = sorted_list_of_multiset M ! (k-1)"
+  "nth_mset k M = sorted_list_of_multiset M ! k"
 
-(* TODO Switch to using this one directly. *)
-definition nth_mset2 :: "nat \<Rightarrow> ('a :: linorder) multiset \<Rightarrow> 'a" where
-  "nth_mset2 k M = sorted_list_of_multiset M ! k"
-
-lemma nth_mset2_bound_left:
+lemma nth_mset_bound_left:
   assumes "k < size M"
   assumes "count_less x M \<le> k"
-  shows "x \<le> nth_mset2 k M"
+  shows "x \<le> nth_mset k M"
 proof (rule ccontr)
   define xs where "xs = sorted_list_of_multiset M"
   have s_xs: "sorted xs" by (simp add:xs_def sorted_sorted_list_of_multiset)
@@ -255,9 +251,9 @@ proof (rule ccontr)
   hence a:"\<And>i. i \<le> k \<Longrightarrow> xs ! i \<le> xs ! k"
     using s_xs l_xs sorted_iff_nth_mono by blast
 
-  assume "\<not>(x \<le> nth_mset2 k M)"
-  hence "x > nth_mset2 k M" by simp
-  hence b:"x > xs ! k" by (simp add:nth_mset2_def xs_def[symmetric])
+  assume "\<not>(x \<le> nth_mset k M)"
+  hence "x > nth_mset k M" by simp
+  hence b:"x > xs ! k" by (simp add:nth_mset_def xs_def[symmetric])
 
   have "k < card {0..k}" by simp
   also have "... \<le> card {i. i < length xs \<and> xs ! i < x}"
@@ -273,25 +269,10 @@ proof (rule ccontr)
   finally show "False" by simp
 qed
 
-lemma nth_mset_bound_left:
-  assumes "k > 0"
-  assumes "k \<le> size M"
-  assumes "size {# y \<in>#M.  y < x#} < k"
-  shows "x \<le> nth_mset k M"
-proof -
-  have "k-1 < size M" using assms(1) assms(2) Suc_le_lessD Suc_pred' by presburger 
-  moreover have "count_less x M \<le> k - 1"
-    using assms(1) assms(3) by (simp add:count_less_def)
-  ultimately have "x \<le> nth_mset2 (k-1) M"
-    using nth_mset2_bound_left[where k="k-1"] by blast
-  thus ?thesis 
-    by (simp add:nth_mset_def nth_mset2_def)
-qed
-
-lemma nth_mset2_bound_left_excl:
+lemma nth_mset_bound_left_excl:
   assumes "k < size M"
   assumes "count_le x M \<le> k"
-  shows "x < nth_mset2 k M"
+  shows "x < nth_mset k M"
 proof (rule ccontr)
   define xs where "xs = sorted_list_of_multiset M"
   have s_xs: "sorted xs" by (simp add:xs_def sorted_sorted_list_of_multiset)
@@ -301,9 +282,9 @@ proof (rule ccontr)
   hence a:"\<And>i. i \<le> k \<Longrightarrow> xs ! i \<le> xs ! k"
     using s_xs l_xs sorted_iff_nth_mono by blast
 
-  assume "\<not>(x < nth_mset2 k M)"
-  hence "x \<ge> nth_mset2 k M" by simp
-  hence b:"x \<ge> xs ! k" by (simp add:nth_mset2_def xs_def[symmetric])
+  assume "\<not>(x < nth_mset k M)"
+  hence "x \<ge> nth_mset k M" by simp
+  hence b:"x \<ge> xs ! k" by (simp add:nth_mset_def xs_def[symmetric])
 
   have "k+1 \<le> card {0..k}" by simp
   also have "... \<le> card {i. i < length xs \<and> xs ! i \<le> xs ! k}"
@@ -323,25 +304,10 @@ proof (rule ccontr)
   finally show "False" by simp
 qed
 
-lemma nth_mset_bound_left_excl:
-  assumes "k > 0"
-  assumes "k \<le> size M"
-  assumes "size {# y \<in>#M.  y \<le> x#} < k"
-  shows "x < nth_mset k M"
-proof -
-  have "k-1 < size M" using assms(1) assms(2) Suc_le_lessD Suc_pred' by presburger 
-  moreover have "count_le x M \<le> k-1"
-    using  assms(3) by (simp add:count_le_def)
-  ultimately have "x < nth_mset2 (k-1) M"
-    using nth_mset2_bound_left_excl[where k="k-1"] by blast
-  thus ?thesis 
-    by (simp add:nth_mset_def nth_mset2_def)
-qed
-
-lemma nth_mset2_bound_right:
+lemma nth_mset_bound_right:
   assumes "k < size M"
   assumes "count_le x M > k"
-  shows "nth_mset2 k M \<le> x"
+  shows "nth_mset k M \<le> x"
 proof (rule ccontr)
   define xs where "xs = sorted_list_of_multiset M"
   have s_xs: "sorted xs" by (simp add:xs_def sorted_sorted_list_of_multiset)
@@ -349,10 +315,10 @@ proof (rule ccontr)
     by (metis size_mset mset_sorted_list_of_multiset assms(1))  
   have M_xs: "M = mset xs" by (simp add:xs_def)
 
-  assume "\<not>(nth_mset2 k M \<le> x)"
-  hence "x < nth_mset2 k M" by simp
+  assume "\<not>(nth_mset k M \<le> x)"
+  hence "x < nth_mset k M" by simp
   hence "x < xs ! k" 
-    by (simp add:nth_mset2_def xs_def[symmetric])
+    by (simp add:nth_mset_def xs_def[symmetric])
   hence a:"\<And>i. i < length xs \<and> xs ! i \<le> x \<Longrightarrow> i < k"
     using s_xs l_xs sorted_iff_nth_mono leI by fastforce
   have "count_le x M \<le> card {i. i < length xs \<and> xs ! i \<le> x}"
@@ -366,21 +332,6 @@ proof (rule ccontr)
   also have "... = k" by simp
   finally have "count_le x M \<le> k" by simp
   thus "False" using assms by simp
-qed
-
-lemma nth_mset_bound_right:
-  assumes "k > 0"
-  assumes "k \<le> size M"
-  assumes "size {# y \<in>#M.  y \<le> x#} \<ge> k"
-  shows "nth_mset k M \<le> x"
-proof -
-  have "k-1 < size M" using assms(1) assms(2) Suc_le_lessD Suc_pred' by presburger 
-  moreover have "count_le x M > k-1"
-    using  assms assms(3) by (simp add:count_le_def)
-  ultimately have "nth_mset2 (k-1) M \<le> x"
-    using nth_mset2_bound_right[where k="k-1"] by blast
-  thus ?thesis 
-    by (simp add:nth_mset_def nth_mset2_def)
 qed
 
 
@@ -399,33 +350,21 @@ lemma sorted_list_of_multiset_image_commute:
   apply (subst sorted_wrt_map)
   by (metis (no_types, lifting) monoE sorted_sorted_list_of_multiset sorted_wrt_mono_rel assms)
 
-lemma nth_mset2_commute_mono:
+lemma nth_mset_commute_mono:
   assumes "mono f"
   assumes "k < size M"
-  shows "f (nth_mset2 k M) = nth_mset2 k (image_mset f M)"
+  shows "f (nth_mset k M) = nth_mset k (image_mset f M)"
 proof -
   have a:"k < length (sorted_list_of_multiset M)"
     by (metis assms(2) mset_sorted_list_of_multiset size_mset)
   show ?thesis
-    using a by (simp add:nth_mset2_def sorted_list_of_multiset_image_commute[OF assms(1)])
+    using a by (simp add:nth_mset_def sorted_list_of_multiset_image_commute[OF assms(1)])
 qed 
 
-lemma nth_mset_commute_mono:
-  assumes "mono f"
-  assumes "k > 0"
-  assumes "size M \<ge> k"
-  shows "f (nth_mset k M) = nth_mset k (image_mset f M)"
-proof -
-  have a:"k - 1 < size M" using assms(2) assms(3) Suc_diff_1 Suc_le_lessD by presburger
-  show ?thesis 
-    using nth_mset2_commute_mono[OF assms(1) a]
-    by (simp add:nth_mset_def nth_mset2_def)
-qed
-
-lemma nth_mset2_max: 
+lemma nth_mset_max: 
   assumes "size A > k"
-  assumes "\<And>x. x \<le> nth_mset2 k A \<Longrightarrow> count A x \<le> 1"
-  shows "nth_mset2 k A = Max (least (k+1) (set_mset A))" and "card (least (k+1) (set_mset A)) = k+1"
+  assumes "\<And>x. x \<le> nth_mset k A \<Longrightarrow> count A x \<le> 1"
+  shows "nth_mset k A = Max (least (k+1) (set_mset A))" and "card (least (k+1) (set_mset A)) = k+1"
 proof -
   define xs where "xs = sorted_list_of_multiset A"
   have k_bound: "k < length xs" apply (simp add:xs_def)
@@ -434,7 +373,7 @@ proof -
   have A_def: "A = mset xs" by (simp add:xs_def)
   have s_xs: "sorted xs" by (simp add:xs_def sorted_sorted_list_of_multiset)
   have a_2: "\<And>x. x \<le> xs ! k \<Longrightarrow> count_list xs x \<le> 1" 
-    using assms(2) apply (simp add:xs_def[symmetric] nth_mset2_def)
+    using assms(2) apply (simp add:xs_def[symmetric] nth_mset_def)
     by (simp add:A_def count_mset) 
 
   have inj_xs: "inj_on (\<lambda>k. xs ! k) {0..k}"
@@ -529,33 +468,12 @@ proof -
     by (subst card_least, simp, simp)
   ultimately have r_2: "card (least (k+1) (set xs)) = k+1" by simp
 
-  show "nth_mset2 k A = Max (least (k+1) (set_mset A))" 
-    apply (simp add:nth_mset2_def xs_def[symmetric] r_1[symmetric])
+  show "nth_mset k A = Max (least (k+1) (set_mset A))" 
+    apply (simp add:nth_mset_def xs_def[symmetric] r_1[symmetric])
     by (simp add:A_def)
 
   show "card (least (k+1) (set_mset A)) = k+1" 
     using r_2 by (simp add:A_def)
-qed
-
-
-lemma nth_mset_max: 
-  assumes "size A \<ge> k"
-  assumes "k > 0"
-  assumes "\<And>x. x \<le> nth_mset k A \<Longrightarrow> count A x \<le> 1"
-  shows "nth_mset k A = Max (least k (set_mset A))" and "card (least k (set_mset A)) = k"
-proof -
-  have a:"k-1 < size A" using assms(1) assms(2) Suc_le_lessD Suc_pred' by presburger
-
-  have b:"\<And>x. x \<le> nth_mset2 (k-1) A \<Longrightarrow> count A x \<le> 1"
-    using assms(3) assms(2) by (simp add:nth_mset2_def nth_mset_def) 
-
-  have "nth_mset2 (k-1) A = Max (least k (set_mset A))"
-    by (metis a b nth_mset2_max(1) One_nat_def Suc_leI add.commute add_diff_inverse_nat assms(2) linorder_not_less)
-  thus "nth_mset k A = Max (least k (set_mset A))" 
-    by (simp add:nth_mset2_def nth_mset_def) 
-
-  show "card (least k (set_mset A)) = k"
-    by (metis  a b nth_mset2_max(2)  Suc_eq_plus1 Suc_pred' assms(2))
 qed
 
 end

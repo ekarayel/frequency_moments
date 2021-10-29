@@ -1052,27 +1052,29 @@ proof -
       assume "\<not>( t \<le> f a \<omega> \<or> f b \<omega> < t \<or> \<not> has_no_collision \<omega>)"
       hence lb: "f a \<omega> < t" and ub: "f b \<omega> \<ge> t" and no_col: "has_no_collision \<omega>" by simp+
 
-      define y where "y =  nth_mset t {#int (hash p x \<omega>). x \<in># mset_set (set xs)#}"
-      define y' where "y' =  nth_mset t {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set xs)#}"
+      define y where "y =  nth_mset (t-1) {#int (hash p x \<omega>). x \<in># mset_set (set xs)#}"
+      define y' where "y' =  nth_mset (t-1) {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set xs)#}"
 
       have "a < y" 
-        apply (subst y_def, rule nth_mset_bound_left_excl, metis t_ge_0, simp add:True)
+        apply (subst y_def, rule nth_mset_bound_left_excl)
+         apply (simp)
+        using True t_ge_0 apply linarith
         using lb 
-        by (simp add:f_def swap_filter_image)
+        by (simp add:f_def swap_filter_image count_le_def)
       hence rank_t_lb: "a + 1 \<le> y" 
         by linarith
     
       have rank_t_ub: "y \<le> b" 
-        apply (subst y_def, rule nth_mset_bound_right, metis t_ge_0, simp add:True)
-        using ub 
-        by (simp add:f_def swap_filter_image)
+        apply (subst y_def, rule nth_mset_bound_right)
+         apply simp using True t_ge_0 apply linarith
+        using ub t_ge_0
+        by (simp add:f_def swap_filter_image count_le_def)
 
       have y_ge_0: "real_of_int y \<ge> 0" using rank_t_lb a_ge_0 by linarith
       have y'_eq: "y' = truncate_down r y"
         apply (subst y_def, subst y'_def, subst nth_mset_commute_mono[where f="(\<lambda>x. truncate_down r (of_int x))"]) 
-           apply (metis truncate_down_mono mono_def of_int_le_iff)
-          apply (metis t_ge_0)
-         apply (simp add:True)
+          apply (metis truncate_down_mono mono_def of_int_le_iff)
+         apply simp using True t_ge_0 apply linarith
         by (simp add: multiset.map_comp comp_def)
       have "real_of_int (a+1) * (1 - 2 powr -real r) \<le> real_of_int y * (1 - 2 powr (-real r))"
         apply (rule mult_right_mono)
@@ -1109,18 +1111,19 @@ proof -
       have h_1: "Max (h \<omega>) = y'"
         apply (simp add:h_def y'_def)
         apply (subst nth_mset_max)
-           apply (simp add:True)
-          apply (metis t_ge_0)
-         apply (subst (asm) y'_def[symmetric], metis no_col')
+        using True t_ge_0 apply simp
+        using no_col' apply (simp add:y'_def)
+        using t_ge_0
         by simp
 
-      have "card (h \<omega>) = card (least t (set_mset {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set xs)#}))"
+      have "card (h \<omega>) = card (least ((t-1)+1) (set_mset {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set xs)#}))"
+        using t_ge_0
         by (simp add:h_def)
-      also have "... = t"
-        apply (rule nth_mset_max(2)) 
-          apply (simp add:True)
-         apply (metis t_ge_0)
-        by (subst (asm) y'_def[symmetric], metis no_col')
+      also have "... = (t-1) +1"
+        apply (rule nth_mset_max(2))
+         using True t_ge_0 apply simp
+        using no_col' by (simp add:y'_def)
+      also have "... = t" using t_ge_0 by simp
       finally have h_2: "card (h \<omega>) = t"
         by simp
       have h_3: "g' (h \<omega>) = real t * real p / y'"
