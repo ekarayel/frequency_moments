@@ -1,6 +1,6 @@
 theory Frequency_Moment_0
   imports Main  "HOL-Probability.Probability_Mass_Function"
-  Primes_Ext Float_Ext Median Least UniversalHashFamilyOfPrime
+  Primes_Ext Float_Ext Median Least UniversalHashFamilyOfPrime Encoding
 begin
 
 type_synonym f0_space = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<Rightarrow> (int set list)) \<times> (nat \<Rightarrow> float set)"
@@ -28,6 +28,15 @@ fun f0_result :: "f0_space \<Rightarrow> rat pmf" where
       (if card (sketch i) < t then of_nat (card (sketch i)) else
         rat_of_nat t* rat_of_nat p / rat_of_float  (Max (sketch i)))
     ) s)"
+
+definition encode_state where
+  "encode_state = 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s. 
+    N\<^sub>S \<times>\<^sub>S (
+    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
+    N\<^sub>S \<times>\<^sub>S ( 
+    encode_extensional [0..<s] (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
+    encode_extensional [0..<s] (set\<^sub>S F\<^sub>S)))))"
 
 definition f0_sketch where 
   "f0_sketch p r t h xs = least t ((\<lambda>x. float_of (truncate_down r (hash p x h))) ` (set xs))"
@@ -134,11 +143,6 @@ lemma abs_ge_iff: "((x::real) \<le> abs y) = (x \<le> y \<or> x \<le> -y)"
 
 lemma two_powr_0: "2 powr (0::real) = 1"
   by simp
-
-
-(* TODO Move to Multiset_Ext *)
-lemma swap_filter_image: "filter_mset g (image_mset f A) = image_mset f (filter_mset (g \<circ> f) A)"
-  by (induction A, simp, simp)
 
 lemma count_nat_abs_diff_2:
   fixes x :: nat

@@ -172,7 +172,6 @@ proof -
     by (simp add:b)
 qed
 
-
 lemma least_mono_commute:
   assumes "finite S"
   assumes "strict_mono_on f S"
@@ -333,22 +332,6 @@ proof (rule ccontr)
   finally have "count_le x M \<le> k" by simp
   thus "False" using assms by simp
 qed
-
-
-lemma list_eq_iff:
-  assumes "mset xs = mset ys"
-  assumes "sorted xs"
-  assumes "sorted ys"
-  shows "xs = ys" 
-  using assms properties_for_sort by blast
-
-lemma sorted_list_of_multiset_image_commute:
-  assumes "mono f"
-  shows "sorted_list_of_multiset (image_mset f M) = map f (sorted_list_of_multiset M)" (is "?A = ?B")
-  apply (rule list_eq_iff, simp)
-   apply (simp add:sorted_sorted_list_of_multiset)
-  apply (subst sorted_wrt_map)
-  by (metis (no_types, lifting) monoE sorted_sorted_list_of_multiset sorted_wrt_mono_rel assms)
 
 lemma nth_mset_commute_mono:
   assumes "mono f"

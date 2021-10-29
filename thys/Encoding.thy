@@ -2,6 +2,7 @@ theory Encoding
   imports Main "HOL-Library.Sublist" "HOL-Library.Monad_Syntax" "HOL-Library.List_Lexorder"
     "HOL-Library.Option_ord" "HOL-Library.Extended_Nat" "Multiset_Ext"
   "HOL-Library.Extended_Nonnegative_Real" "HOL-Library.FuncSet"  "HOL-Analysis.Complex_Transcendental"
+  "HOL-Library.Float" Field
 begin
 
 fun is_prefix where 
@@ -348,8 +349,8 @@ section \<open>Composition\<close>
 
 lemma encoding_compose:
   assumes "is_encoding f"
-  assumes "inj_on g A"
-  shows "is_encoding (\<lambda>x. if x \<in> A then f (g x) else None)"
+  assumes "inj_on g {x. P x}"
+  shows "is_encoding (\<lambda>x. if P x then f (g x) else None)"
   using assms by (simp add: inj_onD is_encoding_def)
 
 lemma log_est: "log 2 (1 + real n) \<le> n"
@@ -390,22 +391,85 @@ proof -
     by simp
 qed
 
-fun encode_prod_fun where
-  "encode_prod_fun s\<^sub>1 s\<^sub>2 e f = (
-    if f \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) then 
-      list\<^sub>S e (map f (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))
+section \<open>Extensional Maps\<close>
+
+fun encode_extensional where
+  "encode_extensional I e f = (
+    if f \<in> extensional (set I) then 
+      list\<^sub>S e (map f I)
     else
       None)"
 
-lemma encode_prod_fun:
+lemma encode_extensional:
   assumes "is_encoding e"
-  shows "is_encoding (\<lambda>x. encode_prod_fun  s\<^sub>1 s\<^sub>2 e x)"
+  shows "is_encoding (\<lambda>x. encode_extensional I e x)"
   apply simp
   apply (rule encoding_compose[where f="list\<^sub>S e"])
    apply (metis list_encoding assms)
   apply (rule inj_onI, simp)
   using extensionalityI by fastforce
 
+section \<open>Floats\<close>
+
+fun F\<^sub>S where " F\<^sub>S f = (I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)"
+
+lemma encode_float:
+  "is_encoding F\<^sub>S"
+proof -
+  have a : "inj (\<lambda>x. (mantissa x, exponent x))"
+  proof (rule injI)
+    fix x y
+    assume "(mantissa x, exponent x) = (mantissa y, exponent y)"
+    hence "real_of_float x = real_of_float y"
+      by (simp add:mantissa_exponent)
+    thus "x = y"
+      by (metis real_of_float_inverse)
+  qed
+  have "is_encoding (\<lambda>f. if True then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
+    apply (rule encoding_compose[where f="(I\<^sub>S \<times>\<^sub>S I\<^sub>S)"])
+     apply (metis prod_encoding int_encoding, simp)
+    by (metis a)
+  moreover have "F\<^sub>S = (\<lambda>f. if f \<in> UNIV then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
+    by (rule ext, simp)
+  ultimately show "is_encoding F\<^sub>S"
+    by simp
+qed
+
+
+section \<open>Ordered Sets\<close>
+
+fun set\<^sub>S where "set\<^sub>S e S = (if finite S then list\<^sub>S e (sorted_list_of_set S) else None)"
+
+lemma encode_set:
+  assumes "is_encoding e"
+  shows "is_encoding (\<lambda>S. set\<^sub>S e S)"
+  apply simp
+  apply (rule encoding_compose[where f="list\<^sub>S e"])
+   apply (metis assms list_encoding)
+  apply (rule inj_onI, simp)
+  by (metis sorted_list_of_set.set_sorted_key_list_of_set)
+
+section \<open>Finite Fields\<close>
+
+fun zfact\<^sub>S where "zfact\<^sub>S p x = (
+    if x \<in> zfact_embed p ` {0..<p} then
+      N\<^sub>S (the_inv_into {0..<p} (zfact_embed p) x)
+    else
+     None
+  )"
+
+lemma zfact_encoding : 
+  "is_encoding (zfact\<^sub>S p)"
+proof -
+  have "p > 0 \<Longrightarrow> is_encoding (\<lambda>x. zfact\<^sub>S p x)"
+    apply simp 
+    apply (rule encoding_compose[where f="N\<^sub>S"])
+     apply (metis nat_encoding, simp)
+    by (metis inj_on_the_inv_into zfact_embed_inj)
+  moreover have "is_encoding (zfact\<^sub>S 0)"
+    by (simp add:is_encoding_def)
+  ultimately show ?thesis by blast
+qed
 
 instantiation rat :: linorder_topology
 begin

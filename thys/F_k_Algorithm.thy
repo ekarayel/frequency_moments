@@ -34,7 +34,7 @@ definition encode_state where
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
     N\<^sub>S \<times>\<^sub>S  
     N\<^sub>S \<times>\<^sub>S  
-    encode_prod_fun s\<^sub>1 s\<^sub>2 (N\<^sub>S \<times>\<^sub>S N\<^sub>S)))"
+    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) (N\<^sub>S \<times>\<^sub>S N\<^sub>S)))"
 
 lemma "is_encoding encode_state"
   apply (simp add:encode_state_def)
@@ -42,7 +42,7 @@ lemma "is_encoding encode_state"
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule prod_encoding, metis nat_encoding)
   apply (rule prod_encoding, metis nat_encoding)
-  by (metis encode_prod_fun prod_encoding nat_encoding)
+  by (metis encode_extensional prod_encoding nat_encoding)
 
 fun fk_result :: "fk_space \<Rightarrow> rat pmf" where
   "fk_result (s\<^sub>1, s\<^sub>2, k, m, r) = 

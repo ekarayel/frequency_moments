@@ -85,4 +85,23 @@ lemma sorted_sorted_list_of_multiset: "sorted (sorted_list_of_multiset M)"
 lemma count_mset: "count (mset xs) a = count_list xs a"
   by (induction xs, simp, simp)
 
+lemma swap_filter_image: "filter_mset g (image_mset f A) = image_mset f (filter_mset (g \<circ> f) A)"
+  by (induction A, simp, simp)
+
+
+lemma list_eq_iff:
+  assumes "mset xs = mset ys"
+  assumes "sorted xs"
+  assumes "sorted ys"
+  shows "xs = ys" 
+  using assms properties_for_sort by blast
+
+lemma sorted_list_of_multiset_image_commute:
+  assumes "mono f"
+  shows "sorted_list_of_multiset (image_mset f M) = map f (sorted_list_of_multiset M)" (is "?A = ?B")
+  apply (rule list_eq_iff, simp)
+   apply (simp add:sorted_sorted_list_of_multiset)
+  apply (subst sorted_wrt_map)
+  by (metis (no_types, lifting) monoE sorted_sorted_list_of_multiset sorted_wrt_mono_rel assms)
+
 end

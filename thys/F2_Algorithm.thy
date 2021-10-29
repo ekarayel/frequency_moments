@@ -19,41 +19,21 @@ fun eval_hash_function where
 
 type_synonym f2_space = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
 
-fun zfact\<^sub>S where "zfact\<^sub>S p x = (
-    if x \<in> zfact_embed p ` {0..<p} then
-      N\<^sub>S (the_inv_into {0..<p} (zfact_embed p) x)
-    else
-     None
-  )"
-
-lemma zfact_encoding : 
-  "is_encoding (zfact\<^sub>S p)"
-proof -
-  have "p > 0 \<Longrightarrow> is_encoding (\<lambda>x. zfact\<^sub>S p x)"
-    apply simp 
-    apply (rule encoding_compose[where f="N\<^sub>S"])
-     apply (metis nat_encoding)
-    by (metis inj_on_the_inv_into zfact_embed_inj)
-  moreover have "is_encoding (zfact\<^sub>S 0)"
-    by (simp add:is_encoding_def)
-  ultimately show ?thesis by blast
-qed
-
 definition encode_state where
   "encode_state = 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
-    encode_prod_fun s\<^sub>1 s\<^sub>2 (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
-    encode_prod_fun s\<^sub>1 s\<^sub>2 I\<^sub>S)))"
+    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
+    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) I\<^sub>S)))"
 
 lemma "is_encoding encode_state"
   apply (simp add:encode_state_def)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis encode_prod_fun list_encoding zfact_encoding)
-  by (metis encode_prod_fun int_encoding)
+  apply (rule prod_encoding, metis encode_extensional list_encoding zfact_encoding)
+  by (metis encode_extensional int_encoding)
 
 fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
   "f2_init \<delta> \<epsilon> n =
