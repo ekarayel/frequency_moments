@@ -592,15 +592,12 @@ proof -
   define p where "p = find_prime_above (max n 3)"
   define \<Omega>\<^sub>0 where 
     "\<Omega>\<^sub>0 = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set ( bounded_degree_polynomials (ZFact (int p)) 4))"
-  define \<Omega>\<^sub>1 where 
-    "\<Omega>\<^sub>1 = Pi\<^sub>M ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. uniform_count_measure (bounded_degree_polynomials (ZFact (int p)) 4))"
 
   define s\<^sub>1_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>1_from = fst"
   define s\<^sub>2_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
   define p_from :: "f2_space \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
   define h_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
   define sketch_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
-
 
   have fin_poly': "finite (bounded_degree_polynomials (ZFact (int p)) 4)"
     apply (rule fin_poly)
@@ -932,8 +929,7 @@ proof -
 qed
 
 lemma f2_asympotic_space_complexity:
-  "f2_complexity \<in> 
-  O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right (0::rat) \<times>\<^sub>F at_right (0::rat)](\<lambda> (n, m, \<epsilon>, \<delta>).
+  "f2_complexity \<in> O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda> (n, m, \<epsilon>, \<delta>). 
   (ln (1 / real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2 * (ln (real n) + ln (real m)))"
   (is "?lhs \<in> O[?evt](?rhs)")
 proof -
@@ -1125,6 +1121,5 @@ proof -
     apply (rule landau_o.bigI[where c="c"], simp add:c_def, simp)
     using a by simp
 qed
-
 
 end
