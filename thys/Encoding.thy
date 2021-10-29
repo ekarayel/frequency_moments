@@ -105,10 +105,6 @@ fun bit_count where
   "bit_count None = \<infinity>" |
   "bit_count (Some x) = ereal (length x)"
 
-fun assert :: "bool \<Rightarrow> unit option" where 
-  "assert True = Some ()" |
-  "assert False = None"
-
 fun append_encoding :: "bool list option \<Rightarrow> bool list option \<Rightarrow> bool list option" (infixr "@\<^sub>S" 65)
   where
     "append_encoding (Some x) (Some y) = Some (x@y)" |
