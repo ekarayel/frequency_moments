@@ -11,23 +11,17 @@ fun f0_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f0_space p
       let s = nat \<lceil>-18 * ln (real_of_rat \<epsilon>)\<rceil>;
       let t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>;
       let p = find_odd_prime_above (max n 19);
-      let r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 26); 
+      let r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24); 
       h \<leftarrow> prod_pmf {0..<s} (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2));
       return_pmf (s, t, p, r, h, (\<lambda>_ \<in> {0..<s}. {}))
     }"
 
 (* TODO: no need for real_of_rat when defining t *)
-(* TODO: find_odd_prime_above was short sighted - have find_prime_above and use
-      p= find_prime_above (min n 19)
-  TODO: Fix r
-  TODO: Improve prove of indep in UniversalHashFamily
-
-*)
 
 fun f0_update :: "nat \<Rightarrow> f0_space \<Rightarrow> f0_space pmf" where
   "f0_update x (s, t, p, r, h, sketch) = 
     return_pmf (s, t, p, r, h, \<lambda>i \<in> {0..<s}.
-      least t (insert (float_of (truncate_nearest r (hash p x (h i)))) (sketch i)))"
+      least t (insert (float_of (truncate_down r (hash p x (h i)))) (sketch i)))"
 
 fun f0_result :: "f0_space \<Rightarrow> rat pmf" where
   "f0_result (s, t, p, r, h, sketch) = return_pmf (median (\<lambda>i \<in> {0..<s}.
@@ -36,7 +30,7 @@ fun f0_result :: "f0_space \<Rightarrow> rat pmf" where
     ) s)"
 
 definition f0_sketch where 
-  "f0_sketch p r t h xs = least t ((\<lambda>x. float_of (truncate_nearest r (hash p x h))) ` (set xs))"
+  "f0_sketch p r t h xs = least t ((\<lambda>x. float_of (truncate_down r (hash p x h))) ` (set xs))"
 
 lemma f0_alg_sketch:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
@@ -46,7 +40,7 @@ lemma f0_alg_sketch:
   defines "t \<equiv> nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
   defines "s \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
   defines "p \<equiv> find_odd_prime_above (max n 19)"
-  defines "r \<equiv> nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 26)"
+  defines "r \<equiv> nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
   shows "sketch = map_pmf (\<lambda>x. (s,t,p,r, x, \<lambda>i \<in> {0..<s}. f0_sketch p r t (x i) xs))
     (prod_pmf {0..<s} (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2)))" 
 proof (subst sketch_def, induction xs rule:rev_induct)
@@ -71,6 +65,7 @@ next
     by (subst least_insert, simp, simp)
 qed
 
+(* TODO Generalize *)
 definition f0_value where
   "f0_value xs = rat_of_nat (card (set xs))"
 
@@ -117,8 +112,6 @@ lemma (in prob_space) prob_mono:
 lemma in_events_pmf: "A \<in> measure_pmf.events \<Omega>"
   by simp
 
-
-
 lemma pmf_add:
   assumes  "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q \<or> x \<in> R"
   shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q + measure (measure_pmf \<Omega>) R"
@@ -142,6 +135,8 @@ lemma abs_ge_iff: "((x::real) \<le> abs y) = (x \<le> y \<or> x \<le> -y)"
 lemma two_powr_0: "2 powr (0::real) = 1"
   by simp
 
+
+(* TODO Move to Multiset_Ext *)
 lemma swap_filter_image: "filter_mset g (image_mset f A) = image_mset f (filter_mset (g \<circ> f) A)"
   by (induction A, simp, simp)
 
@@ -239,11 +234,12 @@ lemma f0_collision_prob:
   defines "\<Omega> \<equiv> pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2)"
   assumes "M \<subseteq> {0..<p}"
   assumes "c \<ge> 1"
+  assumes "r \<ge> 1"
   shows "\<P>(\<omega> in measure_pmf \<Omega>. 
     \<exists>x \<in> M. \<exists>y \<in> M.
     x \<noteq> y \<and>
-    truncate_nearest r (hash p x \<omega>) \<le> c \<and>
-    truncate_nearest r (hash p x \<omega>) = truncate_nearest r (hash p y \<omega>)) \<le> 
+    truncate_down r (hash p x \<omega>) \<le> c \<and>
+    truncate_down r (hash p x \<omega>) = truncate_down r (hash p y \<omega>)) \<le> 
     6 * (real (card M))\<^sup>2 * c\<^sup>2 * 2 powr -r / (real p) \<^sup>2 + 1/real p" (is "\<P>(\<omega> in _. ?l \<omega>) \<le> ?r1 + ?r2")
 proof -
   have p_ge_0: "p > 0"
@@ -270,8 +266,8 @@ proof -
 
   have a1: 
     "\<And>x y. x < y \<Longrightarrow> x \<in> M \<Longrightarrow> y \<in> M \<Longrightarrow> measure \<Omega> 
-    {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_nearest r (hash p x \<omega>) \<le> c \<and>
-    truncate_nearest r (hash p x \<omega>) = truncate_nearest r (hash p y \<omega>)} \<le> 
+    {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_down r (hash p x \<omega>) \<le> c \<and>
+    truncate_down r (hash p x \<omega>) = truncate_down r (hash p y \<omega>)} \<le> 
     12 * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
   proof -
     fix x y
@@ -279,41 +275,46 @@ proof -
     assume a1_2: "y \<in> M"
     assume a1_3: "x < y"
 
-    have a1_4: "\<And>u v. truncate_nearest r (real u) \<le> c \<Longrightarrow> truncate_nearest r (real u) = truncate_nearest r (real v) \<Longrightarrow>
-         real u \<le> 2 * c \<and> \<bar>real u - real v\<bar> \<le> 2 * c * 2 powr (-real r)"
+    have a1_4: "\<And>u v. truncate_down r (real u) \<le> c \<Longrightarrow> 
+        truncate_down r (real u) = truncate_down r (real v) \<Longrightarrow>
+        real u \<le> 2 * c \<and> \<bar>real u - real v\<bar> \<le> 2 * c * 2 powr (-real r)"
     proof -
       fix u v
-      assume a_1:"truncate_nearest r (real u) \<le> c"
-      assume a_2:"truncate_nearest r (real u) = truncate_nearest r (real v)"
-      have a_3: "2 * 2 powr (- real r - 1) = 2 powr (1 + (-real r - 1))"
-        by (subst powr_add, simp)
+      assume a_1:"truncate_down r (real u) \<le> c"
+      assume a_2:"truncate_down r (real u) = truncate_down r (real v)"
+      have a_3: "2 * 2 powr (- real r) = 2 powr (1 -real r)"
+        by (simp add: divide_powr_uminus powr_diff)
 
-      have a_4_1: "1 \<le> 2 * (1 - 2 powr (- real r - 1))"
-        by (simp add:distrib_left distrib_right left_diff_distrib right_diff_distrib powr_diff two_pow_r_le_1)
+      have a_4_1: "1 \<le> 2 * (1 - 2 powr (- real r))"
+        apply simp
+        apply (subst a_3)
+         apply (subst (2) two_powr_0[symmetric])
+         apply (rule powr_mono) using assms(5) by simp+
 
-      have a_4: "(c*1) / (1 - 2 powr (-real r - 1)) \<le> c * 2"
-        apply (subst pos_divide_le_eq)
-         apply (simp, subst (2) two_powr_0[symmetric], rule powr_less_mono, simp, simp)
-        apply (subst mult.assoc)
-        apply (rule mult_left_mono)
-        by (metis a_4_1, metis c_ge_0) 
+      have a_4: "(c*1) / (1 - 2 powr (-real r)) \<le> c * 2" 
+        apply (subst pos_divide_le_eq, simp)
+         apply (subst two_powr_0[symmetric])
+         apply (rule powr_less_mono) using assms(5) apply simp
+         apply simp
+        using a_4_1 
+        by (metis (no_types, opaque_lifting) c_ge_0 mult.left_commute mult.right_neutral mult_left_mono)
 
-      have a_5: "\<And>x. truncate_nearest r (real x) \<le>  c  \<Longrightarrow> real x \<le> c * 2"
+      have a_5: "\<And>x. truncate_down r (real x) \<le>  c  \<Longrightarrow> real x \<le> c * 2"
         apply (rule order_trans[OF _ a_4])
         apply (subst pos_le_divide_eq)
-         apply (simp, subst (2) two_powr_0[symmetric], rule powr_less_mono, simp, simp)
-        using  truncate_nearest_le_pos[OF of_nat_0_le_iff] order_trans apply simp by blast
+         apply (simp, subst two_powr_0[symmetric])
+         apply (rule powr_less_mono) using assms(5) apply simp
+        apply simp
+        using  truncate_down_pos[OF of_nat_0_le_iff] order_trans apply simp by blast
 
       have a_6: "real u \<le> c * 2"
         using a_1 a_5 by simp
       have a_7: "real v \<le> c * 2" 
         using a_1 a_2 a_5 by simp
-      have " \<bar>real u - real v\<bar> \<le> (\<bar>real u\<bar> + \<bar>real v\<bar>) * 2 powr (-real r -1)"
-        apply (rule truncate_nearest_eq_bound) using a_2 by simp 
-      also have "... \<le> (c * 2 + c * 2) * 2 powr (-real r -1)"
-        apply (rule mult_right_mono, rule add_mono) using a_6 a_7 by simp+
-      also have "... = (c * 2) * 2 powr (-real r)"
-        by (simp, subst a_3, simp)
+      have " \<bar>real u - real v\<bar> \<le> (max \<bar>real u\<bar> \<bar>real v\<bar>) * 2 powr (-real r)"
+        apply (rule truncate_down_eq) using a_2 by simp 
+      also have "... \<le> (c * 2) * 2 powr (-real r)"
+        apply (rule mult_right_mono) using a_6 a_7 by simp+
       finally have a_8: "\<bar>real u - real v\<bar> \<le> 2 * c * 2 powr (-real r)"
         by simp
 
@@ -321,10 +322,10 @@ proof -
         using a_6 a_8 by simp
     qed
 
-    have "measure \<Omega> {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_nearest r (hash p x \<omega>) \<le> c \<and>
-      truncate_nearest r (hash p x \<omega>) = truncate_nearest r (hash p y \<omega>)} \<le>
+    have "measure \<Omega> {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_down r (hash p x \<omega>) \<le> c \<and>
+      truncate_down r (hash p x \<omega>) = truncate_down r (hash p y \<omega>)} \<le>
       measure \<Omega> (\<Union> i \<in> {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and>
-      truncate_nearest r u \<le> c \<and> truncate_nearest r u = truncate_nearest r v}.
+      truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}.
       {\<omega>.  hash p x \<omega> = fst i \<and> hash p y \<omega> = snd i})"
       apply (rule pmf_mono_1)
       apply (simp add: \<Omega>_def)
@@ -333,19 +334,19 @@ proof -
       apply (rule fin_bounded_degree_polynomials[OF p_ge_0])
       by (metis assms(3) a2 a3 a1_1 a1_2 a1_3  One_nat_def less_not_refl3 atLeastLessThan_iff subset_eq)
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and>
-      truncate_nearest r u \<le> c \<and> truncate_nearest r u = truncate_nearest r v}. 
+      truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 
       measure \<Omega>  {\<omega>. hash p x \<omega> = fst i \<and> hash p y \<omega> = snd i})"
       apply (rule measure_UNION_le)
        apply (rule finite_subset[where B="{0..<p} \<times> {0..<p}"], rule subsetI, simp add:case_prod_beta mem_Times_iff, simp)
       by simp
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and>
-      truncate_nearest r u \<le> c \<and> truncate_nearest r u = truncate_nearest r v}. 
+      truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 
       \<P>(\<omega> in \<Omega>. (\<forall>u \<in> UNIV. hash p (if u then x else y) \<omega> = (if u then (fst i) else (snd i)))))" 
       apply (rule sum_mono)
       apply (rule pmf_mono)
       by (simp add:case_prod_beta)
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and>
-      truncate_nearest r u \<le> c \<and> truncate_nearest r u = truncate_nearest r v}. 1/(real p)\<^sup>2)"
+      truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 1/(real p)\<^sup>2)"
       apply (rule sum_mono)
       apply (simp only:\<Omega>_def)
       apply (subst hash_prob_2[OF assms(1)])
@@ -353,7 +354,7 @@ proof -
          using a1_1 assms(3) a1_3 a1_2 apply auto[1]
          by force+
     also have "... = 1/(real p)\<^sup>2 * 
-      card {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and> truncate_nearest r u \<le> c \<and> truncate_nearest r u = truncate_nearest r v}"
+      card {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and> truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}"
       by simp
     also have "... \<le> 1/(real p)\<^sup>2 * 
       card {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and> real u \<le> 2 * c \<and> abs (real u - real v) \<le> 2 * c * 2 powr (-real r)}"
@@ -413,21 +414,21 @@ proof -
       by (simp add: c_ge_0)+
     also have "... = 12  * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
       by (simp add:ac_simps power2_eq_square) 
-    finally show "measure \<Omega> {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_nearest r (hash p x \<omega>) \<le> c \<and>
-      truncate_nearest r (hash p x \<omega>) = truncate_nearest r (hash p y \<omega>)} \<le>  12  * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
+    finally show "measure \<Omega> {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_down r (hash p x \<omega>) \<le> c \<and>
+      truncate_down r (hash p x \<omega>) = truncate_down r (hash p y \<omega>)} \<le>  12  * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
       by simp
   qed
 
   have "\<P>(\<omega> in measure_pmf \<Omega>. ?l \<omega> \<and> degree \<omega> \<ge> 1) \<le> 
     measure \<Omega> (\<Union> i \<in> {(x,y) \<in> M \<times> M. x < y}. {\<omega>. 
-    degree \<omega> \<ge> 1 \<and> truncate_nearest r (hash p (fst i) \<omega>) \<le> c \<and>
-    truncate_nearest r (hash p (fst i) \<omega>) = truncate_nearest r (hash p (snd i) \<omega>)})"
+    degree \<omega> \<ge> 1 \<and> truncate_down r (hash p (fst i) \<omega>) \<le> c \<and>
+    truncate_down r (hash p (fst i) \<omega>) = truncate_down r (hash p (snd i) \<omega>)})"
     apply (rule pmf_mono)
     apply (simp) 
     by (metis linorder_neqE_nat)
   also have "... \<le> (\<Sum> i \<in> {(x,y) \<in> M \<times> M. x < y}. measure \<Omega> 
-    {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_nearest r (hash p (fst i) \<omega>) \<le> c \<and>
-    truncate_nearest r (hash p (fst i) \<omega>) = truncate_nearest r (hash p (snd i) \<omega>)})"
+    {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_down r (hash p (fst i) \<omega>) \<le> c \<and>
+    truncate_down r (hash p (fst i) \<omega>) = truncate_down r (hash p (snd i) \<omega>)})"
     apply (rule measure_UNION_le)
      apply (rule finite_subset[where B="M \<times> M"], rule subsetI, simp add:case_prod_beta mem_Times_iff)
      apply (rule finite_cartesian_product[OF f_M f_M])
@@ -493,10 +494,10 @@ proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
   define p where "p =  find_odd_prime_above (max n 19)"
-  define r where "r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 26)"
+  define r where "r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
   define g where "g = (\<lambda>S. if card S < t then rat_of_nat (card S) else of_nat t * rat_of_nat p / rat_of_float (Max S))"
   define g' where "g' = (\<lambda>S. if card S < t then real (card S) else real t * real p / Max S)"
-  define h where "h = (\<lambda>\<omega>. least t ((\<lambda>x. truncate_nearest r (hash p x \<omega>)) ` set xs))"
+  define h where "h = (\<lambda>\<omega>. least t ((\<lambda>x. truncate_down r (hash p x \<omega>)) ` set xs))"
   define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = prod_pmf {0..<s} (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2))"
   define \<Omega>\<^sub>1 where "\<Omega>\<^sub>1 = pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2)"
   define m where "m = card (set xs)"
@@ -507,8 +508,8 @@ proof -
   define b where "b = \<lceil>real t * p / (m * (1-\<delta>'))-1\<rceil>"
 
   define has_no_collision where "has_no_collision = (\<lambda>\<omega>. \<forall>x\<in> set xs. \<forall>y \<in> set xs.
-    (truncate_nearest r (hash p x \<omega>) = truncate_nearest r (hash p y \<omega>) \<longrightarrow> x = y) \<or> 
-    truncate_nearest r (hash p x \<omega>) > b * (1+2 powr (-r-1)))"
+    (truncate_down r (hash p x \<omega>) = truncate_down r (hash p y \<omega>) \<longrightarrow> x = y) \<or> 
+    truncate_down r (hash p x \<omega>) > b)"
 
   have s_ge_0: "s > 0" 
     by (simp add:s_def, meson ln_less_zero of_rat_less_1_iff zero_less_of_rat_iff assms(1))
@@ -519,8 +520,7 @@ proof -
   have f0_ge_0: "f0_value xs \<ge> 1"
     using assms(4) by (simp add: Suc_leI of_nat_ge_1_iff order_less_le f0_value_def)
 
-
-  have r_bound: "4 * log 2 (1 / real_of_rat \<delta>) + 26 \<le> r"
+  have r_bound: "4 * log 2 (1 / real_of_rat \<delta>) + 24 \<le> r"
     apply (simp add:r_def)                              
     apply (subst of_nat_nat)
     apply (rule add_nonneg_nonneg)
@@ -529,9 +529,17 @@ proof -
       apply (subst log_less_one_cancel_iff, simp, simp add:assms)
     by (rule order_less_le_trans[where y="1"], simp add:assms, simp+)
 
-  have "2 powr (-real r-1) \<le> 2 powr (-(4 * log 2 (1 / real_of_rat \<delta>) + 26) - 1)"
+  have "1 \<le> 0 + (24::real)" by simp
+  also have "... \<le> 4 * log 2 (1 / real_of_rat \<delta>) + 24"
+    apply (rule add_mono, simp)
+    apply (subst zero_le_log_cancel_iff)
+    using assms by simp+
+  also have "... \<le> r" using r_bound by simp
+  finally have r_ge_0: "1 \<le> r" by simp
+
+  have "2 powr (-real r) \<le> 2 powr (-(4 * log 2 (1 / real_of_rat \<delta>) + 24))"
     apply (rule powr_mono) using r_bound apply linarith by simp
-  also have "... = 2 powr (-4 * log 2 (1 /real_of_rat \<delta>) -27)"
+  also have "... = 2 powr (-4 * log 2 (1 /real_of_rat \<delta>) -24)"
     by (rule arg_cong2[where f="(powr)"], simp, simp add:algebra_simps)
   also have "... \<le> 2 powr ( -1 * log 2 (1 /real_of_rat \<delta>) -4)"
     apply (rule powr_mono)
@@ -543,11 +551,11 @@ proof -
     by (subst powr_log_cancel, simp, simp, simp add:assms, simp)
   also have "... < real_of_rat \<delta> / 8"
     by (subst pos_divide_less_eq, simp, simp add:assms)
-  finally have r_le_\<delta>: "2 powr (-r-1) < (real_of_rat \<delta>)/ 8"
+  finally have r_le_\<delta>: "2 powr (-real r) < (real_of_rat \<delta>)/ 8"
     by simp
 
-  have r_le_t2: "18 * 384 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 
-    18 * 384 * (80 / (real_of_rat \<delta>)\<^sup>2+1)\<^sup>2 * 2 powr (-4 * log 2 (1 / real_of_rat \<delta>) - 26)"
+  have r_le_t2: "18 * 96 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 
+    18 * 96 * (80 / (real_of_rat \<delta>)\<^sup>2+1)\<^sup>2 * 2 powr (-4 * log 2 (1 / real_of_rat \<delta>) - 24)"
     apply (rule mult_mono)
        apply (rule mult_left_mono)
         apply (rule power_mono)
@@ -556,13 +564,13 @@ proof -
        apply simp
       apply (rule powr_mono) using r_bound apply linarith
     by simp+
-  also have "... \<le> 18 * 384 * (80 / (real_of_rat \<delta>)\<^sup>2 + 1 /  (real_of_rat \<delta>)\<^sup>2)\<^sup>2 * (2 powr (-4 * log 2 (1 / real_of_rat \<delta>)) * 2 powr (-26))"
+  also have "... \<le> 18 * 96 * (80 / (real_of_rat \<delta>)\<^sup>2 + 1 /  (real_of_rat \<delta>)\<^sup>2)\<^sup>2 * (2 powr (-4 * log 2 (1 / real_of_rat \<delta>)) * 2 powr (-24))"
     apply (rule mult_mono)
        apply (rule mult_left_mono)
         apply (rule power_mono)
          apply (rule add_mono, simp) using assms(2) apply (simp add: power_le_one)
     by (simp add:powr_diff)+
-  also have "... = 18 * 384 * (81\<^sup>2 / (real_of_rat \<delta>)^4) * (2 powr (log 2 ((real_of_rat \<delta>)^4))  * 2 powr (-26))"
+  also have "... = 18 * 96 * (81\<^sup>2 / (real_of_rat \<delta>)^4) * (2 powr (log 2 ((real_of_rat \<delta>)^4))  * 2 powr (-24))"
     apply (rule arg_cong2[where f="(*)"])
      apply (rule arg_cong2[where f="(*)"], simp)
     apply (simp add:power2_eq_square power4_eq_xxxx)
@@ -571,12 +579,12 @@ proof -
      apply (subst log_nat_power, simp add:assms)
      apply (subst log_divide, simp, simp, simp, simp add:assms)
     by simp+
-  also have "... = 18 * 384 * 81\<^sup>2 * 2 powr (-26)"
+  also have "... = 18 * 96 * 81\<^sup>2 * 2 powr (-24)"
     apply (subst powr_log_cancel, simp, simp, simp) using assms apply blast
     apply (simp add:algebra_simps) using assms by blast
   also have "... \<le> 1"
     by simp
-  finally have r_le_t2: "18 * 384 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 1"
+  finally have r_le_t2: "18 * 96 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 1"
     by simp
 
   have \<delta>'_ge_0: "\<delta>' > 0"
@@ -994,39 +1002,40 @@ proof -
 
     have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<not>has_no_collision \<omega>) \<le>
       \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<exists>x \<in> set xs. \<exists>y \<in> set xs. x \<noteq> y \<and> 
-      truncate_nearest r (real (hash p x \<omega>)) \<le> real_of_int b * (1 + 2 powr (- real r - 1)) \<and> 
-      truncate_nearest r (real (hash p x \<omega>)) = truncate_nearest r (real (hash p y \<omega>)))" 
+      truncate_down r (real (hash p x \<omega>)) \<le> real_of_int b \<and> 
+      truncate_down r (real (hash p x \<omega>)) = truncate_down r (real (hash p y \<omega>)))" 
       apply (rule pmf_mono_1)
       apply (simp add:has_no_collision_def \<Omega>\<^sub>1_def) 
       by force
-    also have "... \<le> 6 * (real (card (set xs)))\<^sup>2 * (real_of_int b * (1 + 2 powr (- real r - 1)))\<^sup>2 
+    also have "... \<le> 6 * (real (card (set xs)))\<^sup>2 * (real_of_int b)\<^sup>2 
        * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
       apply (simp only: \<Omega>\<^sub>1_def)
-      apply (rule f0_collision_prob[where c="real_of_int b * (1 + 2 powr (- real r - 1))"])
+      apply (rule f0_collision_prob[where c="real_of_int b"])
         apply (metis p_prime)
        apply (rule subsetI, simp add:xs_le_p)
-      by (rule mult_ge_1, metis b_ge_1, simp+)
-    also have "... \<le> 6 * (real m)\<^sup>2 * (real_of_int b * 2)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
+       apply ( metis b_ge_1)
+      by (metis r_ge_0)
+    also have "... \<le> 6 * (real m)\<^sup>2 * (real_of_int b)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
       apply (rule add_mono)
        apply (rule divide_right_mono)
         apply (rule mult_right_mono)
          apply (rule mult_mono)
             apply (simp add:m_def)
-           apply (rule power_mono)
-            apply (rule mult_left_mono)
-             apply (simp, subst (2) two_powr_0[symmetric], rule powr_mono) 
+           apply (rule power_mono, simp)
       using b_ge_0 by simp+
-    also have "... = 24 * (real m)\<^sup>2 * (real_of_int b)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
-      by (simp)
-    also have "... \<le> 24 * (real m)\<^sup>2 * (4 * real t * real p / real m)\<^sup>2 * (2 powr - real r) / (real p)\<^sup>2 + 1 / real p"
+    also have "... \<le> 6 * (real m)\<^sup>2 * (4 * real t * real p / real m)\<^sup>2 * (2 powr - real r) / (real p)\<^sup>2 + 1 / real p"
       apply (rule add_mono)
        apply (rule divide_right_mono)
         apply (rule mult_right_mono)
-         apply (rule mult_left_mono, rule power_mono, metis b_le_tpm)
-      using b_ge_0 by simp+
-    also have "... = 384 * (real t)\<^sup>2 * (2 powr -real r) + 1 / real p"
-      apply (simp add:ac_simps power2_eq_square)
-      using m_ge_0 p_ge_0 t_ge_0 by simp
+        apply (rule mult_left_mono)
+      apply (simp add:b_def) 
+      using b_def b_ge_1 b_le_tpm apply force
+         apply simp
+        apply simp
+       apply simp
+      by simp 
+    also have "... = 96 * (real t)\<^sup>2 * (2 powr -real r) + 1 / real p"
+      using p_ge_0 m_ge_0 t_ge_0 by (simp add:algebra_simps power2_eq_square)
     also have "... \<le> 1/18 + 1/18"
       apply (rule add_mono)
       apply (subst pos_le_divide_eq, simp)
@@ -1047,7 +1056,7 @@ proof -
       hence lb: "f a \<omega> < t" and ub: "f b \<omega> \<ge> t" and no_col: "has_no_collision \<omega>" by simp+
 
       define y where "y =  nth_mset t {#int (hash p x \<omega>). x \<in># mset_set (set xs)#}"
-      define y' where "y' =  nth_mset t {#truncate_nearest r (hash p x \<omega>). x \<in># mset_set (set xs)#}"
+      define y' where "y' =  nth_mset t {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set xs)#}"
 
       have "a < y" 
         apply (subst y_def, rule nth_mset_bound_left_excl, metis t_ge_0, simp add:True)
@@ -1062,44 +1071,41 @@ proof -
         by (simp add:f_def swap_filter_image)
 
       have y_ge_0: "real_of_int y \<ge> 0" using rank_t_lb a_ge_0 by linarith
-      have y'_eq: "y' = truncate_nearest r y"
-        apply (subst y_def, subst y'_def, subst nth_mset_commute_mono[where f="(\<lambda>x. truncate_nearest r (of_int x))"]) 
-           apply (metis truncate_nearest_mono mono_def of_int_le_iff)
+      have y'_eq: "y' = truncate_down r y"
+        apply (subst y_def, subst y'_def, subst nth_mset_commute_mono[where f="(\<lambda>x. truncate_down r (of_int x))"]) 
+           apply (metis truncate_down_mono mono_def of_int_le_iff)
           apply (metis t_ge_0)
          apply (simp add:True)
         by (simp add: multiset.map_comp comp_def)
-      have "real_of_int (a+1) * (1 - 2 powr (-r-1)) \<le> real_of_int y * (1 - 2 powr (-r-1))"
+      have "real_of_int (a+1) * (1 - 2 powr -real r) \<le> real_of_int y * (1 - 2 powr (-real r))"
         apply (rule mult_right_mono)
         using rank_t_lb of_int_le_iff apply blast
         apply simp
-        apply (subst (2) two_powr_0[symmetric])
+        apply (subst two_powr_0[symmetric])
         by (rule powr_mono, simp, simp)
       also have "... \<le> y'"
         apply (subst y'_eq)
-        using truncate_nearest_le_pos[OF y_ge_0] by simp
-      finally have rank_t_lb': "(a+1) * (1 - 2 powr (-r-1)) \<le> y'" by simp
+        using truncate_down_pos[OF y_ge_0] by simp
+      finally have rank_t_lb': "(a+1) * (1 - 2 powr (-real r)) \<le> y'" by simp
 
-      have "y' \<le> real_of_int y * (1 + 2 powr (-r-1))"
-        apply (subst y'_eq)
-        using truncate_nearest_ge_pos[OF y_ge_0] by simp
-      also have "... \<le> real_of_int b * (1 + 2 powr (-r-1))"
-        apply (rule mult_right_mono)
-        using rank_t_ub of_int_le_iff apply blast
-        by simp
-      finally have rank_t_ub': "y' \<le> b * (1+2 powr (-r-1))"
+      have "y' \<le> real_of_int y"
+        by (subst y'_eq, rule truncate_down_le, simp)
+      also have "... \<le> real_of_int b"
+        using rank_t_ub of_int_le_iff by blast
+      finally have rank_t_ub': "y' \<le> b"
         by simp
 
-      have "0 < (a+1) * (1-2 powr (-r-1))"
+      have "0 < (a+1) * (1-2 powr (-real r))"
         apply (rule mult_pos_pos)
         using a_ge_0 apply linarith
         apply simp
-        apply (subst (2) two_powr_0[symmetric])
+        apply (subst two_powr_0[symmetric])
         apply (rule powr_less_mono)
-        by auto
+        using r_ge_0 by auto
       hence y'_pos: "y' > 0" using rank_t_lb' by linarith
 
-      have no_col': "\<And>x. x \<le> y' \<Longrightarrow> count {#truncate_nearest r (real (hash p x \<omega>)). x \<in># mset_set (set xs)#} x \<le> 1"
-         apply (subst count_image_mset, simp add:vimage_def card_le_Suc0_iff_eq)
+      have no_col': "\<And>x. x \<le> y' \<Longrightarrow> count {#truncate_down r (real (hash p x \<omega>)). x \<in># mset_set (set xs)#} x \<le> 1"
+        apply (subst count_image_mset, simp add:vimage_def card_le_Suc0_iff_eq)
         using  rank_t_ub' no_col apply (subst (asm) has_no_collision_def)
         by force
 
@@ -1111,7 +1117,7 @@ proof -
          apply (subst (asm) y'_def[symmetric], metis no_col')
         by simp
 
-      have "card (h \<omega>) = card (least t (set_mset {#truncate_nearest r (hash p x \<omega>). x \<in># mset_set (set xs)#}))"
+      have "card (h \<omega>) = card (least t (set_mset {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set xs)#}))"
         by (simp add:h_def)
       also have "... = t"
         apply (rule nth_mset_max(2)) 
@@ -1135,12 +1141,12 @@ proof -
          apply (rule mult_strict_right_mono)
           apply (simp add:\<delta>'_def distrib_left distrib_right left_diff_distrib right_diff_distrib)
         using True m_def t_ge_0 a_ge_0 assms(2) by auto
-      also have "... \<le> ((1 + real_of_rat \<delta>)*(1-2 powr (-r-1))) * m * (a+1)"
+      also have "... \<le> ((1 + real_of_rat \<delta>)*(1-2 powr (-r))) * m * (a+1)"
         apply (rule mult_right_mono)
          apply (rule mult_right_mono)
           apply (rule mult_left_mono)
         using r_le_\<delta> assms(2) a_ge_0 by auto
-      also have "... = (1 + real_of_rat \<delta>) * m * ((a+1) * (1-2 powr (-r-1)))" 
+      also have "... = (1 + real_of_rat \<delta>) * m * ((a+1) * (1-2 powr (-real r)))" 
         by simp
       also have "... \<le> (1 + real_of_rat \<delta>) * m * y'"
         apply (rule mult_left_mono, metis rank_t_lb')
@@ -1149,19 +1155,15 @@ proof -
       hence f_1: "g' (h \<omega>) < (1 + real_of_rat \<delta>) * m"
         apply (simp add: h_3)
         by (subst pos_divide_less_eq, metis y'_pos, simp)
-      have "(1 - real_of_rat \<delta>) * m * y' \<le> (1 - real_of_rat \<delta>) * m * (b * (1+2 powr (-r-1)))" 
+      have "(1 - real_of_rat \<delta>) * m * y' \<le> (1 - real_of_rat \<delta>) * m * b" 
         apply (rule mult_left_mono, metis rank_t_ub')
         using assms by simp
-      also have "... = ((1-real_of_rat \<delta>) * (1+2 powr (-real r-1)))  * (real m * b)"
+      also have "... = ((1-real_of_rat \<delta>))  * (real m * b)"
         by simp
-      also have "... \<le> ((1-real_of_rat \<delta>) * (1+real_of_rat \<delta>/8)) * (real m * b)" 
-        apply (rule mult_right_mono) 
-         apply (rule mult_left_mono)
-        using r_le_\<delta> m_eq_f0_value f0_ge_0 b_ge_0 assms by simp+
       also have "... < (1-\<delta>') * (real m * b)" 
         apply (rule mult_strict_right_mono)
          apply (simp add: \<delta>'_def algebra_simps)
-        apply (rule add_pos_pos, simp add:assms, simp add:assms)
+        using assms apply simp
         using r_le_\<delta> m_eq_f0_value f0_ge_0 b_ge_0 by simp
       also have "... \<le> (1-\<delta>') * (real m * (real t * real p / (real m * (1-\<delta>'))))"
         apply (rule mult_left_mono)
@@ -1193,15 +1195,15 @@ proof -
     case False
     have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. real_of_rat \<delta> * real_of_rat (f0_value xs) \<le> \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>) \<le>
       \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<exists>x \<in> set xs. \<exists>y \<in> set xs. x \<noteq> y \<and> 
-      truncate_nearest r (real (hash p x \<omega>)) \<le> real p * (1 + 2 powr (- real r - 1)) \<and> 
-      truncate_nearest r (real (hash p x \<omega>)) = truncate_nearest r (real (hash p y \<omega>)))" 
+      truncate_down r (real (hash p x \<omega>)) \<le> real p \<and> 
+      truncate_down r (real (hash p x \<omega>)) = truncate_down r (real (hash p y \<omega>)))" 
     proof (rule pmf_mono_1)
       fix \<omega>
       assume a:"\<omega> \<in> {\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1).
               real_of_rat \<delta> * real_of_rat (f0_value xs) \<le> \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>}"
       assume b:"\<omega> \<in> set_pmf \<Omega>\<^sub>1" 
       have a_1: "card (set xs) < t" using False by auto
-      have a_2:"card (h \<omega>) = card ((\<lambda>x. truncate_nearest r (real (hash p x \<omega>))) ` (set xs))"
+      have a_2:"card (h \<omega>) = card ((\<lambda>x. truncate_down r (real (hash p x \<omega>))) ` (set xs))"
         apply (simp add:h_def)
         apply (subst card_least, simp)
         apply (rule min.absorb4)
@@ -1215,56 +1217,45 @@ proof -
             linorder_not_less m_eq_f0_value m_ge_0 zero_less_mult_iff zero_less_of_rat_iff)
       hence "card (h \<omega>) \<noteq> card (set xs)"
         using m_def m_eq_f0_value by linarith
-      hence "\<not>inj_on (\<lambda>x. truncate_nearest r (real (hash p x \<omega>))) (set xs)"
+      hence "\<not>inj_on (\<lambda>x. truncate_down r (real (hash p x \<omega>))) (set xs)"
         apply (simp add:a_2) 
         using card_image by blast
-      moreover have "\<And>x. x \<in> set xs \<Longrightarrow> 
-        truncate_nearest r (real (hash p x \<omega>)) \<le> real p * (1 + 2 powr (-real r-1))"
+      moreover have "\<And>x. x \<in> set xs \<Longrightarrow> truncate_down r (real (hash p x \<omega>)) \<le> real p"
       proof -
         fix x
         assume a:"x \<in> set xs"
-        have "truncate_nearest r (real (hash p x \<omega>)) \<le> truncate_nearest r p"
-          apply (rule monoD[OF truncate_nearest_mono], rule of_nat_mono)
+        show "truncate_down r (real (hash p x \<omega>)) \<le> real p"
+          apply (rule truncate_down_le)
           using hash_range[OF p_ge_0 _ xs_le_p[OF a]]  b
           apply (simp add:\<Omega>\<^sub>1_def set_pmf_of_set[OF ne_bounded_degree_polynomials fin_bounded_degree_polynomials[OF p_ge_0]])
           using le_eq_less_or_eq by blast
-        also have "... \<le>  real p * (1 + 2 powr (-real r-1))"
-          by (rule truncate_nearest_ge_pos, simp)
-        finally show "truncate_nearest r (real (hash p x \<omega>)) \<le> real p * (1 + 2 powr (-real r-1))"
-          by simp
       qed
      ultimately show "\<omega> \<in> {\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1). \<exists>x \<in> set xs. \<exists>y \<in> set xs. x \<noteq> y \<and>
-        truncate_nearest r (real (hash p x \<omega>)) \<le> real p * (1 + 2 powr (-real r-1)) \<and> 
-        truncate_nearest r (real (hash p x \<omega>)) = truncate_nearest r (real (hash p y \<omega>))}"
+        truncate_down r (real (hash p x \<omega>)) \<le> real p \<and> 
+        truncate_down r (real (hash p x \<omega>)) = truncate_down r (real (hash p y \<omega>))}"
        apply (simp add:inj_on_def) by blast
     qed
-    also have "... \<le> 6 * (real (card (set xs)))\<^sup>2 * (real p * (1 + 2 powr (-real r-1)))\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
+    also have "... \<le> 6 * (real (card (set xs)))\<^sup>2 * (real p)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
       apply (simp only:\<Omega>\<^sub>1_def)
       apply (rule f0_collision_prob)
         apply (metis p_prime)
        apply (rule subsetI, simp add:xs_le_p)
-      apply (rule mult_ge_1)
-      using p_ge_0 by simp+
-    also have "... = 6 * (real (card (set xs)))\<^sup>2 * ((1 + 2 powr (-real r-1)))\<^sup>2 * 2 powr (- real r) + 1 / real p"
+      using p_ge_0 r_ge_0 by simp+
+    also have "... = 6 * (real (card (set xs)))\<^sup>2 * 2 powr (- real r) + 1 / real p"
       apply (simp add:ac_simps power2_eq_square)
       using p_ge_0 by blast
-    also have "... \<le> 6 * (real t)\<^sup>2 * 2\<^sup>2 * 2 powr (-real r) + 1 / real p"
+    also have "... \<le> 6 * (real t)\<^sup>2 * 2 powr (-real r) + 1 / real p"
       apply (rule add_mono)
-       apply (rule mult_mono)
-          apply (rule mult_mono)
-             apply (rule mult_left_mono, rule power_mono, rule of_nat_mono) using False apply simp
-              apply simp
-             apply simp
-            apply (rule power_mono, simp, subst (2) two_powr_0[symmetric], rule powr_mono, simp, simp)
+       apply (rule mult_right_mono)
+        apply (rule mult_left_mono)
+         apply (rule power_mono) using False apply simp
       by simp+
-    also have "... = 24 * (real t)\<^sup>2 * 2 powr (-real r) + 1/ real p"
-      by simp
     also have "... \<le> 1/6 + 1/6"
       apply (rule add_mono)
       apply (subst pos_le_divide_eq, simp)
       using r_le_t2 apply simp
       using p_ge_18 by simp
-    also have "... = 1/3" by simp
+    also have "... \<le> 1/3" by simp
     finally show ?thesis by simp
   qed
 
@@ -1278,7 +1269,7 @@ proof -
     apply (simp add:g_def g'_def h_def f0_sketch_def)
     apply (subst least_mono_commute, simp)
      apply (meson less_float.rep_eq strict_mono_onI)
-    by (simp add:image_comp float_of_inverse[OF truncate_nearest_float])
+    by (simp add:image_comp float_of_inverse[OF truncate_down_float])
 
   have card_eq: "\<And>\<omega>. card (f0_sketch p r t \<omega> xs) = card (h \<omega>)" 
     apply (subst real_g_2[symmetric]) 
