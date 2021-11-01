@@ -1324,4 +1324,204 @@ proof -
     using a by (simp add:\<Omega>\<^sub>0_def[symmetric])
 qed
 
+fun f0_space_usage :: "(nat \<times> rat \<times> rat) \<Rightarrow> real" where
+  "f0_space_usage (n, \<epsilon>, \<delta>) = (
+    let s = nat \<lceil>-18 * ln (real_of_rat \<epsilon>)\<rceil> in 
+    let r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24) in
+    let t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
+    8 +
+    2 * log 2 (1 + real s) +
+    2 * log 2 (1 + real t) +
+    2 * log 2 (10 + real n) +
+    2 * log 2 (1 + real r) +
+    real s * (12 + 4 * log 2 (10 + real n) +
+    real t * (11 + 4 * r + 2 * log 2 (log 2 (real n + 9)))))"
+
+lemma f_subset:
+  assumes "g ` A \<subseteq> h ` B"
+  shows "(\<lambda>x. f (g x)) ` A \<subseteq> (\<lambda>x. f (h x)) ` B"
+  using assms by auto
+
+lemma f0_bit_count:
+  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
+  assumes "\<delta> > 0 \<and> \<delta> < 1"
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
+  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
+  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
+proof -
+  define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
+  define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
+  define p where "p =  find_prime_above (max n 19)"
+  define r where "r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
+
+  have n_le_p: "n \<le> p" 
+    apply (rule order_trans[where y="max n 19"], simp)
+    apply (subst p_def)
+    by (rule find_prime_above_lower_bound)
+
+  have p_ge_0: "p > 0"
+    apply (rule prime_gt_0_nat)
+    by (simp add:p_def find_prime_above_is_prime)
+
+  have p_le_n: "p \<le> 2*n + 19"
+    apply (simp add:p_def)
+    apply (cases "n \<le> 19", simp add:find_prime_above.simps) 
+    apply (rule order_trans[where y="2*n+2"], simp add:find_prime_above_upper_bound[simplified])
+    by simp
+
+  have log_2_4: "log 2 4 = 2" 
+    by (metis log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
+
+  have b_4_22: "\<And>y. y \<in> {0..<p} \<Longrightarrow> bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
+    ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+9)))" 
+  proof -
+    fix y
+    assume a:"y \<in> {0..<p}"
+
+    show " bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+9)))" 
+    proof (cases "y \<ge> 1")
+      case True
+
+      have b_4_23: "0 < 2 + log 2 (real p)" 
+       apply (rule order_less_le_trans[where y="2+log 2 1"], simp)
+       using p_ge_0 by simp
+
+      have "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le>  ereal (8 + 4 * real r + 2 * log 2 (2 + \<bar>log 2 \<bar>real y\<bar>\<bar>))"
+        by (rule truncate_float_bit_count)
+      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (2 + log 2 p))"
+        apply (simp)
+        apply (subst log_le_cancel_iff, simp, simp, simp add:b_4_23)
+        apply (subst abs_of_nonneg) using True apply simp
+        apply (simp, subst log_le_cancel_iff, simp, simp) using True apply simp
+         apply (simp add:p_ge_0)
+        using a by simp
+      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (log 2 4 + log 2 (2 * n + 19)))"
+        apply simp
+        apply (subst log_le_cancel_iff, simp, simp add:_b_4_23)
+         apply (rule add_pos_pos, simp, simp)
+        apply (rule add_mono)
+         apply (metis dual_order.refl log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
+        apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
+        using p_le_n by simp
+      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (log 2 ((n+9) powr 2)))"
+        apply simp
+        apply (subst log_le_cancel_iff, simp, rule add_pos_pos, simp, simp, simp)
+        apply (subst log_mult[symmetric], simp, simp, simp, simp)
+        by (subst log_le_cancel_iff, simp, simp, simp, simp add:power2_eq_square algebra_simps)
+      also have "... = ereal (10 +  4 * real r + 2 * log 2 (log 2 (n + 9)))"
+        apply (subst log_powr, simp)
+        apply (simp)
+        apply (subst (3) log_2_4[symmetric]) 
+        by (subst log_mult, simp, simp, simp, simp, simp add:log_2_4)
+      finally show ?thesis by simp
+    next
+      case False
+      hence "y = 0" using a by simp
+      then show ?thesis by (simp add:float_bit_count_zero)
+    qed
+  qed
+
+  have b: 
+    "\<And>x. x \<in> ({0..<s} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 2) \<Longrightarrow>
+        bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs)) \<le> 
+        f0_space_usage (n, \<epsilon>, \<delta>)"
+  proof -
+    fix x
+    assume b_1:"x \<in> {0..<s} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 2"
+    have b_2: "x \<in> extensional {0..<s}" using b_1 by (simp add:PiE_def) 
+
+    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> card (f0_sketch p r t (x y) xs) \<le> t "
+      apply (simp add:f0_sketch_def)
+      apply (subst card_least, simp)
+      by simp
+
+    hence b_3: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) xs) ` {0..<s} \<Longrightarrow> card y \<le> t"
+      by force
+
+    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> f0_sketch p r t (x y) xs \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {0..<p} "
+      apply (simp add:f0_sketch_def)
+      apply (rule order_trans[OF least_subset])
+      apply (rule f_subset[where f="\<lambda>x. float_of (truncate_down r (real x))"])
+      apply (rule image_subsetI, simp)
+      apply (rule hash_range[OF p_ge_0, where n="2"])
+       using b_1 apply (simp add: PiE_iff)
+      using assms(3) n_le_p order_less_le_trans by blast
+    hence b_4: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) xs) ` {0..<s} \<Longrightarrow> 
+      y \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {0..<p}"
+      by force
+
+    have b_4_1: "\<And>y z . y \<in> (\<lambda>z. f0_sketch p r t (x z) xs) ` {0..<s} \<Longrightarrow> z \<in> y \<Longrightarrow> 
+      bit_count (F\<^sub>S z) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+9)))"
+      using b_4_22 b_4 by blast
+
+    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> finite (f0_sketch p r t (x y) xs)"
+      apply (simp add:f0_sketch_def)
+      by (rule finite_subset[OF least_subset], simp)
+    hence b_5: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) xs) ` {0..<s} \<Longrightarrow> finite y" by force
+
+    have "bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs)) =
+      bit_count (N\<^sub>S s) + bit_count (N\<^sub>S t) +  bit_count (N\<^sub>S p) + bit_count (N\<^sub>S r) +
+      bit_count (list\<^sub>S (list\<^sub>S (zfact\<^sub>S p)) (map x [0..<s])) +
+      bit_count (list\<^sub>S (set\<^sub>S F\<^sub>S) (map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs) [0..<s]))"
+      apply (simp add:b_2 encode_state_def dependent_bit_count prod_bit_count
+        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] 
+        del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
+      by (simp add:ac_simps del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
+    also have "... \<le> ereal (2* log 2 (1 + real s) + 1) + ereal  (2* log 2 (1 + real t) + 1)
+      + ereal (2* log 2 (1 + real p) + 1) + ereal (2 * log 2 (1 + real r) + 1)
+      + (ereal (real s) * (ereal (real 2 * (2 * log 2 (real p) + 2) + 1) + 1) + 1) 
+      + (ereal (real s) * ((ereal (real t) * (ereal (10 + 4 * real r + 2 * log 2 (log 2 (real (n + 9))))
+           + 1) + 1) + 1) + 1)"
+      apply (rule add_mono, rule add_mono, rule add_mono, rule add_mono, rule add_mono)
+           apply (metis nat_bit_count)
+          apply (metis nat_bit_count)
+         apply (metis nat_bit_count)
+        apply (metis nat_bit_count)
+       apply (rule list_bit_count_est[where xs="map x [0..<s]", simplified])
+       apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0]) using b_1 apply blast
+      apply (rule list_bit_count_est[where xs="map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs) [0..<s]", simplified])
+      apply (rule set_bit_count_est, metis b_5, metis b_3)
+       apply simp
+      by (metis b_4_1)
+    also have "... = ereal ( 6 + 2 * log 2 (1 + real s)  + 2 * log 2 (1 + real t) + 
+      2 * log 2 (1 + real p) + 2 * log 2 (1 + real r) + real s * (8 + 4 * log 2 (real p) + 
+      real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 9))))))"
+      apply (simp)
+      by (subst distrib_left[symmetric], simp) 
+    also have "... \<le> ereal ( 6 + 2 * log 2 (1 + real s)  + 2 * log 2 (1 + real t) + 
+      2 * log 2 (2 * (10 + real n)) + 2 * log 2 (1 + real r) + real s * (8 + 4 * log 2 (2 * (10 + real n)) + 
+      real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 9))))))"
+      apply (simp, rule add_mono, simp) using p_le_n apply simp
+      apply (rule mult_left_mono, simp)
+       apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
+       using p_le_n apply simp
+      by simp
+    also have "... \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
+      apply (subst log_mult, simp, simp, simp)
+      apply (subst log_mult, simp, simp, simp)
+      apply (simp add:s_def[symmetric] r_def[symmetric] t_def[symmetric])
+      by (simp add:algebra_simps)
+    finally show "bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs)) \<le> 
+        f0_space_usage (n, \<epsilon>, \<delta>)" by simp
+  qed
+  
+  have a:"\<And>y. y \<in> (\<lambda>x. (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs)) `
+             ({0..<s} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 2) \<Longrightarrow>
+         bit_count (encode_state y) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
+    using b apply (simp add:image_def del:f0_space_usage.simps) by blast
+
+  show ?thesis
+    apply (subst AE_measure_pmf_iff, rule ballI)
+    apply (subst (asm) sketch_def)
+    apply (subst (asm) f0_alg_sketch[OF assms(1) assms(2) assms(3)], simp)
+    apply (simp add:s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric])
+    apply (subst (asm) set_prod_pmf, simp)
+    apply (simp add:comp_def)
+    apply (subst (asm) set_pmf_of_set)
+      apply (metis ne_bounded_degree_polynomials)
+     apply (metis fin_bounded_degree_polynomials[OF p_ge_0])
+    using a
+    by (simp add:s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric])
+qed
+
 end

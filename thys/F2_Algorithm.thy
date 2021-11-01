@@ -3,7 +3,7 @@ section \<open>Frequency Moment 2\<close>
 theory F2_Algorithm
   imports Main "HOL-Probability.Giry_Monad" "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
     Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext "HOL-Library.Extended_Nat"
-    "HOL-Library.Rewrite" "Encoding" List_Ext Prod_PMF  "HOL-Library.Landau_Symbols"
+    "HOL-Library.Rewrite" "Encoding" List_Ext Prod_PMF  "HOL-Library.Landau_Symbols" UniversalHashFamilyOfPrime
 begin
 
 definition f2_value where
@@ -235,7 +235,7 @@ proof -
 qed
 
 lemma fin_poly: 
-  assumes "prime p"
+  assumes "Factorial_Ring.prime p"
   shows "finite (bounded_degree_polynomials (ZFact (int p)) 4)"
   apply (rule finite_poly_count)
    apply (rule zfact_prime_is_field)
@@ -244,7 +244,7 @@ lemma fin_poly:
   using assms  prime_gt_0_nat by blast
 
 lemma eval_exp':
-  assumes "prime p"
+  assumes "Factorial_Ring.prime p"
   assumes "k < p"
   assumes "p > 2" 
   shows
@@ -345,7 +345,7 @@ qed
 
 
 lemma eval_exp_1':
-  assumes "prime p"
+  assumes "Factorial_Ring.prime p"
   assumes "k < p"
   assumes "p > 2"
   shows "has_bochner_integral (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) (\<lambda>\<omega>. real_of_int (eval_hash_function p \<omega> k)/ sqrt (real p^2-1)) 0"
@@ -358,7 +358,7 @@ qed
 
 
 lemma eval_exp_2':
-  assumes "prime p"
+  assumes "Factorial_Ring.prime p"
   assumes "k < p"
   assumes "p > 2"
   shows "has_bochner_integral (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) (\<lambda>\<omega>. (real_of_int (eval_hash_function p \<omega> k)/ sqrt (real p^2-1))^2) 1"
@@ -387,7 +387,7 @@ qed
 
 
 lemma eval_exp_4':
-  assumes "prime p"
+  assumes "Factorial_Ring.prime p"
   assumes "k < p"
   assumes "p > 2"
   shows 
@@ -425,7 +425,7 @@ qed
 
 
 lemma eval_4_indep':
-  assumes "prime p"
+  assumes "Factorial_Ring.prime p"
   assumes "p > 2"
   shows "prob_space.k_wise_indep_vars (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) 4 (\<lambda>_. borel)
     (\<lambda>k \<omega>. real_of_int (eval_hash_function p \<omega> k)/ sqrt (real p^2-1)) {0..<p}"
@@ -474,7 +474,7 @@ qed
 
 
 lemma 
-  assumes "prime p"
+  assumes "Factorial_Ring.prime p"
   assumes "p > 2"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < p"
   defines "M \<equiv> measure_pmf (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))"
@@ -820,29 +820,16 @@ proof -
     proof -
       fix x 
       assume a_5: "x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})"
-      have a_4: "\<And>z. z \<in> set x \<Longrightarrow> z \<in> zfact_embed p ` {0..<p}"
-        apply (subst zfact_embed_ran[OF p_ge_0])
-        using a_5 a_1 apply (simp add:PiE_def Pi_def image_def bounded_degree_polynomials_def)
-        by (metis (no_types, opaque_lifting) atLeastLessThan_iff length_pos_if_in_set less_nat_zero_code list.size(3) polynomial_def subsetD univ_poly_carrier)
-
-      have "length x - 1 < 4" 
-        using a_5 a_1 apply (simp add:PiE_def Pi_def image_def bounded_degree_polynomials_def) 
-        by fastforce
-      hence a_6: "length x \<le> 4" by linarith
-      have "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le>  ereal (real (length x)) * (ereal (2 * log 2 (4 + 2 * real n) + 1) + 1) + 1"
-        apply (rule list_bit_count_est[where a="2 * log 2 (4 + 2 * real n) + 1"])
-        using a_4 apply (simp)
-        apply (rule nat_bit_count_est[where m="2*n+3", simplified])
-        apply (rule order_trans[where y="p"])
-        using the_inv_into_into[OF zfact_embed_inj[OF p_ge_0], where B="{0..<p}", simplified] less_imp_le_nat apply presburger
-        by (simp add:p_le_n)
-      also have "... \<le> ereal 4 * (ereal (2 * log 2 (4 + 2 * real n) + 1) + 1) + 1"
-        apply (rule add_mono)
-         apply (rule ereal_mult_mono, simp, simp)
-        using  a_6 by simp+
-      also have "... = ereal (9 + 8 * log 2 (4 + 2 * real n))"
+      have "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le> ereal ( real 4 * (2 * log 2 (real p) + 2) + 1)"
+        apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0])
+        using a_1 a_5 by blast
+      also have "... \<le> ereal (real 4 * (2 * log 2 (3 + 2 * real n) + 2) + 1)"
+        apply simp
+        apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
+        using p_le_n by simp
+      also have "... \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
         by simp
-      finally show "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le>  ereal (9 + 8 * log 2 (4 + 2 * real n))"
+      finally show "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
         by blast
     qed
 

@@ -1,8 +1,6 @@
 theory Encoding
-  imports Main "HOL-Library.Sublist" "HOL-Library.Monad_Syntax" "HOL-Library.List_Lexorder"
-    "HOL-Library.Option_ord" "HOL-Library.Extended_Nat" "Multiset_Ext"
-  "HOL-Library.Extended_Nonnegative_Real" "HOL-Library.FuncSet"  "HOL-Analysis.Complex_Transcendental"
-  "HOL-Library.Float" Field
+  imports Main "HOL-Library.Sublist" "HOL-Library.Extended_Real" "HOL-Library.FuncSet" 
+  "HOL.Transcendental" "HOL-Library.Float" "HOL-Analysis.Complex_Transcendental"
 begin
 
 fun is_prefix where 
@@ -353,17 +351,19 @@ lemma encoding_compose:
   shows "is_encoding (\<lambda>x. if P x then f (g x) else None)"
   using assms by (simp add: inj_onD is_encoding_def)
 
+lemma suc_n_le_2_pow_n:
+  fixes n :: nat
+  shows "n + 1 \<le> 2 ^ n"
+  by (induction n, simp, simp)
+
 lemma log_est: "log 2 (1 + real n) \<le> n"
 proof -
-  have "n + 1 \<le> 2 ^ ( n)"
-    by (induction n, simp, simp)
-  hence "1 + real n \<le> 2 powr (real n)"
-    apply (simp add: powr_realpow)
+  have "1 + real n \<le> 2 powr (real n)"
+    using suc_n_le_2_pow_n apply (simp add: powr_realpow)
     by (metis numeral_power_eq_of_nat_cancel_iff of_nat_Suc of_nat_mono)
   thus ?thesis 
     by (simp add: Transcendental.log_le_iff)
 qed
-
 
 lemma log_2_ln: 
   assumes "x \<ge> 1"
@@ -409,32 +409,6 @@ lemma encode_extensional:
   apply (rule inj_onI, simp)
   using extensionalityI by fastforce
 
-section \<open>Floats\<close>
-
-fun F\<^sub>S where " F\<^sub>S f = (I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)"
-
-lemma encode_float:
-  "is_encoding F\<^sub>S"
-proof -
-  have a : "inj (\<lambda>x. (mantissa x, exponent x))"
-  proof (rule injI)
-    fix x y
-    assume "(mantissa x, exponent x) = (mantissa y, exponent y)"
-    hence "real_of_float x = real_of_float y"
-      by (simp add:mantissa_exponent)
-    thus "x = y"
-      by (metis real_of_float_inverse)
-  qed
-  have "is_encoding (\<lambda>f. if True then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
-    apply (rule encoding_compose[where f="(I\<^sub>S \<times>\<^sub>S I\<^sub>S)"])
-     apply (metis prod_encoding int_encoding, simp)
-    by (metis a)
-  moreover have "F\<^sub>S = (\<lambda>f. if f \<in> UNIV then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
-    by (rule ext, simp)
-  ultimately show "is_encoding F\<^sub>S"
-    by simp
-qed
-
 
 section \<open>Ordered Sets\<close>
 
@@ -449,26 +423,20 @@ lemma encode_set:
   apply (rule inj_onI, simp)
   by (metis sorted_list_of_set.set_sorted_key_list_of_set)
 
-section \<open>Finite Fields\<close>
-
-fun zfact\<^sub>S where "zfact\<^sub>S p x = (
-    if x \<in> zfact_embed p ` {0..<p} then
-      N\<^sub>S (the_inv_into {0..<p} (zfact_embed p) x)
-    else
-     None
-  )"
-
-lemma zfact_encoding : 
-  "is_encoding (zfact\<^sub>S p)"
+lemma set_bit_count_est:
+  assumes "finite S"
+  assumes "card S \<le> m"
+  assumes "0 \<le> a"
+  assumes "\<And>x. x \<in> S \<Longrightarrow> bit_count (f x) \<le> a"
+  shows "bit_count (set\<^sub>S f S) \<le> ereal (real m) * (a+1) + 1"
 proof -
-  have "p > 0 \<Longrightarrow> is_encoding (\<lambda>x. zfact\<^sub>S p x)"
-    apply simp 
-    apply (rule encoding_compose[where f="N\<^sub>S"])
-     apply (metis nat_encoding, simp)
-    by (metis inj_on_the_inv_into zfact_embed_inj)
-  moreover have "is_encoding (zfact\<^sub>S 0)"
-    by (simp add:is_encoding_def)
-  ultimately show ?thesis by blast
+  have "bit_count (set\<^sub>S f S) \<le> ereal (length (sorted_list_of_set S)) * (a+1) + 1"
+    using assms(4) assms(1) list_bit_count_est[where xs="sorted_list_of_set S"] by simp
+  also have "... \<le> ereal (real m) * (a+1) + 1"
+    apply (rule add_mono)
+    apply (rule ereal_mult_right_mono)
+    using assms by simp+
+  finally show ?thesis by simp
 qed
 
 instantiation rat :: linorder_topology

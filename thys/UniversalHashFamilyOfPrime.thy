@@ -1,5 +1,5 @@
 theory UniversalHashFamilyOfPrime
-  imports Field UniversalHashFamily Probability_Ext
+  imports Field UniversalHashFamily Probability_Ext Encoding
 begin
 
 lemma fin_bounded_degree_polynomials:
@@ -261,5 +261,58 @@ proof -
     using a by (simp add:measure_pmf.k_wise_indep_vars_def comp_def)
 qed
 
+subsection \<open>Encoding\<close>
+
+fun zfact\<^sub>S where "zfact\<^sub>S p x = (
+    if x \<in> zfact_embed p ` {0..<p} then
+      N\<^sub>S (the_inv_into {0..<p} (zfact_embed p) x)
+    else
+     None
+  )"
+
+lemma zfact_encoding : 
+  "is_encoding (zfact\<^sub>S p)"
+proof -
+  have "p > 0 \<Longrightarrow> is_encoding (\<lambda>x. zfact\<^sub>S p x)"
+    apply simp 
+    apply (rule encoding_compose[where f="N\<^sub>S"])
+     apply (metis nat_encoding, simp)
+    by (metis inj_on_the_inv_into zfact_embed_inj)
+  moreover have "is_encoding (zfact\<^sub>S 0)"
+    by (simp add:is_encoding_def)
+  ultimately show ?thesis by blast
+qed
+
+lemma bounded_degree_polynomial_bit_count:
+  assumes "p > 0"
+  assumes "x \<in> bounded_degree_polynomials (ZFact p) n"
+  shows "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le> ereal (real n * (2 * log 2 p + 2) + 1)"
+proof -
+  have b:"real (length x) \<le> real n"
+    using assms(2) 
+    apply (simp add:bounded_degree_polynomials_def)
+    apply (cases "x=[]", simp, simp)
+    by linarith
+
+  have a:"\<And>y. y \<in> set x \<Longrightarrow> y \<in> zfact_embed p ` {0..<p}" 
+    using assms(2) 
+    apply (simp add:bounded_degree_polynomials_def)
+    by (metis length_greater_0_conv length_pos_if_in_set polynomial_def subsetD univ_poly_carrier zfact_embed_ran[OF assms(1)])
+
+  have "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le> ereal (real (length x)) * ( ereal (2 * log 2 (1 + real (p-1)) + 1) + 1) + 1"
+    apply (rule list_bit_count_est)
+    apply (simp add:a del:N\<^sub>S.simps)
+    apply (rule nat_bit_count_est)
+    by (metis a the_inv_into_into[OF zfact_embed_inj[OF assms(1)], where B="{0..<p}", simplified]
+        Suc_pred assms(1) less_Suc_eq_le)
+  also have "... \<le> ereal (real n) * (2 + ereal (2 * log 2 p) ) + 1"
+    apply simp
+    apply (rule mult_mono, metis b)
+      apply (rule add_mono)
+    using assms(1) by simp+
+  also have "... = ereal (real n * (2 * log 2 p + 2) + 1)"
+    by simp
+  finally show ?thesis by simp
+qed
 
 end
