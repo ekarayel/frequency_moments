@@ -1,6 +1,6 @@
 theory Frequency_Moment_0
   imports Main  "HOL-Probability.Probability_Mass_Function"
-  Primes_Ext Float_Ext Median Least UniversalHashFamilyOfPrime Encoding
+  Primes_Ext Float_Ext Median Least UniversalHashFamilyOfPrime Encoding "HOL-Library.Landau_Symbols"
 begin
 
 type_synonym f0_space = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<Rightarrow> (int set list)) \<times> (nat \<Rightarrow> float set)"
@@ -1522,6 +1522,259 @@ proof -
      apply (metis fin_bounded_degree_polynomials[OF p_ge_0])
     using a
     by (simp add:s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric])
+qed
+
+lemma f0_asympotic_space_complexity:
+  "f0_space_usage \<in> O[at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda> (n, \<epsilon>, \<delta>). 
+  ln (1 / of_rat \<epsilon>) * (ln (real n) + 1 / (of_rat \<delta>)\<^sup>2 * (ln (ln (real n)) + ln (1 / of_rat \<delta>))))"
+  (is "?lhs \<in> O[?evt](?rhs)")
+proof -
+  define c :: real where "c = 129276"
+  have log_2_4: "log 2 4 = 2" 
+    by (metis log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
+
+  have b:"\<And>n \<epsilon> \<delta>. n \<ge> 10  \<Longrightarrow> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<Longrightarrow> (0 < \<delta> \<and> \<delta> < 1/128) \<Longrightarrow>
+     abs (f0_space_usage  (n, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, \<epsilon>, \<delta>))" 
+  proof -
+    fix n :: nat
+    fix \<epsilon> :: rat
+    fix \<delta> :: rat
+    assume n_ge_10: "n \<ge> 10"
+    assume \<epsilon>_asm: "0 < \<epsilon> \<and> \<epsilon> < 1/3"
+    assume \<delta>_asm: "0 < \<delta> \<and> \<delta> < 1/128"
+    define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
+    define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
+    define r where "r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
+
+    have real_s_eq: "real s = real_of_int  \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
+      apply (simp add:s_def)
+      apply (rule of_nat_nat)
+      apply simp
+      apply (subst mult.commute, subst pos_less_divide_eq[symmetric], simp)
+      apply (rule order_le_less_trans[where y="0"])
+       apply (subst ln_le_zero_iff)
+      using \<epsilon>_asm by auto
+
+    have real_t_eq: "real t = real_of_int \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
+      apply (simp add:t_def)
+      apply (rule of_nat_nat)
+      apply simp
+      apply (rule order_le_less_trans[where y="0"], simp)
+      apply (rule divide_pos_pos, simp)
+      using \<delta>_asm by simp
+
+    have s_ge_1: "real s \<ge> 1"
+      apply (simp add:real_s_eq) 
+      apply (subst ln_less_zero_iff)
+      using \<epsilon>_asm by auto
+
+    have t_ge_1: "real t \<ge> 1"
+      apply (simp add:real_t_eq)
+      using \<delta>_asm by simp
+
+    have \<delta>_le_2: "real_of_rat \<delta> < 2" 
+      apply (rule order_less_le_trans[where y="1/128"])
+      using \<delta>_asm apply simp 
+       apply (metis (no_types, opaque_lifting) of_rat_less of_rat_mult of_rat_numeral_eq one_eq_of_rat_iff)
+      by simp
+
+    have r_def_2: "real r = of_int (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
+      apply (subst r_def, rule of_nat_nat)
+      apply (rule add_nonneg_nonneg)
+       apply (rule mult_nonneg_nonneg, simp)
+       apply simp
+       apply (subst less_log_iff, simp, simp add:\<delta>_asm, simp)
+       apply (subst pos_less_divide_eq, simp add:\<delta>_asm, simp add:\<delta>_le_2)
+      by simp
+
+    have "real r \<ge> 17" 
+      apply (subst r_def_2, simp)
+      apply (rule add_nonneg_nonneg, simp)
+      apply (rule mult_nonneg_nonneg, simp)
+      apply simp
+      apply (subst less_log_iff, simp, simp add:\<delta>_asm, simp)
+      by (subst pos_less_divide_eq, simp add:\<delta>_asm, simp add:\<delta>_le_2)
+    hence r_ge_17: "r \<ge> 17" by simp
+
+    have "real r \<le> (4 * (log 2 (1 / of_rat \<delta>) + 1)) + 24"
+      apply (subst r_def_2)
+      apply (subst of_int_add)
+      apply (rule add_mono)
+       apply (subst of_int_mult)
+       apply (rule mult_mono, simp) using of_int_ceiling_le_add_one apply blast apply simp
+       apply simp
+       apply (subst less_log_iff, simp, simp add:\<delta>_asm, simp)
+       apply (subst pos_less_divide_eq, simp add:\<delta>_asm, simp add:\<delta>_le_2)
+      by simp
+    also have "... = 4 * (log 2 (1 / of_rat \<delta>) + log 2 (2^7))" 
+      by (subst log_nat_power, simp, simp)
+    also have "... \<le> 4 * (log 2 (1 / of_rat \<delta>) + log 2 (1 / of_rat \<delta>))" 
+      apply (rule mult_left_mono)
+       apply (rule add_mono, simp)
+       apply (subst le_log_iff, simp, simp add:\<delta>_asm, simp)
+       apply (subst pos_le_divide_eq, simp add:\<delta>_asm)
+       using \<delta>_asm apply simp 
+       apply (metis Groups.mult_ac(2) less_eq_rat_def of_rat_le_1_iff of_rat_mult of_rat_numeral_eq)
+      by simp
+    also have "... \<le> 12 * ln (1 / of_rat \<delta>)" 
+      apply (simp, rule log_2_ln)
+      apply (simp add:\<delta>_asm) using \<delta>_asm by linarith
+    finally have r_le_\<delta>: "r \<le> 12 * ln(1 / of_rat \<delta>)" by simp
+
+    have n_ge_0: "n > 0" using n_ge_10 by simp
+
+    have exp_1_le_n: "exp 1 \<le> real n"
+      using order_less_imp_le e_less_272 n_ge_10 by linarith
+
+    have "real t \<le> 80 / (of_rat \<delta>)\<^sup>2 + 1"
+      by (simp add:real_t_eq) 
+    also have "... \<le> 80 / (of_rat \<delta>)\<^sup>2 + 1 / (of_rat \<delta>)\<^sup>2"
+      apply (rule add_mono, simp)
+      using \<delta>_asm by (simp add: power_le_one)
+    finally have t_le_\<delta>: "real t \<le> 81 / (of_rat \<delta>)\<^sup>2" by simp
+
+    have ln_ln_n_nonneg: "0 \<le> ln (ln (real n))" 
+      apply (subst ln_ge_zero_iff, subst ln_gt_zero_iff)
+        using n_ge_0 apply simp
+       using n_ge_10 apply simp
+      apply (subst ln_ge_iff)
+      using n_ge_0 n_ge_10 exp_1_le_n by auto
+    
+    have ln_1_div_\<delta>_nonneg: " 0 \<le> ln (1 / real_of_rat \<delta>)"
+      apply (subst ln_ge_zero_iff)
+      using \<delta>_asm by auto
+
+    have ln_1_div_\<epsilon>_nonneg: " 0 \<le> ln (1 / real_of_rat \<epsilon>)"
+      apply (subst ln_ge_zero_iff)
+      using \<epsilon>_asm by auto
+
+    have "real s = real_of_int \<lceil>18 * ln (1 / real_of_rat \<epsilon>)\<rceil>"
+      by (subst real_s_eq, subst ln_div, simp, simp add:\<epsilon>_asm, simp)
+    also have "... \<le> 18 * ln (1 / real_of_rat \<epsilon>) + 1"
+      by simp
+    also have "... \<le> 19 * ln (1 / real_of_rat \<epsilon>)"
+      apply simp
+      apply (subst ln_ge_iff, simp add:\<epsilon>_asm)
+      apply (rule order_less_imp_le)
+      apply (rule order_less_le_trans[OF e_less_272])
+      apply (rule order_trans[where y="3"], simp)
+      apply (rule order_less_imp_le)
+      using \<epsilon>_asm apply simp 
+      by (metis Groups.mult_ac(2) less_divide_eq of_rat_1 of_rat_divide of_rat_less of_rat_numeral_eq)
+    finally have s_le_\<epsilon>: "real s \<le> 19 * ln (1 / of_rat \<epsilon>)" by simp
+
+    have "abs (f0_space_usage  (n, \<epsilon>, \<delta>)) \<le> 
+      1 * 8 + 2 * real s + 1 * (2 * real t) + 1 * (2 * log 2 (10 + real n)) + 1 * 1 * (2 * real r) +
+      real s * (12 + 4 * log 2 (10 + real n) + real t * (11 + 4 * real r + 2 * log 2 (log 2 (real n + 9))))"
+      apply (simp add:s_def[symmetric] t_def[symmetric] r_def[symmetric])
+      apply (rule add_mono, rule mult_left_mono, metis log_est, simp)
+      apply (rule add_mono, simp add: log_est)
+      by (simp add: log_est)
+    also have "... \<le> real s * 8 + 2 * real s + real s * (2 * real t) + real s * (2 * log 2 (10 + real n))
+      +  real s * real t * (2 * real r) + 
+      real s * (12 + 4 * log 2 (10 + real n) + real t * (11 + 4 * real r + 2 * log 2 (log 2 (real n + 9))))"
+      apply (rule add_mono)
+       apply (rule add_mono)
+        apply (rule add_mono)
+         apply (rule add_mono, simp add:s_ge_1)
+         apply (rule mult_right_mono, metis s_ge_1, simp)
+        apply (rule mult_right_mono, metis s_ge_1, simp)
+       apply (rule mult_right_mono, rule mult_mono, metis s_ge_1, metis t_ge_1, simp, simp, simp)
+      by simp
+    also have "... = real s * (22 + 6 * log 2 (10 + real n) + real t * (13 + 6 * real r + 2 * log 2 (log 2 (real n + 9))))"
+      by (simp add:algebra_simps)
+    also have "... \<le> real s * (22 + 6 * log 2 (2* real n) + real t * (13 + 6 * real r + 2 * log 2 (log 2 (2 * real n))))"
+      apply (rule mult_left_mono)
+       apply (rule add_mono)
+        apply (rule add_mono, simp)
+        apply (simp, subst log_le_cancel_iff, simp, simp, simp add:n_ge_0, simp add:n_ge_10)
+       apply (rule mult_left_mono) using n_ge_10 by simp+
+    also have "... = real s * (28 + 6 * log 2 (real n) + real t * (13 + 6 * real r + 2 * log 2 (1 + log 2 (real n))))"
+      apply (subst log_mult, simp, simp, simp add:n_ge_0)
+      apply (subst log_mult, simp, simp, simp add:n_ge_0)
+      by simp
+    also have "... \<le> real s * (28 * log 2 (real n) + 6 * log 2 (real n) + real t * (13 + 6 * real r + 2 * log 2 (2 * log 2 (real n))))"
+      apply (rule mult_left_mono)
+       apply (rule add_mono) using n_ge_10 apply simp
+       apply (rule mult_left_mono)
+        apply (simp, subst log_le_cancel_iff)
+      using n_ge_10 by (auto intro!:add_pos_pos)
+    also have "... = real s * (34 * log 2 (real n) + real t * (13 + 6 * real r + 2 * log 2 (2 * log 2 (real n))))"
+      by simp
+    also have "... \<le> real s * (51 * ln (real n) + real t * (13 + 6 * real r + 2 * log 2 (3 * ln (real n))))"
+      apply (rule mult_left_mono)
+       apply (rule add_mono)
+        apply (simp, rule log_2_ln) using n_ge_10 apply simp
+       apply (rule mult_left_mono)
+        apply (simp, subst log_le_cancel_iff, simp)
+      using n_ge_10 apply simp
+      using n_ge_10 apply simp
+      apply (rule log_2_ln)
+      using n_ge_10 by auto
+    also have "... \<le> real s * (51 * ln (real n) + real t * (13 + 6 * real r + 2 * log 2 (4 * ln (real n))))"
+      apply (rule mult_left_mono, simp)
+       apply (rule mult_left_mono, simp)
+        apply (subst log_le_cancel_iff, simp)
+      using n_ge_10 by auto
+    also have "... \<le> real s * (51 * ln (real n) + real t * (17 + 6 * real r + 2 * log 2 (ln (real n))))"
+      apply (subst log_mult, simp, simp, simp) using n_ge_10 apply simp 
+      by (simp add:algebra_simps log_2_4)
+    also have "... \<le> real s * (51 * ln (real n) + real t * (7 * real r + 2 * log 2 (ln (real n))))"
+      apply (rule mult_left_mono)
+       apply (rule add_mono, simp)
+       apply (rule mult_left_mono)
+       apply (rule add_mono, simp add:r_ge_17)
+      by auto
+    also have "... \<le> real s * (51 * ln (real n) + real t * (7 * 12 * ln (1 / of_rat \<delta>) + 3 * ln (ln (real n))))"
+      apply (rule mult_left_mono)
+       apply (rule add_mono, simp)
+       apply (rule mult_left_mono)
+        apply (rule add_mono, simp add:r_le_\<delta>)
+        apply (rule log_2_ln)
+        apply (subst ln_ge_iff)
+      using n_ge_10 exp_1_le_n by auto
+    also have "... \<le> real s * (51 * ln (real n) + real t * (84 * ( ln (1 / of_rat \<delta>) + ln (ln (real n)))))"
+      apply (rule mult_left_mono)
+       apply (rule add_mono, simp)
+       apply (rule mult_left_mono)
+      using ln_ln_n_nonneg by auto
+    also have "... \<le> 19 * ln(1 / of_rat \<epsilon>) * (81*84 * ln (real n) + (81 / (of_rat \<delta>)\<^sup>2) * (84 * ( ln (1 / of_rat \<delta>) + ln (ln (real n)))))"
+      apply (rule mult_mono, metis s_le_\<epsilon>)
+        apply (rule add_mono, simp, subst ln_ge_zero_iff) using n_ge_0 apply (simp, simp)
+        apply (rule mult_right_mono, metis t_le_\<delta>)
+        apply (rule mult_nonneg_nonneg, simp)
+        apply (rule add_nonneg_nonneg, metis ln_1_div_\<delta>_nonneg, metis ln_ln_n_nonneg)
+       apply (simp, metis ln_1_div_\<epsilon>_nonneg) 
+      apply (rule add_nonneg_nonneg)
+       apply (simp, subst ln_ge_zero_iff) using n_ge_0 apply (simp, simp)
+      apply (rule mult_nonneg_nonneg, simp)
+      apply (rule mult_nonneg_nonneg, simp)
+      by (rule add_nonneg_nonneg, metis ln_1_div_\<delta>_nonneg, metis ln_ln_n_nonneg)
+    also have "... = 19*81*84 * ln (1 / of_rat \<epsilon>) * (ln (real n) + 1 / (of_rat \<delta>)\<^sup>2 * (ln ( 1 / (of_rat \<delta>)) + ln (ln (real n))))"
+      by (simp add:algebra_simps)
+    also have "... = c * abs  (?rhs  (n, \<epsilon>, \<delta>))" apply simp
+      apply (subst abs_of_nonneg)
+       apply (rule mult_nonneg_nonneg, metis ln_1_div_\<epsilon>_nonneg)
+       apply (rule add_nonneg_nonneg, subst ln_ge_zero_iff) using n_ge_0 apply (simp, simp)
+       apply (subst pos_le_divide_eq) using \<delta>_asm apply simp
+       apply simp
+       apply (rule add_nonneg_nonneg, metis ln_ln_n_nonneg, metis ln_1_div_\<delta>_nonneg)
+      by (simp add:c_def)
+    finally show "abs (f0_space_usage  (n, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, \<epsilon>, \<delta>))" by blast
+  qed
+
+  have a:"eventually 
+    (\<lambda>x. abs (f0_space_usage x) \<le> c * abs (?rhs x)) ?evt"
+    apply (rule eventually_mono[where P="\<lambda>(n, \<epsilon>, \<delta>).  n \<ge> 10  \<and> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<and> (0 < \<delta> \<and> \<delta> < 1/128)"])
+    apply (rule eventually_prod_I2[where Q="\<lambda>n. n \<ge> 10"], simp)
+    apply (rule eventually_prod_I2[where Q="\<lambda>\<epsilon>. 0 < \<epsilon> \<and> \<epsilon> < 1/3"])
+    apply (rule eventually_at_rightI[where b="1/3"], simp, simp)
+    apply (rule eventually_at_rightI[where b="1/128"], simp, simp)
+    using b by blast
+
+  show ?thesis
+    apply (rule landau_o.bigI[where c="c"], simp add:c_def, simp)
+    using a by simp
 qed
 
 end

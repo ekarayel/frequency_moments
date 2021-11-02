@@ -944,7 +944,7 @@ qed
 lemma fk_asympotic_space_complexity:
   "fk_complexity \<in> 
   O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right (0::rat) \<times>\<^sub>F at_right (0::rat)](\<lambda> (k, n, m, \<epsilon>, \<delta>).
-  real k*(real n) powr (1-1/ real k) / (real_of_rat \<delta>)\<^sup>2 * (ln (1 / real_of_rat \<epsilon>)) * (ln (real n) + ln (real m)))"
+  real k*(real n) powr (1-1/ real k) / (of_rat \<delta>)\<^sup>2 * (ln (1 / of_rat \<epsilon>)) * (ln (real n) + ln (real m)))"
   (is "?lhs \<in> O[?evt](?rhs)")
 proof -
   define c where "c=(270::real)"

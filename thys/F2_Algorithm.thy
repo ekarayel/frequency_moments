@@ -897,7 +897,7 @@ qed
 
 lemma f2_asympotic_space_complexity:
   "f2_complexity \<in> O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda> (n, m, \<epsilon>, \<delta>). 
-  (ln (1 / real_of_rat \<epsilon>)) / (real_of_rat \<delta>)\<^sup>2 * (ln (real n) + ln (real m)))"
+  (ln (1 / of_rat \<epsilon>)) / (of_rat \<delta>)\<^sup>2 * (ln (real n) + ln (real m)))"
   (is "?lhs \<in> O[?evt](?rhs)")
 proof -
   define c where "c=(5865::real)"
