@@ -1,9 +1,9 @@
 section \<open>Frequency Moment 2\<close>
 
 theory F2_Algorithm
-  imports Main "HOL-Probability.Giry_Monad" "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
+  imports Main "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
     Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext "HOL-Library.Extended_Nat"
-    "HOL-Library.Rewrite" "Encoding" List_Ext Prod_PMF  "HOL-Library.Landau_Symbols" UniversalHashFamilyOfPrime
+    Encoding List_Ext Prod_PMF  "HOL-Library.Landau_Symbols" UniversalHashFamilyOfPrime
 begin
 
 definition f2_value where
@@ -11,7 +11,7 @@ definition f2_value where
 
 fun eval_hash_function where
   "eval_hash_function p h k = (
-    if hash_function (ZFact (int p)) (zfact_embed p k) h \<in> zfact_embed p ` {k. 2*k < p} then
+    if hash p k h \<in> {k. 2*k < p} then
       int p - 1
     else
       - int p - 1
@@ -223,126 +223,79 @@ proof -
     by (simp add: h_power_4_estimate mult_nonneg_nonpos2 algebra_simps)
 qed
 
-lemma ex_poly: 
-  "bounded_degree_polynomials (ZFact (int p)) 4 \<noteq> {}" (is "?A \<noteq> _")
-proof -
-  have "\<zero>\<^bsub>poly_ring (ZFact (int p))\<^esub> \<in> ?A"
-    apply (simp add:bounded_degree_polynomials_def)
-    apply (rule conjI)
-     apply (simp add: univ_poly_zero univ_poly_zero_closed)
-    using univ_poly_zero by blast
-  thus ?thesis by blast
-qed
-
-lemma fin_poly: 
-  assumes "Factorial_Ring.prime p"
-  shows "finite (bounded_degree_polynomials (ZFact (int p)) 4)"
-  apply (rule finite_poly_count)
-   apply (rule zfact_prime_is_field)
-   apply (simp add:assms)
-  apply (rule zfact_finite)
-  using assms  prime_gt_0_nat by blast
-
 lemma eval_exp':
   assumes "Factorial_Ring.prime p"
   assumes "k < p"
   assumes "p > 2" 
   shows
-    "has_bochner_integral (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) (\<lambda>\<omega>. (real_of_int (eval_hash_function p \<omega> k) / sqrt (real p^2-1)) ^m) (
-    ((real p-1)^m* (real p+1) + (-real p - 1)^m *(real p - 1))/ ((2*real p) * sqrt(real p^2-1)^m))"
+    "has_bochner_integral (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) 
+    (\<lambda>\<omega>. (real_of_int (eval_hash_function p \<omega> k) / sqrt (real p^2-1)) ^m) (
+    ((real p-1)^m * (real p+1) + (-real p - 1)^m * (real p - 1)) / ((2*real p) * sqrt(real p^2-1)^m))"
 proof -
   have g:"p > 0" using assms(1) prime_gt_0_nat by auto
 
-  have g1:"zfact_embed p k \<in> carrier (ZFact p)" using zfact_embed_ran[OF g] assms
-    by auto
   have "odd p" using assms prime_odd_nat by blast
   then obtain t where t_def: "p=2*t+1" 
     using oddE by blast
 
+  define \<Omega> where "\<Omega> = (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))"
 
-  have "card {k. 2 * k < Suc(2 * t)} = card {k. k < t+1}" 
-    by (rule arg_cong[where f="card"], auto)
-  hence card_B: "card {k. 2 * k < p} = (p+1)/2"
+  have b: "finite (set_pmf \<Omega>)"
+    apply (simp add:\<Omega>_def)
+    by (metis fin_bounded_degree_polynomials[OF g] ne_bounded_degree_polynomials set_pmf_of_set)
+
+  have zero_le_4: "0 < (4::nat)" by simp
+
+  have "card ({k. 2 * k < p} \<inter> {0..<p}) = card ({0..t})"
+    apply (subst Int_absorb2, rule subsetI, simp)
+    apply (rule arg_cong[where f="card"])
+    apply (rule order_antisym, rule subsetI, simp add:t_def) 
+    by (rule subsetI, simp add:t_def)
+  also have "... = t+1"
+    by simp
+  also have "... = (real p + 1)/2"
     by (simp add:t_def)
+  finally have c_1: "card ({k. 2 * k < p} \<inter> {0..<p}) = (real p+1)/2" by simp
 
+  have "card ({k. p \<le> 2 * k} \<inter> {0..<p}) = card {t+1..<p}"
+    apply (rule arg_cong[where f="card"])
+    apply (rule order_antisym, rule subsetI, simp add:t_def) 
+    by (rule subsetI, simp add:t_def)
+  also have "... = p - (t+1)" by simp
+  also have "... = (real p-1)/2"
+    by (simp add:t_def)
+  finally have c_2: "card ({k. p \<le> 2 * k} \<inter> {0..<p}) = (real p-1)/2" by simp
 
-  have d: "\<And> A P. A \<inter> {\<omega>. P \<omega>} = {\<omega> \<in> A. P \<omega>}"
-    by blast
-
-  have e: "\<And> f A P Q. A \<inter> -{\<omega>. f \<omega> \<in> Q} = {\<omega> \<in> A. f \<omega> \<in> - Q}"
-    by blast
-
-  have f: "\<And>A B. -A \<inter> B = B - A"
-    by blast
-
-  define F where "F = ZFact (int p)"
-  define G where "G = bounded_degree_polynomials F 4"
-
-  define H where "H = {x. hash_function (ZFact (int p)) (zfact_embed p k) x \<in> zfact_embed p ` {k. 2 * k < p}}"
-  have card_G: "card G = p ^ 4"
-    apply (simp add:G_def F_def)
-    apply (subst poly_count, metis zfact_prime_is_field assms(1), metis zfact_finite g)
-    by (subst zfact_card [OF g], simp)
-
-  have card_G_int_H: "card (G \<inter> H) = ((real p+1) / 2) * real p^3"
-    apply (simp add:G_def H_def F_def hash_function_def)
-    apply (subst d)
-    apply (subst poly_card_set', metis zfact_prime_is_field assms(1), metis zfact_finite g)
-      apply (metis g1, simp)
-    apply (subst Int_absorb2)
-     apply (subst zfact_embed_ran[OF g, symmetric])
-     apply (rule image_mono, rule subsetI, simp)
-    apply (subst card_image)
-     apply (rule inj_on_subset[OF zfact_embed_inj[OF g]], rule subsetI, simp)
-    apply (simp add:  zfact_card[OF g])
-    by (subst card_B, simp)
-
-  have card_G_int_not_H: "card (G \<inter> -H) = ((real p-1) / 2) * real p^3"
-    apply (simp add:G_def H_def F_def hash_function_def)
-    apply (subst e)
-    apply (subst poly_card_set', metis zfact_prime_is_field assms(1), metis zfact_finite g)
-      apply (metis g1, simp)
-    apply (subst f)
-    apply (subst card_Diff_subset, rule finite_imageI) 
-      apply (rule finite_subset[where B="{k. k < p}"], rule subsetI, simp, simp)
-     apply (subst zfact_embed_ran[OF g, symmetric])
-    apply (rule image_mono, rule subsetI, simp)
-    apply (subst card_image)
-     apply (rule inj_on_subset[OF zfact_embed_inj[OF g]], rule subsetI, simp)
-    apply (simp add:  zfact_card[OF g])
-    apply (subst of_nat_diff)
-    apply (rule card_mono[where B="{0..<p}", simplified], rule subsetI, simp)
-    apply (subst card_B)
-    by (simp add:add_divide_distrib)
-
-  have s1: " (\<Sum>a\<in>G. real_of_int (eval_hash_function p a k) ^ m / real (card G)) =
+  have "integral\<^sup>L \<Omega> (\<lambda>x. real_of_int (eval_hash_function p x k) ^ m) =
+    integral\<^sup>L \<Omega> (\<lambda>\<omega>. indicator {\<omega>. 2 * hash p k \<omega> < p} \<omega> * (real p - 1)^m + 
+      indicator {\<omega>. 2 * hash p k \<omega> \<ge> p} \<omega> * (-real p - 1)^m)" 
+    by (rule Bochner_Integration.integral_cong, simp, simp)
+  also have "... = 
+     \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> {k. 2 * k < p})  * (real p - 1) ^ m  + 
+     \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> {k. 2 * k \<ge> p})  * (-real p - 1) ^ m "
+    apply (subst Bochner_Integration.integral_add)
+    apply (rule integrable_measure_pmf_finite[OF b])
+    apply (rule integrable_measure_pmf_finite[OF b])
+    by simp
+  also have "... = (real p + 1) * (real p - 1) ^ m / (2 * real p) + (real p - 1) * (- real p - 1) ^ m / (2 * real p)"
+    apply (simp only:\<Omega>_def hash_prob_range[OF assms(1) assms(2) zero_le_4] c_1 c_2)
+    by simp
+  also have "... =  
     ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)"
-    apply (subst card_G)
-    apply (subst sum_divide_distrib[symmetric])
-    apply (simp)
-    apply (subst if_distrib[where f="\<lambda>x. real_of_int x ^ m"])
-    apply (subst sum.If_cases, simp add:G_def F_def, metis fin_poly assms(1))
-    apply (simp add:H_def[symmetric] card_G_int_H card_G_int_not_H)
-    apply (subst frac_eq_eq, simp add:g, simp add: g)
-    apply (subst distrib_right[where c="real p ^ 4"])
-    apply (subst distrib_right[where c="2* real p"])
-    apply (rule arg_cong2[where f="(+)"])
-    by (simp add: power3_eq_cube power4_eq_xxxx)+
+    by (simp add:add_divide_distrib ac_simps)
+  finally have a:"integral\<^sup>L \<Omega> (\<lambda>x. real_of_int (eval_hash_function p x k) ^ m) = 
+    ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)" by simp
 
   show ?thesis
     apply (subst power_divide)
     apply (subst divide_divide_eq_left[symmetric])
     apply (rule has_bochner_integral_divide_zero)
+    apply (subst \<Omega>_def[symmetric])
     apply (subst has_bochner_integral_iff)
     apply (rule conjI)
-    apply (rule integrable_measure_pmf_finite, subst set_pmf_of_set, rule ex_poly, metis fin_poly assms(1))
-    apply (subst integral_measure_pmf_real[where A="bounded_degree_polynomials (ZFact (int p)) 4"], metis fin_poly assms(1))
-     apply (subst (asm) set_pmf_of_set, rule ex_poly, metis fin_poly assms(1), simp)
-    apply (subst pmf_of_set, rule ex_poly, metis fin_poly assms(1))
-    apply (simp add:indicator_def G_def[symmetric] F_def[symmetric] del:eval_hash_function.simps)
-    by (metis s1)
+     apply (rule integrable_measure_pmf_finite[OF b])
+    by (metis a)
 qed
-
 
 lemma eval_exp_1':
   assumes "Factorial_Ring.prime p"
@@ -422,56 +375,26 @@ proof -
     by (metis assms)
 qed
 
-
-
 lemma eval_4_indep':
   assumes "Factorial_Ring.prime p"
   assumes "p > 2"
   shows "prob_space.k_wise_indep_vars (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) 4 (\<lambda>_. borel)
     (\<lambda>k \<omega>. real_of_int (eval_hash_function p \<omega> k)/ sqrt (real p^2-1)) {0..<p}"
 proof -
-  have a1:"p > 0" using assms(2) by auto
-  have a:"prob_space (poly_hash_family (ZFact p) 4)" 
-    apply (rule prob_space_poly_family)
-    using assms zfact_prime_is_field apply simp
-    using a1 zfact_finite by auto
-  have a2:"\<And>J. J\<subseteq>carrier (ZFact (int p)) \<Longrightarrow> finite J \<Longrightarrow> card J \<le> 4  \<Longrightarrow>
-    prob_space.indep_vars (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) 
-    (\<lambda>_. pmf_of_set (carrier (ZFact (int p)))) (hash_function (ZFact (int p))) 
-    J"
-    apply (rule bounded_poly_indep_pmf)
-    apply (metis zfact_prime_is_field assms(1))
-        apply (rule zfact_finite) using assms(2) apply linarith
-    by simp+
-
-  have c1:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> zfact_embed p ` J \<subseteq> carrier (ZFact (int p))"
-    using zfact_embed_ran[OF a1] by fastforce
-  have c2:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow> card (zfact_embed p ` J) \<le> 4"
-    by (meson card_image_le le_trans)
-  have c3:"\<And>J. J \<subseteq> {0..<p} \<Longrightarrow> finite J \<Longrightarrow> finite (zfact_embed p ` J)"
-    by simp
-  have b_aux:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> finite J \<Longrightarrow> card J \<le> 4 \<Longrightarrow> 
-    prob_space.indep_vars (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) 
-    ((\<lambda>_. measure_pmf (pmf_of_set (carrier (ZFact (int p))))) \<circ> zfact_embed p) (\<lambda>k \<omega>. hash_function (ZFact (int p)) (zfact_embed p k) \<omega>) 
-    J"
-    apply (subst prob_space.indep_vars_reindex [where f="zfact_embed p" and X'="hash_function (ZFact (int p))"])
-      apply (metis prob_space_measure_pmf)
-      apply (metis zfact_embed_inj a1 inj_on_subset)
-     using a2 c1 c2 c3 apply presburger
-    by simp
   have b:"\<And>J. J\<subseteq>{0..<p} \<Longrightarrow> card J \<le> 4 \<Longrightarrow> finite J \<Longrightarrow> 
-    prob_space.indep_vars (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) (\<lambda>_. borel) (\<lambda>k \<omega>. real_of_int (eval_hash_function p \<omega> k)/ sqrt (real p^2-1)) J"
-    apply simp
-    apply (rule prob_space.indep_vars_compose2 [where X="(\<lambda>k \<omega>. hash_function (ZFact (int p)) (zfact_embed p k) \<omega>)"
-            and M'=" (\<lambda>_. pmf_of_set (carrier (ZFact (int p))))"])
-      apply (metis prob_space_measure_pmf)
-     using b_aux apply (simp)
-    by measurable
-  
+    prob_space.indep_vars (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) (\<lambda>_. borel) 
+      (\<lambda>k \<omega>. real_of_int (eval_hash_function p \<omega> k)/ sqrt (real p^2-1)) J"
+    apply (simp only:eval_hash_function.simps)
+    apply (rule prob_space.indep_vars_compose2[where 
+      Y="\<lambda>_ x. real_of_int (if x \<in> {k. 2 * k < p} then int p - 1 else - int p - 1) / sqrt ((real p)\<^sup>2 - 1)" 
+      and M'="\<lambda>_. pmf_of_set {0..<p}"])
+      apply (simp add:prob_space_measure_pmf)
+     using hash_k_wise_indep[OF assms(1), where n="4"] apply (simp add:measure_pmf.k_wise_indep_vars_def)
+     by simp
   show ?thesis
-    by (simp add: prob_space_measure_pmf b prob_space.k_wise_indep_vars_def del:eval_hash_function.simps)
+    apply (simp add:measure_pmf.k_wise_indep_vars_def del:eval_hash_function.simps)
+    by (metis b)
 qed
-
 
 lemma 
   assumes "Factorial_Ring.prime p"
@@ -579,9 +502,13 @@ proof -
   define h_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
   define sketch_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
 
+  have p_ge_3: "p \<ge> 3"
+    apply (simp add:p_def)
+    by (meson find_prime_above_lower_bound dual_order.trans max.cobounded2)
+
   have fin_poly': "finite (bounded_degree_polynomials (ZFact (int p)) 4)"
-    apply (rule fin_poly)
-    by (simp add:p_def find_prime_above_is_prime)
+    apply (rule fin_bounded_degree_polynomials)
+    using p_ge_3 by auto
 
   have p_ge_3: "p \<ge> 3"
     apply (simp add:p_def)
@@ -891,7 +818,7 @@ proof -
     apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:f2_complexity.simps)
     apply (subst set_prod_pmf, simp)
     apply (simp add: PiE_iff  del:f2_complexity.simps)
-    apply (subst set_pmf_of_set, metis ex_poly, metis fin_poly p_def find_prime_above_is_prime(1))
+    apply (subst set_pmf_of_set, metis ne_bounded_degree_polynomials, metis fin_bounded_degree_polynomials[OF p_ge_0])
     by (metis a)
 qed
 
