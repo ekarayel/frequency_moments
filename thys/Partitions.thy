@@ -1,8 +1,8 @@
+section \<open>Partitions\<close>
+
 theory Partitions
   imports Main "HOL-Library.Multiset" "HOL.Real"
 begin
-
-section \<open>Partitions\<close>
 
 text \<open>In this section, we define a function that enumerates all the partitions of
 @{text "{0..<n}"}. We represent the partitions as lists with @{text "n"} elements. If the element

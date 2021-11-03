@@ -1,3 +1,5 @@
+section \<open>Frequency Moment $0$\<close>
+
 theory Frequency_Moment_0
   imports Main  "HOL-Probability.Probability_Mass_Function"
   Primes_Ext Float_Ext Median Least UniversalHashFamilyOfPrime Encoding "HOL-Library.Landau_Symbols"
@@ -484,17 +486,17 @@ lemma inters_compr: "A \<inter> {x. P x} = {x \<in> A. P x}"
 lemma of_bool_square: "(of_bool x)\<^sup>2 = ((of_bool x)::real)"
   by (cases x, simp, simp)
 
-lemma f0_alg_correct:
+theorem f0_alg_correct:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0 \<and> \<delta> < 1"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f0_result). abs (\<omega> - f0_value xs) \<ge> (\<delta> * f0_value xs)) \<le> real_of_rat \<epsilon>"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f0_result). \<bar>\<omega> - f0_value xs\<bar> \<ge> (\<delta> * f0_value xs)) \<le> of_rat \<epsilon>"
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  define p where "p =  find_prime_above (max n 19)"
+  define p where "p = find_prime_above (max n 19)"
   define r where "r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
   define g where "g = (\<lambda>S. if card S < t then rat_of_nat (card S) else of_nat t * rat_of_nat p / rat_of_float (Max S))"
   define g' where "g' = (\<lambda>S. if card S < t then real (card S) else real t * real p / Max S)"
@@ -1342,7 +1344,7 @@ lemma f_subset:
   shows "(\<lambda>x. f (g x)) ` A \<subseteq> (\<lambda>x. f (h x)) ` B"
   using assms by auto
 
-lemma f0_bit_count:
+theorem f0_space_usage:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0 \<and> \<delta> < 1"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
@@ -1524,9 +1526,9 @@ proof -
     by (simp add:s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric])
 qed
 
-lemma f0_asympotic_space_complexity:
-  "f0_space_usage \<in> O[at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda> (n, \<epsilon>, \<delta>). 
-  ln (1 / of_rat \<epsilon>) * (ln (real n) + 1 / (of_rat \<delta>)\<^sup>2 * (ln (ln (real n)) + ln (1 / of_rat \<delta>))))"
+theorem f0_asympotic_space_complexity:
+  "f0_space_usage \<in> O[at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda> (n, \<epsilon>, \<delta>). ln (1 / of_rat \<epsilon>) * 
+  (ln (real n) + 1 / (of_rat \<delta>)\<^sup>2 * (ln (ln (real n)) + ln (1 / of_rat \<delta>))))"
   (is "?lhs \<in> O[?evt](?rhs)")
 proof -
   define c :: real where "c = 129276"

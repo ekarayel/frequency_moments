@@ -1,17 +1,26 @@
 session StreamingAlgorithms = HOL +
-  options [document = pdf, document_output = "output", document_variants="document:outline=/proof"]
   sessions
+    "Bertrands_Postulate"
     "HOL-Algebra"
     "HOL-Probability"
+    "Lp"
   theories
+    Encoding
     Field
-    PolyCard
-    PolynomialCounting
-    UniversalHashFamily
-    Partitions
-    Multiset_Ext
-    F2_Algorithm
+    Float_Ext
+    Frequency_Moment_0
+    Frequency_Moment_2
+    Frequency_Moment_k
+    Least
+    List_Ext
     Median
+    Multiset_Ext
+    Partitions
+    PolynomialCounting
+    Primes_Ext
     Probability_Ext
+    Prod_PMF
+    UniversalHashFamilyOfPrime
+    UniversalHashFamily
   document_files
     "root.tex"

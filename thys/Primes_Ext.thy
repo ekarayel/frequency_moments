@@ -1,6 +1,6 @@
 section \<open>Primes\<close>
 
-text \<open>In this section we introduce a function that retrieves the next larger odd prime.\<close>
+text \<open>In this section we introduce a function that finds primes above a given treshold.\<close>
 
 theory Primes_Ext
 imports Main "HOL-Computational_Algebra.Primes" "Bertrands_Postulate.Bertrand" 

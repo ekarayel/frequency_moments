@@ -1,3 +1,7 @@
+section \<open>Float\<close>
+
+text \<open>Extensions to "HOL-Library.Float"\<close>
+
 theory Float_Ext
   imports "HOL-Library.Float" Encoding
 begin
@@ -62,9 +66,9 @@ proof -
     using abs_le_iff a b by linarith
 qed
 
-
-definition rat_of_float :: "float \<Rightarrow> rat" where "rat_of_float f = of_int (mantissa f) * (
-  if exponent f \<ge> 0 then 2 ^ (nat (exponent f)) else 1 / 2 ^ (nat (-exponent f)))" 
+definition rat_of_float :: "float \<Rightarrow> rat" where 
+  "rat_of_float f = of_int (mantissa f) * 
+    (if exponent f \<ge> 0 then 2 ^ (nat (exponent f)) else 1 / 2 ^ (nat (-exponent f)))" 
 
 lemma real_of_rat_of_float: "real_of_rat (rat_of_float x) = real_of_float x"
   apply (cases x)

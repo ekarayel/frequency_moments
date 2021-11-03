@@ -88,7 +88,6 @@ lemma count_mset: "count (mset xs) a = count_list xs a"
 lemma swap_filter_image: "filter_mset g (image_mset f A) = image_mset f (filter_mset (g \<circ> f) A)"
   by (induction A, simp, simp)
 
-
 lemma list_eq_iff:
   assumes "mset xs = mset ys"
   assumes "sorted xs"

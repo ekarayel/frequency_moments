@@ -1,4 +1,6 @@
-theory F_k_Algorithm
+section \<open>Frequency Moment $k$\<close>
+
+theory Frequency_Moment_k
   imports Main "HOL-Probability.Probability_Mass_Function" Median "HOL-Probability.Stream_Space" Prod_PMF "Lp.Lp"
   List_Ext Encoding "HOL-Library.Landau_Symbols"
 begin
@@ -656,7 +658,7 @@ proof -
     using a by simp+
 qed
 
-lemma fk_alg_sketch:
+theorem fk_alg_sketch:
   assumes "k \<ge> 1"
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
@@ -682,7 +684,7 @@ lemma fk_alg_correct:
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> fk_result). abs (\<omega> - fk_value k xs) \<ge> (\<delta> * fk_value k xs)) \<le> real_of_rat \<epsilon>"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> fk_result). abs \<bar>\<omega> - fk_value k xs\<bar> \<ge> (\<delta> * fk_value k xs)) \<le> real_of_rat \<epsilon>"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil>"
@@ -861,8 +863,8 @@ proof -
      using d by simp
 qed
 
-fun fk_complexity :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
-  "fk_complexity (k, n, m, \<epsilon>, \<delta>) = (
+fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
+  "fk_space_usage (k, n, m, \<epsilon>, \<delta>) = (
     let s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k) / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
     let s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil> in 
     5 +
@@ -872,14 +874,14 @@ fun fk_complexity :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat) 
     2 * log 2 (1 + real m) +
     s\<^sub>1 * s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m)))"
 
-lemma fk_alg_space:
+theorem fk_space_usage:
   assumes "k \<ge> 1"
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
-  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> fk_complexity (k, n, length xs, \<epsilon>, \<delta>)" (is "AE \<omega> in sketch. (_  \<le> ?rhs)")
+  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> fk_space_usage (k, n, length xs, \<epsilon>, \<delta>)" (is "AE \<omega> in sketch. (_  \<le> ?rhs)")
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil>"
@@ -933,8 +935,8 @@ proof -
   qed
     
   show ?thesis
-    apply (simp add: a AE_measure_pmf_iff del:fk_complexity.simps)
-    apply (subst set_prod_pmf, simp, simp add:PiE_def del:fk_complexity.simps)
+    apply (simp add: a AE_measure_pmf_iff del:fk_space_usage.simps)
+    apply (subst set_prod_pmf, simp, simp add:PiE_def del:fk_space_usage.simps)
     apply (subst set_pmf_of_set [OF non_empty_space[OF assms(5)] fin_space[OF assms(5)]])
     apply (subst PiE_def[symmetric])
     by (metis b)
@@ -942,7 +944,7 @@ qed
 
 
 lemma fk_asympotic_space_complexity:
-  "fk_complexity \<in> 
+  "fk_space_usage \<in> 
   O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right (0::rat) \<times>\<^sub>F at_right (0::rat)](\<lambda> (k, n, m, \<epsilon>, \<delta>).
   real k*(real n) powr (1-1/ real k) / (of_rat \<delta>)\<^sup>2 * (ln (1 / of_rat \<epsilon>)) * (ln (real n) + ln (real m)))"
   (is "?lhs \<in> O[?evt](?rhs)")
@@ -950,7 +952,7 @@ proof -
   define c where "c=(270::real)"
 
   have b:"\<And>k n m \<epsilon> \<delta>. k \<ge> 1 \<Longrightarrow> n \<ge> 729  \<Longrightarrow> m \<ge> 1 \<Longrightarrow> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<Longrightarrow> (0 < \<delta> \<and> \<delta> < 1) \<Longrightarrow>
-     abs (fk_complexity  (k, n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (k, n, m, \<epsilon>, \<delta>))"
+     abs (fk_space_usage  (k, n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (k, n, m, \<epsilon>, \<delta>))"
   proof -
     fix k n m \<epsilon> \<delta>
     assume k_ge_1: "k \<ge> (1::nat)"
@@ -1130,7 +1132,7 @@ proof -
       (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
       by blast
 
-    show "abs (fk_complexity  (k, n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (k, n, m, \<epsilon>, \<delta>))"
+    show "abs (fk_space_usage  (k, n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (k, n, m, \<epsilon>, \<delta>))"
       apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
       apply (subst abs_of_nonneg)
        using n_ge_1 m_ge_1 apply (auto intro!: add_nonneg_nonneg mult_nonneg_nonneg)[1]
@@ -1140,7 +1142,7 @@ proof -
   qed
 
   have a:"eventually 
-    (\<lambda>x. abs (fk_complexity x) \<le> c * abs (?rhs x)) ?evt"
+    (\<lambda>x. abs (fk_space_usage x) \<le> c * abs (?rhs x)) ?evt"
     apply (rule eventually_mono[where P="\<lambda>(k, n, m, \<epsilon>, \<delta>).  k \<ge> 1 \<and> n \<ge> 729  \<and> m \<ge> 1 \<and> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<and> (0 < \<delta> \<and> \<delta> < 1)"])
     apply (rule eventually_prod_I2[where Q="\<lambda>k. k \<ge> 1"], simp)
     apply (rule eventually_prod_I2[where Q="\<lambda>n. n \<ge> 729"], simp)

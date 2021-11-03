@@ -1,6 +1,6 @@
-section \<open>Frequency Moment 2\<close>
+section \<open>Frequency Moment $2$\<close>
 
-theory F2_Algorithm
+theory Frequency_Moment_2
   imports Main "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
     Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext "HOL-Library.Extended_Nat"
     Encoding List_Ext Prod_PMF  "HOL-Library.Landau_Symbols" UniversalHashFamilyOfPrime
@@ -417,7 +417,7 @@ proof -
           (set xs)"
     apply (rule prob_space.k_wise_subset [where I="{0..<p}"])
     apply (simp add:a)
-    using eval_4_indep' assms apply (simp add:poly_hash_family_def del:eval_hash_function.simps)
+    using eval_4_indep' assms apply (simp del:eval_hash_function.simps)
     apply (rule subsetI)
     using assms(3) by simp
 
@@ -426,22 +426,21 @@ proof -
     apply (rule prob_space.var_f2[where xs="xs" and M="M" and h="\<lambda>x \<omega>. real_of_int (eval_hash_function p \<omega> x)/sqrt (real p^2-1)"])
     apply (simp add:a)
     apply (metis b)
-    using assms eval_exp' [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
-    using assms eval_exp_1' [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
-    using assms eval_exp_2' [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
-    using assms eval_exp_4' [where p="p"] by (simp add:has_bochner_integral_iff poly_hash_family_def)
+    using assms eval_exp' [where p="p"] apply (simp add:has_bochner_integral_iff)
+    using assms eval_exp_1' [where p="p"] apply (simp add:has_bochner_integral_iff)
+    using assms eval_exp_2' [where p="p"] apply (simp add:has_bochner_integral_iff)
+    using assms eval_exp_4' [where p="p"] by (simp add:has_bochner_integral_iff)
 
   show ?B
     apply (simp only:f2_sketch_elim)
     apply (rule prob_space.exp_f2[where xs="xs" and M="M" and h="\<lambda>x \<omega>. real_of_int (eval_hash_function p \<omega> x)/sqrt (real p^2-1)"])
     apply (simp add:a)
     apply (metis b)
-    using assms eval_exp' [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
-    using assms eval_exp_1' [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
-    using assms eval_exp_2' [where p="p"] apply (simp add:has_bochner_integral_iff poly_hash_family_def)
-    using assms eval_exp_4' [where p="p"] by (simp add:has_bochner_integral_iff poly_hash_family_def)
+    using assms eval_exp' [where p="p"] apply (simp add:has_bochner_integral_iff)
+    using assms eval_exp_1' [where p="p"] apply (simp add:has_bochner_integral_iff)
+    using assms eval_exp_2' [where p="p"] apply (simp add:has_bochner_integral_iff)
+    using assms eval_exp_4' [where p="p"] by (simp add:has_bochner_integral_iff)
 qed
-
 
 lemma f2_alg_sketch:
   fixes n :: nat
@@ -482,13 +481,13 @@ proof -
   finally show ?thesis by auto
 qed
 
-lemma f2_alg_correct:
+theorem f2_alg_correct:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). abs (\<omega> - f2_value xs) \<ge> (\<delta> * f2_value xs)) \<le> real_of_rat \<epsilon>"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). \<bar>\<omega> - f2_value xs\<bar> \<ge> (\<delta> * f2_value xs)) \<le> of_rat \<epsilon>"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
@@ -700,8 +699,8 @@ proof -
     using  median_bound_4 by simp
 qed
 
-fun f2_complexity :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
-  "f2_complexity (n, m, \<epsilon>, \<delta>) = (
+fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
+  "f2_space_usage (n, m, \<epsilon>, \<delta>) = (
     let s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2 \<rceil> in
     let s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil> in 
     5 +
@@ -710,12 +709,12 @@ fun f2_complexity :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow>
     2 * log 2 (4 + 2 * real n) +
     s\<^sub>1 * s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1 )))"
 
-lemma f2_complexity:
+theorem f2_space_usage:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
-  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f2_complexity (n, length xs, \<epsilon>, \<delta>)"
+  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f2_space_usage (n, length xs, \<epsilon>, \<delta>)"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
@@ -735,7 +734,7 @@ proof -
   have a: "\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
        bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
       sum_list (map (eval_hash_function p (y i)) xs)))
-       \<le> ereal (f2_complexity (n, length xs, \<epsilon>, \<delta>))"
+       \<le> ereal (f2_space_usage (n, length xs, \<epsilon>, \<delta>))"
   proof -
     fix y
     assume a_1:"y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4"
@@ -804,33 +803,33 @@ proof -
        apply (rule int_bit_count_est)
        apply (simp add:a_7)
       by (simp add:algebra_simps)
-    also have "... = ereal (f2_complexity (n, length xs, \<epsilon>, \<delta>))"
+    also have "... = ereal (f2_space_usage (n, length xs, \<epsilon>, \<delta>))"
       by (simp add:distrib_left[symmetric] s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
     finally show "bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}.
       sum_list (map (eval_hash_function p (y i)) xs)))
-       \<le> ereal (f2_complexity (n, length xs, \<epsilon>, \<delta>))" by blast
+       \<le> ereal (f2_space_usage (n, length xs, \<epsilon>, \<delta>))" by blast
   qed
 
   show ?thesis
     apply (subst AE_measure_pmf_iff)
     apply (subst sketch_def)
     apply (subst f2_alg_sketch[OF assms(1) assms(2), where n="n" and xs="xs"])
-    apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:f2_complexity.simps)
+    apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:f2_space_usage.simps)
     apply (subst set_prod_pmf, simp)
-    apply (simp add: PiE_iff  del:f2_complexity.simps)
+    apply (simp add: PiE_iff  del:f2_space_usage.simps)
     apply (subst set_pmf_of_set, metis ne_bounded_degree_polynomials, metis fin_bounded_degree_polynomials[OF p_ge_0])
     by (metis a)
 qed
 
-lemma f2_asympotic_space_complexity:
-  "f2_complexity \<in> O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda> (n, m, \<epsilon>, \<delta>). 
+theorem f2_asympotic_space_complexity:
+  "f2_space_usage \<in> O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda> (n, m, \<epsilon>, \<delta>). 
   (ln (1 / of_rat \<epsilon>)) / (of_rat \<delta>)\<^sup>2 * (ln (real n) + ln (real m)))"
   (is "?lhs \<in> O[?evt](?rhs)")
 proof -
   define c where "c=(5865::real)"
 
   have b:"\<And>n m \<epsilon> \<delta>.  n \<ge> 4  \<Longrightarrow> m \<ge> 1 \<Longrightarrow> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<Longrightarrow> (0 < \<delta> \<and> \<delta> < 1) \<Longrightarrow>
-     abs (f2_complexity  (n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, m, \<epsilon>, \<delta>))"
+     abs (f2_space_usage  (n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, m, \<epsilon>, \<delta>))"
   proof -
     fix n m \<epsilon> \<delta>
     assume n_ge_4: "n \<ge> (4::nat)"
@@ -993,7 +992,7 @@ proof -
       \<le> c * (ln (1 / real_of_rat \<epsilon>) * (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
       by blast
 
-    show "abs (f2_complexity  (n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, m, \<epsilon>, \<delta>))"
+    show "abs (f2_space_usage  (n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, m, \<epsilon>, \<delta>))"
       apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
       apply (subst abs_of_nonneg)
        using b_8 n_ge_1 m_ge_1 apply (auto intro!: add_nonneg_nonneg zero_le_log_cancel_iff mult_nonneg_nonneg)[1]
@@ -1003,7 +1002,7 @@ proof -
   qed
 
   have a:"eventually 
-    (\<lambda>x. abs (f2_complexity x) \<le> c * abs (?rhs x)) ?evt"
+    (\<lambda>x. abs (f2_space_usage x) \<le> c * abs (?rhs x)) ?evt"
     apply (rule eventually_mono[where P="\<lambda>(n, m, \<epsilon>, \<delta>).  n \<ge> 4  \<and> m \<ge> 1 \<and> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<and> (0 < \<delta> \<and> \<delta> < 1)"])
     apply (rule eventually_prod_I2[where Q="\<lambda>n. n \<ge> 4"], simp)
     apply (rule eventually_prod_I2[where Q="\<lambda>m. m \<ge> 1"], simp)

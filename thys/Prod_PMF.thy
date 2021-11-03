@@ -1,10 +1,12 @@
+section \<open>Product Combinator for Probability Mass Functions\<close>
+
 theory Prod_PMF
   imports Main "HOL-Probability.Probability_Mass_Function" "HOL-Probability.Stream_Space"
       "HOL-Probability.Independent_Family" Probability_Ext 
 begin
 
-text \<open>Alternative version of emeasure_PiM where @{term "M i"} has to be a sigma finite measure 
-*only* for @{term "i \<in> I"}.\<close>
+text \<open>Alternative version of @{thm [source] product_sigma_finite.emeasure_PiM} 
+where @{term "M i"} has to be a sigma finite measure \emph{only} for @{term "i \<in> I"}.\<close>
 lemma emeasure_prod:
   assumes "\<And>i. i \<in> I \<Longrightarrow> sigma_finite_measure (M i)"
   assumes "\<And>i. i \<in> I \<Longrightarrow> A i \<in> sets (M i)"

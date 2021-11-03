@@ -1,3 +1,5 @@
+section \<open>Least\<close>
+
 theory Least
   imports Main "HOL-Library.Multiset" List_Ext Multiset_Ext
 begin

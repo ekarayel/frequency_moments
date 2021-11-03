@@ -1,3 +1,7 @@
+section \<open>List\<close>
+
+text \<open>Extensions to "HOL.List"\<close>
+
 theory List_Ext
   imports Main "HOL.List"
 begin
