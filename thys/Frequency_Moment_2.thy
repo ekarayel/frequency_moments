@@ -630,9 +630,9 @@ proof -
     by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
 
   have distr': "sketch \<bind> f2_result = map_pmf f (prod_pmf  ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)))"
-      using f2_alg_sketch[OF assms(1) assms(2), where xs="xs" and n="n"]
+    using f2_alg_sketch[OF assms(1) assms(2), where xs="xs" and n="n"]
     apply (simp add:sketch_def Let_def s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
-      apply (subst bind_assoc_pmf)
+    apply (subst bind_assoc_pmf)
     apply (subst bind_return_pmf)
     apply (subst f2_result_conv, simp)
     apply (simp add:s\<^sub>2_from_def s\<^sub>1_from_def p_from_def h_from_def sketch_from_def cong:restrict_cong)
@@ -651,7 +651,7 @@ proof -
     apply (rule indep_vars_restrict_intro [where f="\<lambda>j. {0..<s\<^sub>1} \<times> {j}"])
          apply (simp add:f2_def f3_def)
         apply (simp add:disjoint_family_on_def, fastforce)
-    apply (simp add:s2_nonzero)
+       apply (simp add:s2_nonzero)
       apply (rule subsetI, simp add:mem_Times_iff)
      apply (simp)
     by (simp)
@@ -688,14 +688,12 @@ proof -
   qed
   show ?thesis
     apply (simp add: distr' e real_f f'_def g_def \<Omega>\<^sub>0_def[symmetric])
-    apply (rule prob_space.median_bound[where M="\<Omega>\<^sub>0" and 
-          \<delta>="real_of_rat (\<delta> * f2_value xs)" and \<mu>="real_of_rat (f2_value xs)" and
-          \<epsilon>="real_of_rat \<epsilon>" and n ="s\<^sub>2" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])
+    apply (rule prob_space.median_bound[where M="\<Omega>\<^sub>0" and \<epsilon>="real_of_rat \<epsilon>" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])
          apply (metis prob_space_measure_pmf)
-    apply (metis assms(1))
+        apply (metis assms(1))
        apply (metis assms(1))
-    apply (metis median_bound_2')
-    apply (metis median_bound_3)
+      apply (metis median_bound_2')
+     apply (metis median_bound_3)
     using  median_bound_4 by simp
 qed
 

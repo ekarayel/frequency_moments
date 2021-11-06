@@ -230,61 +230,52 @@ definition (in prob_space) covariance where
   "covariance f g = expectation (\<lambda>\<omega>. (f \<omega> - expectation f) * (g \<omega> - expectation g))"
 
 lemma (in prob_space) real_prod_integrable:
-  fixes f :: "'a \<Rightarrow> real"
-  fixes g :: "'a \<Rightarrow> real"
-  assumes "integrable M f"
-  assumes "integrable M g"
-  assumes "integrable M (\<lambda>\<omega>. f \<omega>^2)"
-  assumes "integrable M (\<lambda>\<omega>. g \<omega>^2)"
+  fixes f g :: "'a \<Rightarrow> real"
+  assumes [measurable]: "f \<in> borel_measurable M" "g \<in> borel_measurable M"
+  assumes sq_int: "integrable M (\<lambda>\<omega>. f \<omega>^2)" "integrable M (\<lambda>\<omega>. g \<omega>^2)"
   shows "integrable M (\<lambda>\<omega>. f \<omega> * g \<omega>)"
-proof -
-  have b1:"(\<lambda>\<omega>. ennreal (abs (f \<omega>))) \<in> borel_measurable M" 
-    using assms(1) assms(2) by measurable
-  have b2:"(\<lambda>\<omega>. ennreal (abs (g \<omega>))) \<in> borel_measurable M" 
-    using assms(1) assms(2) by measurable
-  have b:"(\<lambda>\<omega>. f \<omega> * g \<omega>) \<in> borel_measurable M" 
-    using assms(1) assms(2) by measurable
-
-  have a1: "integral\<^sup>N M (\<lambda>\<omega>. (ennreal \<bar>f \<omega>\<bar>)\<^sup>2) < \<infinity>" using assms(3) 
-    apply (subst (asm) integrable_iff_bounded) by (simp add:ennreal_power)
-  have a2: "integral\<^sup>N M (\<lambda>\<omega>. (ennreal \<bar>g \<omega>\<bar>)\<^sup>2) < \<infinity>" using assms(4)
-    apply (subst (asm) integrable_iff_bounded) by (simp add:ennreal_power)
-  show "integrable M (\<lambda>\<omega>. f \<omega> * g \<omega>)" 
-    apply (subst integrable_iff_bounded)
-    apply (rule conjI, metis b)
-    apply (simp add:abs_mult)
-    apply (subst ennreal_mult, simp, simp)
-    using Cauchy_Schwarz_nn_integral[OF b1 b2] a1 a2 
-    by (metis (no_types, lifting) ennreal_0 ennreal_mult_less_top infinity_ennreal_def 
-          linorder_not_le neq_top_trans power2_eq_square top_neq_ennreal)
-qed
+  unfolding integrable_iff_bounded
+proof
+  have "(\<integral>\<^sup>+ \<omega>. ennreal (norm (f \<omega> * g \<omega>)) \<partial>M)\<^sup>2 = (\<integral>\<^sup>+ \<omega>. ennreal \<bar>f \<omega>\<bar> * ennreal \<bar>g \<omega>\<bar> \<partial>M)\<^sup>2" 
+    by (simp add: abs_mult ennreal_mult)
+  also have "... \<le>  (\<integral>\<^sup>+ \<omega>. ennreal \<bar>f \<omega>\<bar>^2 \<partial>M) * (\<integral>\<^sup>+ \<omega>. ennreal \<bar>g \<omega>\<bar>^2 \<partial>M)"
+    apply (rule Cauchy_Schwarz_nn_integral) by auto
+  also have "... < \<infinity>" 
+    using sq_int by (auto simp: integrable_iff_bounded ennreal_power ennreal_mult_less_top)
+  finally have "(\<integral>\<^sup>+ x. ennreal (norm (f x * g x)) \<partial>M)\<^sup>2 < \<infinity>" 
+    by simp
+  thus "(\<integral>\<^sup>+ x. ennreal (norm (f x * g x)) \<partial>M) < \<infinity>" 
+    by (simp add: power_less_top_ennreal)
+qed auto
 
 lemma (in prob_space) covariance_eq:
   fixes f :: "'a \<Rightarrow> real"
-  assumes "integrable M f"
-  assumes "integrable M g"
-  assumes "integrable M (\<lambda>\<omega>. f \<omega>^2)"
-  assumes "integrable M (\<lambda>\<omega>. g \<omega>^2)"
+  assumes "f \<in> borel_measurable M" "g \<in> borel_measurable M"
+  assumes "integrable M (\<lambda>\<omega>. f \<omega>^2)" "integrable M (\<lambda>\<omega>. g \<omega>^2)"
   shows "covariance f g = expectation (\<lambda>\<omega>. f \<omega> * g \<omega>) - expectation f * expectation g"
-  using real_prod_integrable assms
-  by (simp add:covariance_def algebra_simps prob_space)
-
+proof -
+  have "integrable M f" using square_integrable_imp_integrable assms by auto
+  moreover have "integrable M g" using square_integrable_imp_integrable assms by auto
+  ultimately show ?thesis
+    using assms real_prod_integrable
+    by (simp add:covariance_def algebra_simps prob_space)
+qed
 
 lemma (in prob_space) covar_integrable:
-  fixes f :: "'a \<Rightarrow> real"
-  fixes g :: "'a \<Rightarrow> real"
-  assumes "integrable M f"
-  assumes "integrable M (\<lambda>\<omega>. f \<omega>^2)"
-  assumes "integrable M g"
-  assumes "integrable M (\<lambda>\<omega>. g \<omega>^2)"
+  fixes f g :: "'a \<Rightarrow> real"
+  assumes "f \<in> borel_measurable M" "g \<in> borel_measurable M"
+  assumes "integrable M (\<lambda>\<omega>. f \<omega>^2)" "integrable M (\<lambda>\<omega>. g \<omega>^2)"
   shows "integrable M (\<lambda>\<omega>. (f \<omega> - expectation f) * (g \<omega> - expectation g))"
-  apply (rule real_prod_integrable)
-  using assms by (simp add:power2_eq_square right_diff_distrib left_diff_distrib)+
+proof -
+  have "integrable M f" using square_integrable_imp_integrable assms by auto
+  moreover have "integrable M g" using square_integrable_imp_integrable assms by auto
+  ultimately show ?thesis using assms real_prod_integrable by (simp add: algebra_simps)
+qed
 
 lemma (in prob_space) sum_square_int:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
   assumes "finite I"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> f i \<in> borel_measurable M"
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   shows "integrable M (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)\<^sup>2)"
   apply (simp add:power2_eq_square sum_distrib_left sum_distrib_right)
@@ -296,7 +287,7 @@ lemma (in prob_space) sum_square_int:
 lemma (in prob_space) var_sum_1:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
   assumes "finite I"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> f i \<in> borel_measurable M"
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   shows 
     "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. (\<Sum>j \<in> I. covariance (f i) (f j)))" (is "?lhs = ?rhs")
@@ -304,7 +295,8 @@ proof -
   have a:"\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. (f i \<omega> - expectation (f i)) * (f j \<omega> - expectation (f j)))" 
     using assms covar_integrable by simp
   have "?lhs = expectation (\<lambda>\<omega>. (\<Sum>i\<in>I. f i \<omega> - expectation (f i))\<^sup>2)"
-    apply (subst Bochner_Integration.integral_sum, simp add:assms)
+    apply (subst Bochner_Integration.integral_sum)
+    apply (simp add: square_integrable_imp_integrable[OF assms(2) assms(3)])
     by (subst sum_subtractf[symmetric], simp)
   also have "... = expectation (\<lambda>\<omega>. (\<Sum>i \<in> I. (\<Sum>j \<in> I. (f i \<omega> - expectation (f i)) *  (f j \<omega> - expectation (f j)))))"
     apply (simp add: power2_eq_square sum_distrib_right sum_distrib_left)
@@ -319,11 +311,10 @@ qed
 lemma (in prob_space) covar_self_eq:
   fixes f :: "'a \<Rightarrow> real"
   shows "covariance f f = variance f"
-  using indep_var_def
   by (simp add:covariance_def power2_eq_square)
 
 lemma (in prob_space) covar_indep_eq_zero:
-  fixes f :: "'a \<Rightarrow> real"
+  fixes f g :: "'a \<Rightarrow> real"
   assumes "integrable M f"
   assumes "integrable M g"
   assumes "indep_var borel f borel g"
@@ -341,7 +332,7 @@ qed
 lemma (in prob_space) var_sum_2:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
   assumes "finite I"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> f i \<in> borel_measurable M"
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = 
       (\<Sum>i \<in> I. variance (f i)) + (\<Sum>i \<in> I. \<Sum>j \<in> I - {i}. covariance (f i) (f j))"
@@ -352,23 +343,20 @@ lemma (in prob_space) var_sum_2:
   apply (subst sum.insert[symmetric], simp add:assms, simp)
   by (rule sum.cong, simp add:insert_absorb, simp)
 
-lemma sum_zero_all: 
-  assumes "\<And>i. i \<in> I \<Longrightarrow> f i = (0 :: 'a :: ab_group_add)"
-  shows "sum f I = 0"
-  using assms by simp
-
 lemma (in prob_space) var_sum_pairwise_indep:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
   assumes "finite I"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> f i \<in> borel_measurable M"
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   assumes "\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> i \<noteq> j \<Longrightarrow> indep_var borel (f i) borel (f j)"
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
 proof -
-  have a:" (\<Sum>i \<in> I. \<Sum>j \<in> I - {i}. covariance (f i) (f j)) = 0"
-    apply (rule sum_zero_all)
-    apply (rule sum_zero_all)
-    using covar_indep_eq_zero assms by auto
+  have "\<And>i j. i \<in> I \<Longrightarrow> j \<in> I - {i} \<Longrightarrow> covariance (f i) (f j) = 0" 
+    apply (rule covar_indep_eq_zero)
+    using assms square_integrable_imp_integrable[OF assms(2) assms(3)] by auto
+
+  hence a:"(\<Sum>i \<in> I. \<Sum>j \<in> I - {i}. covariance (f i) (f j)) = 0"
+    by simp
 
   show ?thesis
     by (subst var_sum_2[OF assms(1) assms(2) assms(3)], simp, simp add:a)
@@ -400,7 +388,7 @@ qed
 lemma (in prob_space) var_sum_pairwise_indep_2:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
   assumes "finite I"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> f i \<in> borel_measurable M"
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   assumes "\<And>J. J \<subseteq> I \<Longrightarrow> card J = 2 \<Longrightarrow> indep_vars (\<lambda> _. borel) f J"
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
@@ -411,7 +399,7 @@ lemma (in prob_space) var_sum_pairwise_indep_2:
 lemma (in prob_space) var_sum_all_indep:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
   assumes "finite I"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (f i)"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> f i \<in> borel_measurable M"
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   assumes "indep_vars (\<lambda> _. borel) f I"
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
@@ -428,12 +416,15 @@ lemma (in prob_space) has_variance_sum:
   apply (simp only:has_variance_def)
   apply (rule conjI, rule prob_space.sum_square_int) 
   using prob_space_axioms apply blast 
-      apply (simp, simp, simp)
+     apply simp
+  using  Bochner_Integration.integrable_iff_bounded apply blast
+  apply simp
   apply (rule conjI)
   using prob_space_axioms apply blast 
-  apply (subst var_sum_all_indep, simp, simp, simp, simp)
   apply (rule conjI)
   using prob_space_axioms apply blast 
-  by simp
+  apply (subst var_sum_all_indep, simp)
+  using  Bochner_Integration.integrable_iff_bounded apply blast
+  by simp+
 
 end

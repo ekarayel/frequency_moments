@@ -2,123 +2,15 @@ section \<open>Product Combinator for Probability Mass Functions\<close>
 
 theory Prod_PMF
   imports Main "HOL-Probability.Probability_Mass_Function" "HOL-Probability.Stream_Space"
-      "HOL-Probability.Independent_Family" Probability_Ext 
+      "HOL-Probability.Independent_Family" Probability_Ext "HOL-Probability.Product_PMF"
 begin
 
-text \<open>Alternative version of @{thm [source] product_sigma_finite.emeasure_PiM} 
-where @{term "M i"} has to be a sigma finite measure \emph{only} for @{term "i \<in> I"}.\<close>
-lemma emeasure_prod:
-  assumes "\<And>i. i \<in> I \<Longrightarrow> sigma_finite_measure (M i)"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> A i \<in> sets (M i)"
-  assumes "finite I"
-  shows "emeasure (PiM I M) (PiE I A) = (\<Prod> i \<in> I. emeasure (M i) (A i))"
-proof -
-  define M' where "M' = (\<lambda>i. if i \<in> I then M i else count_space {undefined})" 
-
-  interpret product_sigma_finite M'
-    apply (simp add:product_sigma_finite_def M'_def)
-    by (metis assms(1) finite.emptyI finite_insert sigma_finite_measure_count_space_finite)
-
-  have a:"\<And>i. i \<in> I \<Longrightarrow> A i \<in> sets (M' i)"
-    using assms(2) M'_def by simp
-  have b:"PiM I M = PiM I M'"
-    by (rule PiM_cong, simp, simp add:M'_def)
-  have c:"\<And>i. i \<in> I \<Longrightarrow> emeasure (M i) = emeasure (M' i)"
-    by (simp add:M'_def)  
-  show ?thesis by (simp add:b c emeasure_PiM[OF assms(3) a]) 
-qed
-
-lemma count_space_prod:
-  assumes "\<And>i. i \<in> I \<Longrightarrow> countable (M i)"
-  assumes "finite I"
-  shows "count_space (PiE I M) = PiM I (count_space \<circ> M)"
-proof -
-  have a:"countable (PiE I M)" using countable_PiE assms by blast
-
-  have b:"\<And>s. s \<in>  Pi\<^sub>E I M \<Longrightarrow> (PiE I (\<lambda>i. {s i})) \<in> prod_algebra I (count_space \<circ> M)"
-    by (rule prod_algebraI_finite, metis assms(2), simp add:PiE_iff)
-  have c: "\<And>s. s \<in> PiE I M \<Longrightarrow> (PiE I (\<lambda>i. {s i})) = {s}" 
-    by (metis (mono_tags, lifting) PiE_eq_singleton PiE_restrict)
-  have d:" (\<lambda>s. {s}) ` Pi\<^sub>E I M \<subseteq> prod_algebra I (count_space \<circ> M)"
-    apply (rule subsetI) using b c by auto
-
-  show ?thesis
-    apply (rule measure_eqI_countable, simp)
-      apply (simp add:sets_PiM)
-      apply (rule order_antisym)
-       apply (rule sigma_algebra.sigma_sets_subset, rule sigma_algebra_Pow)
-       using prod_algebra_sets_into_space[where M="\<lambda>i. count_space (M i)", simplified] 
-       apply (simp add: comp_def)
-      apply (subst sigma_sets_singletons[OF a, symmetric])
-      apply (rule sigma_sets_subseteq)
-      apply (metis d)
-     apply (metis a)
-    apply (simp)
-    apply (subst c[symmetric], simp)
-    apply (subst emeasure_prod)
-       apply (simp add: sigma_finite_measure_count_space_countable assms(1))
-      apply (simp add: PiE_iff)
-     apply (metis assms(2))
-    by (simp add:comp_def emeasure_count_space PiE_iff)
-qed
-
-context 
-  fixes I :: "'a set"
-  assumes finite_I: "finite I"
-  fixes M :: "'a \<Rightarrow> 'b pmf"
-begin
-lift_definition prod_pmf :: "('a \<Rightarrow> 'b) pmf" is "(\<lambda>x. (if x \<in> extensional I then \<Prod>i \<in> I. (pmf (M i)) (x i) else 0))"
-proof -
-  have a: "count_space (PiE I (set_pmf \<circ> M)) = PiM I (\<lambda>i. count_space (set_pmf ( M i)))"
-    using count_space_prod countable_set_pmf 
-    by (metis (mono_tags, lifting) PiM_cong comp_def finite_I) 
-
-  have b: "\<And>i. i \<in> I \<Longrightarrow> integral\<^sup>N (count_space (set_pmf (M i))) (pmf (M i)) = 1"
-    by (simp add: emeasure_pmf nn_integral_pmf)
-  have "integral\<^sup>N (count_space UNIV) (\<lambda>x. ennreal (if x \<in> extensional I then \<Prod>i\<in>I. pmf (M i) (x i) else 0)) = 
-    integral\<^sup>N (count_space UNIV) (\<lambda>x. ((\<Prod>i\<in>I. ennreal (pmf (M i) (x i)))) * indicator (PiE I (set_pmf \<circ> M)) x)"
-  proof (rule nn_integral_cong)
-    fix x :: "'a \<Rightarrow> 'b"
-    assume "x \<in> space (count_space UNIV)"
-    show "ennreal (if x \<in> extensional I then \<Prod>i\<in>I. pmf (M i) (x i) else 0) =
-          (\<Prod>i\<in>I. ennreal(pmf (M i) (x i))) * indicator (Pi\<^sub>E I (set_pmf \<circ> M)) x"
-      apply (cases "x \<in> PiE I (set_pmf \<circ> M)", simp add:PiE_def prod_ennreal)
-      apply (simp add:PiE_def Pi_def)
-      apply (rule impI, simp add:ennreal_eq_0_iff)
-      apply (rule order_eq_refl)
-      using finite_I apply (simp)
-      by (metis set_pmf_iff)
-  qed
-  also have "... = integral\<^sup>N (count_space (PiE I (set_pmf \<circ> M))) (\<lambda>x. (\<Prod>i\<in>I. ennreal (pmf (M i) (x i))))"
-    by (subst nn_integral_restrict_space[symmetric], simp, simp add:restrict_count_space)
-  also have "... = integral\<^sup>N (\<Pi>\<^sub>M i \<in> I. count_space (set_pmf (M i))) (\<lambda>x. (\<Prod>i\<in>I. ennreal (pmf (M i) (x i))))"
-    by (subst a, simp)
-  also have "... = 1"
-    apply (subst product_sigma_finite.product_nn_integral_prod)
-       apply (simp add:product_sigma_finite_def)
-       using countable_set_pmf 
-       apply (simp add: sigma_finite_measure_count_space_countable)
-      apply (metis finite_I)
-     apply simp
-    by (simp add:b)
-  finally have "integral\<^sup>N (count_space UNIV) (\<lambda>x. ennreal (if x \<in> extensional I then \<Prod>i\<in>I. pmf (M i) (x i) else 0)) = 1" 
-    by simp
-  moreover have "\<And>x. 0 \<le> (if x \<in> extensional I then \<Prod>i\<in>I. pmf (M i) (x i) else 0)" (is "\<And>x. ?ths x")
-  proof -
-    fix x
-    show "?ths x"
-      apply (cases "x \<in> extensional I")
-       apply (simp, rule prod_nonneg, fastforce)
-      by simp
-  qed
-  ultimately show ?thesis by blast
-qed
-end
+definition prod_pmf where "prod_pmf I M = Pi_pmf I undefined M"
 
 lemma pmf_prod_pmf: 
   assumes "finite I"
   shows "pmf (prod_pmf I M) x = (if x \<in> extensional I then \<Prod>i \<in> I. (pmf (M i)) (x i) else 0)"
-  by (simp add: prod_pmf.rep_eq[OF assms])
+  by (simp add:prod_pmf_def  pmf_Pi[OF assms(1)] extensional_def)
 
 lemma set_prod_pmf:
   assumes "finite I"
@@ -130,40 +22,11 @@ lemma set_prod_pmf:
 lemma set_pmf_iff': "x \<notin> set_pmf M \<longleftrightarrow> pmf M x = 0"
   using set_pmf_iff by metis
 
-lemma prob_prod_pmf: 
+lemma prob_prod_pmf:
   assumes "finite I"
   shows "measure (measure_pmf (prod_pmf I M)) (Pi I A) = (\<Prod> i \<in> I. measure (M i) (A i))"
-proof -
-  have "integral\<^sup>L (count_space (Pi I A)) (pmf (prod_pmf I M)) = 
-    integral\<^sup>L (count_space (Pi I A)) (\<lambda>x. indicat_real (PiE I (set_pmf \<circ> M)) x *\<^sub>R pmf (prod_pmf I M) x)"
-    by (rule Bochner_Integration.integral_cong, simp, simp add:indicator_def set_pmf_iff'[symmetric] set_prod_pmf[OF assms(1)])
-  also have "... = integral\<^sup>L (count_space (PiE I (\<lambda>i. if i \<in> I then (A i \<inter> set_pmf (M i)) else {undefined})))  (\<lambda>\<omega>. \<Prod> i \<in> I. pmf (M i) (\<omega> i))"
-    apply (subst integral_restrict_space[symmetric], simp, simp add:restrict_count_space)
-    apply (rule Bochner_Integration.integral_cong)
-     apply (rule arg_cong[where f="count_space"])
-     apply (rule order_antisym, rule subsetI, simp add:Pi_def PiE_def, rule subsetI, simp add:Pi_def PiE_def, simp)
-    by (simp add:pmf_prod_pmf[OF assms(1)] PiE_def)
-  also have "... = (\<Prod>i\<in>I. integral\<^sup>L ((count_space \<circ> (\<lambda>i. if i \<in> I then A i \<inter> set_pmf (M i) else {undefined})) i) (pmf (M i)))"
-    apply (subst count_space_prod, simp, metis assms)
-    apply (subst product_sigma_finite.product_integral_prod)
-       apply (simp add:product_sigma_finite_def)
-       apply (metis countable_Int2 countable_empty countable_insert  sigma_finite_measure_count_space_countable countable_set_pmf)
-      apply (metis assms)
-     apply (simp add:comp_def integrable_pmf)
-    by simp
-  also have "... = (\<Prod> i \<in> I. integral\<^sup>L (count_space (A i)) (\<lambda>x. indicat_real (set_pmf (M i)) x *\<^sub>R pmf (M i) x))"
-    apply (rule prod.cong, simp)
-    by (subst integral_restrict_space[symmetric], simp, simp add:restrict_count_space inf_commute)
-  also have "... = (\<Prod> i \<in> I. integral\<^sup>L (count_space (A i)) (pmf (M i)))"
-    apply (rule prod.cong, simp)
-    by (rule Bochner_Integration.integral_cong, simp, simp add:indicator_def set_pmf_iff'[symmetric])
-  finally have r:"integral\<^sup>L (count_space (Pi I A)) (pmf (prod_pmf I M)) = (\<Prod> i \<in> I. integral\<^sup>L (count_space (A i)) (pmf (M i)))"
-    by blast
-
-  show ?thesis
-    apply (subst (1 2) integral_pmf[symmetric])
-    by (metis r)
-qed
+  apply (simp add:prod_pmf_def)
+  by (subst measure_Pi_pmf_Pi[OF assms(1)], simp)
 
 lemma prob_prod_pmf': 
   assumes "finite I"
@@ -190,7 +53,6 @@ lemma prob_prod_pmf_slice:
 lemma range_inter: "range ((\<inter>) F) = Pow F"
   apply (rule order_antisym, rule subsetI, simp add:image_def, blast)
   by (rule subsetI, simp add:image_def, blast)
-
 
 lemma indep_vars_pmf:
   assumes "\<And>a J. J \<subseteq> I \<Longrightarrow> finite J \<Longrightarrow> 
@@ -545,32 +407,17 @@ proof -
     by (simp add:has_variance_def, metis c d e prob_space_measure_pmf)
 qed
 
+lemma PiE_defaut_undefined_eq: "PiE_dflt I undefined M = PiE I M" 
+  apply (rule set_eqI)
+  apply (simp add:PiE_dflt_def PiE_def extensional_def Pi_def) by blast
+
+
 lemma pmf_of_set_prod:
   assumes "finite I"
   assumes "\<And>x. x \<in> I \<Longrightarrow> finite (M x)"
   assumes "\<And>x. x \<in> I \<Longrightarrow> M x \<noteq> {}"
   shows "pmf_of_set (PiE I M) = prod_pmf I (\<lambda>i. pmf_of_set (M i))"
-proof -
-  have a:"\<And>f. indicat_real (Pi\<^sub>E I M) f / real (card (Pi\<^sub>E I M)) =
-    (if f \<in> extensional I then (\<Prod>i\<in>I. indicat_real (M i) (f i) / real (card (M i)))  else 0)" (is "\<And>f. ?a f")
-  proof -
-    fix f
-    show "?a f"
-      apply (cases "f \<in> extensional I")
-       apply (cases "f \<in> PiE I M") 
-        apply (simp add: card_PiE[OF assms(1)])
-        apply (simp add:PiE_iff indicator_def Pi_def)
-       apply (simp add: prod_dividef[where f= "\<lambda>_. 1" , simplified])
-       apply (simp, simp add:PiE_iff prod_dividef indicator_def assms)
-      by (simp add:PiE_def)
-  qed
-
-  show ?thesis
-  apply (rule pmf_eqI)
-  apply (subst pmf_of_set, metis PiE_eq_empty_iff assms(3), metis finite_PiE assms(1) assms(2))
-  apply (subst pmf_prod_pmf, metis assms(1))
-  using a assms by simp
-qed
+  by (simp add:prod_pmf_def PiE_defaut_undefined_eq Pi_pmf_of_set[OF assms(1) assms(2) assms(3)])
 
 
 lemma extensionality_iff:

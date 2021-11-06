@@ -165,7 +165,7 @@ proof -
     apply (simp add:A_def abs_le_iff)
     by linarith
   also have "... = card {\<lceil>real x-q\<rceil>..\<lfloor>real x+q\<rfloor>} - 1"
-    by (rule card_Diff_singleton, simp, metis a)
+    by (rule card_Diff_singleton, rule a)
   also have "... = int (card {\<lceil>real x-q\<rceil>..\<lfloor>real x+q\<rfloor>}) - int 1"
     apply (rule of_nat_diff)
     by (metis a card_0_eq empty_iff finite_atLeastAtMost_int less_one linorder_not_le)
@@ -717,8 +717,7 @@ proof -
       prob_space.variance \<Omega>\<^sub>1 (\<lambda>\<omega>. (\<Sum>x \<in> set xs. of_bool (int (hash p x \<omega>) \<le> a)))"
       by (simp add:f_def inters_compr)
     also have "... = (\<Sum>x \<in> set xs. prob_space.variance \<Omega>\<^sub>1 (\<lambda>\<omega>. of_bool (int (hash p x \<omega>) \<le> a)))"
-      apply (rule prob_space.var_sum_pairwise_indep_2, simp add:prob_space_measure_pmf, simp)
-        apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
+      apply (rule prob_space.var_sum_pairwise_indep_2, simp add:prob_space_measure_pmf, simp, simp)
        apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
       apply (rule prob_space.indep_vars_compose2[where Y="\<lambda>i x. of_bool (int x \<le> a)" and M'="\<lambda>_. measure_pmf (pmf_of_set {0..<p})"])
         apply (simp add:prob_space_measure_pmf)
