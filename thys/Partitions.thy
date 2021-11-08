@@ -1,7 +1,7 @@
 section \<open>Partitions\<close>
 
 theory Partitions
-  imports Main "HOL-Library.Multiset" "HOL.Real"
+  imports Main "HOL-Library.Multiset" "HOL.Real" List_Ext
 begin
 
 text \<open>In this section, we define a function that enumerates all the partitions of
@@ -80,6 +80,7 @@ lemma enum_partitions_aux_range:
   "x \<in> set (enum_partitions_aux n) \<Longrightarrow> set (snd x) = {k. k < fst x}"
   by (induction n arbitrary:x, simp, simp, force)
 
+
 lemma enum_partitions_aux_len:
   "x \<in> set (enum_partitions_aux n) \<Longrightarrow> length (snd x) = n"
   by (induction n arbitrary:x, simp, simp, force)
@@ -137,108 +138,6 @@ next
   qed
 qed
 
-fun remdups_indices 
-  where 
-    "remdups_indices [] = []" |
-    "remdups_indices (r#rs) = (if r \<in> set rs then id else (#) 0 ) (map Suc (remdups_indices rs))" 
-
-fun count_list_p where "count_list_p r k = count_list r (r ! k)"
-
-definition remdups_p where "remdups_p r xs = map ((!) xs) (remdups_indices r)"
-
-lemma remdups_indices_range:
-  "k \<in> set (remdups_indices r) \<Longrightarrow> k < length r"
-proof (induction r arbitrary:k)
-  case Nil
-  then show ?case by simp
-next
-  case (Cons a r)
-  then show ?case by (cases "a \<in> set r", simp, blast, simp, blast)
-qed
-
-lemma
-  assumes "has_eq_relation r xs"
-  shows set_xs: "set xs = set (remdups_p r xs)" and
-    distinct_set_xs: "distinct (remdups_p r xs)"
-proof -
-  have a:"set (map ((!) r) (remdups_indices r)) = set r"
-    apply (induction r, simp, simp) 
-    by (metis (no_types, lifting) image_cong image_image insert_absorb nth_Cons_Suc)
-  have "set xs \<subseteq> set (remdups_p r xs)"
-  proof 
-    fix x
-    assume "x \<in> set xs"
-    then obtain k where k_bound: "k < length xs" and x_def: "x = xs ! k" by (metis in_set_conv_nth)
-    hence "r ! k \<in> set r" using k_bound assms by (simp add:has_eq_relation_def)
-    then obtain j where j_set: "j \<in> set (remdups_indices r)" and j_k_r: "r ! k = r ! j"
-      by (metis (no_types, lifting) a in_set_conv_nth length_map nth_map)
-    moreover have "j < length r" using remdups_indices_range j_set by blast
-    ultimately have "x = xs ! j" using k_bound j_set a assms by (simp add:has_eq_relation_def x_def)
-    thus "x \<in> set (remdups_p r xs)"
-      apply (simp add:remdups_p_def)
-      using j_set by blast
-  qed
-  moreover have "set (remdups_p r xs) \<subseteq> set xs"
-    apply (simp add:remdups_p_def)
-    by (metis remdups_indices_range assms has_eq_relation_def image_subsetI nth_mem)
-  ultimately show "set xs = set (remdups_p r xs)"
-    by auto
-  have "length (remdups_indices r) = card (set r)"
-    by (induction r, simp, simp add:insert_absorb)   
-  hence "distinct (map ((!) r) (remdups_indices r))"
-    by (metis card_distinct length_map a)
-  thus "distinct (remdups_p r xs)" using assms
-    by (simp add:has_eq_relation_def remdups_indices_range remdups_p_def distinct_conv_nth) 
-qed
-
-lemma count_xs_aux:
-  "count (mset x) y = count_list x y"
-  by (induction x, simp, simp)
-
-lemma count_card: "count_list xs x = card {k. k < length xs \<and> xs ! k = x}"
-proof (induction xs)
-  case Nil
-  then show ?case by simp
-next
-  case (Cons a xs)
-  have "Suc ` {k. k < length xs \<and> xs ! k = x} = {k. k < Suc (length xs) \<and> (a # xs) ! k = x \<and> k > 0}"
-    apply (rule order_antisym, rule image_subsetI, simp, rule subsetI, simp)
-    using less_Suc_eq_0_disj by fastforce
-  hence a:"card {k. k < length xs \<and> xs ! k = x} = card {k. k < Suc (length xs) \<and> (a # xs) ! k = x \<and> k > 0}"
-    by (metis (no_types, lifting) card_image inj_Suc)
-  have b:"\<And>A B. finite A \<Longrightarrow> 0 \<notin> A \<Longrightarrow> B = insert 0 A \<Longrightarrow> Suc (card A) = card B"
-    by (simp)
-  show ?case 
-    apply (cases "a=x")
-     apply (simp add:a Cons)
-     apply (rule b, simp, simp)
-    apply (rule order_antisym, rule subsetI, simp, blast, rule subsetI, simp)
-     apply (meson nth_Cons_0 zero_less_Suc)
-     apply (simp add:a Cons)
-    apply (rule arg_cong [where f="card"])
-    apply (rule order_antisym, rule subsetI, simp, rule subsetI, simp) 
-    by (meson nth_non_equal_first_eq)
-qed
-
-lemma count_xs:
-  assumes "k \<in> set (remdups_indices r)"
-  assumes "has_eq_relation r xs"
-  shows "count (mset xs) (xs ! k) = count_list_p r k"
-proof -
-  have a:"k < length xs" 
-    by (metis has_eq_relation_def assms remdups_indices_range )
-  have b:"count (mset xs) (xs ! k) = count_list xs (xs ! k)"
-    by (simp add: count_xs_aux) 
-  have "count_list xs (xs ! k) = count_list_p r k"
-    apply (simp add:count_card)
-    apply (rule arg_cong [where f="card"])
-    apply (rule order_antisym)
-     apply (rule subsetI, simp)
-    using a assms(2) apply (simp add:has_eq_relation_def, force)
-     apply (rule subsetI, simp)
-    using a assms(2) by (simp add:has_eq_relation_def)
-  thus ?thesis using a b by simp
-qed
 
 fun verify where
   "verify r x 0 _ = True" |
@@ -267,5 +166,123 @@ lemma sum_filter: "sum_list (map (\<lambda>p. if f p then (r::real) else 0) y) =
 
 lemma sum_partitions: "sum_list (map (\<lambda>p. if has_eq_relation p x then (r::real) else 0) (enum_partitions (length x))) = r"
   by (metis mult.right_neutral of_nat_1 enum_partitions_complete sum_filter)
+
+lemma sum_partitions': 
+  assumes "n = length x"
+  shows "sum_list (map (\<lambda>p. of_bool (has_eq_relation p x) * (r::real)) (enum_partitions n)) = r"
+  apply (simp add:of_bool_def comp_def assms del:enum_partitions.simps)
+  apply (subst (2) sum_partitions[where x="x" and r="r", symmetric]) 
+  apply (rule arg_cong[where f="sum_list"])
+  apply (rule map_cong, simp)
+  by simp
+
+lemma eq_rel_obtain_bij:
+  assumes "has_eq_relation u v"
+  obtains f where "bij_betw f (set u) (set v)" "\<And>y. y \<in> set u \<Longrightarrow> count_list u y = count_list v (f y)"
+proof -
+  define A where "A = (\<lambda>x. {k. k < length u \<and> u ! k = x})"
+  define q where "q = (\<lambda>x. v ! (Min (A x)))"
+
+  have A_ne_iff: "\<And>x. x \<in> set u \<Longrightarrow> A x \<noteq> {}" by (simp add:A_def in_set_conv_nth) 
+  have f_A: "\<And>x. finite (A x)" by (simp add:A_def)
+
+  have a:"inj_on q (set u)"
+  proof (rule inj_onI)
+    fix x y
+    assume a_1:"x \<in> set u" "y \<in> set u"
+    have "length u > 0" using a_1 by force
+    define xi where "xi = Min (A x)"
+    have xi_l: "xi < length u"
+      using Min_in[OF f_A A_ne_iff[OF a_1(1)]]
+      by (simp add:xi_def A_def) 
+    have xi_v: "u ! xi = x" 
+      using Min_in[OF f_A A_ne_iff[OF a_1(1)]]
+      by (simp add:xi_def A_def) 
+    define yi where "yi = Min (A y)"
+    have yi_l: "yi < length u" 
+      using Min_in[OF f_A A_ne_iff[OF a_1(2)]]
+      by (simp add:yi_def A_def) 
+    have yi_v: "u ! yi = y" 
+      using Min_in[OF f_A A_ne_iff[OF a_1(2)]]
+      by (simp add:yi_def A_def) 
+
+    assume "q x = q y"
+    hence "v ! xi = v ! yi"
+      by (simp add:q_def xi_def yi_def)
+    hence "u ! xi = u ! yi"
+      by (metis (no_types, lifting) has_eq_relation_def assms(1) xi_l yi_l)
+    thus "x = y"
+      using yi_v xi_v by blast
+  qed
+
+  have b:"\<And>y. y \<in> set u \<Longrightarrow> count_list u y = count_list v (q y)"
+  proof -
+    fix y
+    assume b_1:"y \<in> set u"
+    define i where "i = Min (A y)"
+    have i_bound: "i < length u" 
+      using Min_in[OF f_A A_ne_iff[OF b_1]]
+      by (simp add:i_def A_def) 
+    have y_def: "y = u ! i"
+      using Min_in[OF f_A A_ne_iff[OF b_1]]
+      by (simp add:i_def A_def) 
+
+    have "count_list u y =  card {k. k < length u \<and> u ! k = u ! i}"
+      by (simp add:count_list_card y_def)
+    also have "... = card {k. k < length v \<and> v ! k = v ! i}"
+      apply (rule arg_cong[where f="card"])
+      apply (rule set_eqI, simp)
+      by (metis (no_types, lifting) assms(1) has_eq_relation_def i_bound)
+    also have "... = card {k. k < length v \<and> v ! k = q y}"
+      by (simp add:q_def i_def)
+    also have "... = count_list v (q y)"
+      by (simp add:count_list_card)
+    finally show "count_list u y = count_list v (q y)"
+      by simp
+  qed
+
+  have c:"q ` set u \<subseteq> set v" 
+    apply (rule image_subsetI)
+    by (metis b count_list_gr_1)
+
+  have d_1:"length v = length u" using assms has_eq_relation_def by blast
+  also have "... = sum (count_list u) (set u)"
+    by (simp add:sum_count_set)
+  also have "... = sum ((count_list v) \<circ> q) (set u)"
+    by (rule sum.cong, simp, simp add:comp_def b)
+  also have "... = sum (count_list v) (q ` set u)"
+    by (rule sum.reindex[OF a, symmetric])
+  finally have d_1:"sum (count_list v) (q ` set u) = length v"
+    by simp
+
+  have "sum (count_list v) (q ` set u) + sum (count_list v) (set v - (q ` set u)) = sum (count_list v) (set v)"
+    apply (subst sum.union_disjoint[symmetric], simp, simp, simp)
+    apply (rule sum.cong)
+    using c apply blast
+    by simp
+  also have "... = length v"
+    by (simp add:sum_count_set)
+  finally have d_2:"sum (count_list v) (q ` set u) + sum (count_list v) (set v - (q ` set u)) = length v" by simp
+
+  have "sum (count_list v) (set v - (q ` set u)) = 0"
+    using d_1 d_2 by linarith
+
+  hence "\<And>x. x \<in> (set v - (q ` set u)) \<Longrightarrow> count_list v x \<le> 0"
+    using member_le_sum by simp
+  hence "\<And>x. x \<in> (set v - (q ` set u)) \<Longrightarrow> False"
+    by (metis count_list_gr_1 Diff_iff le_0_eq not_one_le_zero)
+  hence "set v - (q ` set u) = {}"
+    by blast
+
+  hence e: "q ` set u = set v"
+    using c by blast
+
+  have d:"bij_betw q (set u) (set v)"
+    apply (simp add: bij_betw_def)
+    using c e a by blast
+  have "\<exists>f. bij_betw f (set u) (set v) \<and> (\<forall>y \<in> set u. count_list u y = count_list v (f y))"
+    using b d by blast
+  with that show ?thesis by blast
+qed
 
 end

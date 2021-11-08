@@ -79,6 +79,28 @@ proof -
     by (simp add:M_def sum_mset_sum_list[symmetric])
 qed
 
+lemma prod_list_eval:
+  fixes f :: "'a \<Rightarrow> 'b::{ring,semiring_1,comm_monoid_mult}"
+  shows "prod_list (map f xs) = (\<Prod>x \<in> set xs. (f x)^(count_list xs x))"
+proof -
+  define M where "M = mset xs"
+  have "prod_mset (image_mset f M) = (\<Prod>x \<in> set_mset M. f x ^ (count M x))"
+  proof (induction "M" rule:disj_induct_mset)
+    case 1
+    then show ?case by simp
+  next
+    case (2 n M x)
+    have a:"\<And>y. y \<in> set_mset M \<Longrightarrow> y \<noteq> x" using 2(2) by blast
+    have b:"count M x = 0" apply (subst  count_eq_zero_iff) using 2 by blast 
+    show ?case using 2  by (simp add:a b mult.commute)
+  qed
+  moreover have "\<And>x. count_list xs x = count (mset xs) x" 
+    by (induction xs, simp, simp)
+  ultimately show ?thesis
+    by (simp add:M_def prod_mset_prod_list[symmetric])
+qed
+
+
 lemma sorted_sorted_list_of_multiset: "sorted (sorted_list_of_multiset M)"
   by (induction M, simp, simp add:sorted_insort) 
 

@@ -382,29 +382,25 @@ proof -
   show ?B using a has_bochner_integral_iff by blast
 qed
 
-lemma has_variance_prod_pmf_sliceI:
-  assumes "i \<in> I"
-  assumes "finite I"
-  assumes "has_variance (measure_pmf (M i)) f r"
-  shows "has_variance (prod_pmf I M) (\<lambda>\<omega>. f (\<omega> i)) r"
-proof -
-  have a:"integrable (measure_pmf (M i)) f" 
-    using assms(3) by (simp add:has_variance_def) 
-  have b:"integrable (measure_pmf (M i)) (\<lambda>\<omega>. (f \<omega>)\<^sup>2)" 
-    using assms(3) by (simp add:has_variance_def) 
-  have c:"integrable (measure_pmf (prod_pmf I M)) (\<lambda>\<omega>. f (\<omega> i))"
-    by (rule integrable_prod_pmf_slice[OF assms(2) assms(1)], metis a)
-  have d:"integrable (measure_pmf (prod_pmf I M)) (\<lambda>\<omega>. (f (\<omega> i))\<^sup>2)" 
-    by (rule integrable_prod_pmf_slice[OF assms(2) assms(1)], metis b)
 
-  have e:"r (prob_space.variance (measure_pmf (prod_pmf I M)) (\<lambda>\<omega>. f(\<omega> i)))"
-    apply (subst prob_space.variance_eq, metis prob_space_measure_pmf, metis c, metis d)
-    apply (subst integral_prod_pmf_slice[OF assms(2) assms(1)], metis b)
-    apply (subst integral_prod_pmf_slice[OF assms(2) assms(1)], metis a)
-    apply (subst prob_space.variance_eq[symmetric], metis prob_space_measure_pmf, metis a, metis b)
-    using assms(3) by (simp add:has_variance_def)
+lemma variance_prod_pmf_slice:
+  fixes f :: "'a \<Rightarrow> real"
+  assumes "i \<in> I" "finite I"
+  assumes "integrable (measure_pmf (M i)) (\<lambda>\<omega>. f \<omega>^2)"
+  shows "prob_space.variance (prod_pmf I M) (\<lambda>\<omega>. f (\<omega> i)) = prob_space.variance (M i) f"
+proof -
+  have a:"integrable (measure_pmf (M i)) f"
+    apply (rule measure_pmf.square_integrable_imp_integrable)
+    using assms(3) by auto
+
   show ?thesis
-    by (simp add:has_variance_def, metis c d e prob_space_measure_pmf)
+    apply (subst measure_pmf.variance_eq)
+      apply (rule integrable_prod_pmf_slice[OF assms(2) assms(1)], metis a)
+     apply (rule integrable_prod_pmf_slice[OF assms(2) assms(1)], metis assms(3))
+    apply (subst measure_pmf.variance_eq[OF a assms(3)])
+    apply (subst integral_prod_pmf_slice[OF assms(2) assms(1)], metis assms(3))
+    apply (subst integral_prod_pmf_slice[OF assms(2) assms(1)], metis a)
+    by simp
 qed
 
 lemma PiE_defaut_undefined_eq: "PiE_dflt I undefined M = PiE I M" 

@@ -574,17 +574,19 @@ lemma fk_alg_core_var:
   assumes "xs \<noteq> []"
   assumes "k \<ge> 1"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  shows "has_variance (measure_pmf (pmf_of_set {(u, v). v < count_list xs u}))
+  shows "prob_space.variance (measure_pmf (pmf_of_set {(u, v). v < count_list xs u}))
         (\<lambda>a. real (length xs) * real (Suc (snd a) ^ k - snd a ^ k))
-        (\<lambda>x. x \<le> (real_of_rat (fk_value k xs))\<^sup>2 * real k * real n powr (1 - 1 / real k))"
+         \<le> (real_of_rat (fk_value k xs))\<^sup>2 * real k * real n powr (1 - 1 / real k)"
 proof -
   define f :: "nat \<times> nat \<Rightarrow> real" 
     where "f = (\<lambda>x. (real (length xs) * real (Suc (snd x) ^ k - snd x ^ k)))"
   define \<Omega> where "\<Omega> = pmf_of_set {(u, v). v < count_list xs u}"
   
-  have integrable: "\<And>k. integrable (measure_pmf \<Omega>) (\<lambda>\<omega>. f \<omega>^k)"
-    apply (simp add:\<Omega>_def, rule integrable_measure_pmf_finite, subst set_pmf_of_set)
-    using assms(1) fin_space non_empty_space set_pmf_of_set by auto
+  have integrable: "\<And>k f. integrable (measure_pmf \<Omega>) (\<lambda>\<omega>. (f \<omega>)::real)"
+    apply (simp add:\<Omega>_def)
+    apply (rule integrable_measure_pmf_finite)
+    apply (subst set_pmf_of_set)
+    using assms(1) fin_space non_empty_space by auto
 
   have k_g_0: "k > 0" using assms by linarith
 
@@ -653,9 +655,11 @@ proof -
     by blast
 
   show ?thesis
-    using prob_space_measure_pmf[where p="\<Omega>"] integrable[where k="1", simplified] integrable
-    apply (simp add: f_def[symmetric] \<Omega>_def[symmetric] has_variance_def prob_space.variance_eq)
-    using a by simp+
+    apply (subst measure_pmf.variance_eq)
+    apply (subst \<Omega>_def[symmetric], metis integrable)
+    apply (subst \<Omega>_def[symmetric], metis integrable)
+    apply (simp add: \<Omega>_def[symmetric])
+    using a f_def by simp
 qed
 
 theorem fk_alg_sketch:
@@ -722,6 +726,13 @@ proof -
     by (simp add:of_rat_divide of_rat_sum of_rat_mult, simp)
 
   define \<Omega> where "\<Omega> = pmf_of_set {(u, v). v < count_list xs u}"
+  have fin_omega: "finite (set_pmf \<Omega>)"
+    apply (subst \<Omega>_def, subst set_pmf_of_set)
+    using assms(5) fin_space non_empty_space by auto
+  have fin_omega_2: "finite (set_pmf ((prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))))"
+    apply (subst set_prod_pmf, simp)
+    apply (rule finite_PiE, simp)
+    by (simp add:fin_omega)
 
   have a:"sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list xs u}))"
@@ -773,14 +784,15 @@ proof -
     by (simp add: mult.commute)
   
   have f2_var: "\<And>i\<^sub>1 i\<^sub>2. i\<^sub>1 < s\<^sub>1 \<Longrightarrow> i\<^sub>2 < s\<^sub>2 \<Longrightarrow>
-       has_variance (measure_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))) (\<lambda>\<omega>. f2 \<omega> i\<^sub>1 i\<^sub>2)
-          (\<lambda>x. x \<le> (real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 8)" 
-    apply (subst f2_def, rule has_variance_prod_pmf_sliceI, simp, simp)
-    apply (rule has_variance_imp [where r="\<lambda>x. x \<le> (real_of_rat (fk_value k xs))\<^sup>2 *
+       prob_space.variance (measure_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))) (\<lambda>\<omega>. f2 \<omega> i\<^sub>1 i\<^sub>2)
+           \<le> (real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 8" 
+    apply (simp only: f2_def)
+    apply (subst variance_prod_pmf_slice, simp, simp, rule integrable_measure_pmf_finite[OF fin_omega])
+    apply (rule order_trans [where y="(real_of_rat (fk_value k xs))\<^sup>2 *
                  real k * real n powr (1 - 1 / real k)"])
-    using f2_var_1 order_trans apply blast
     apply (simp add: \<Omega>_def)
-    using assms fk_alg_core_var by blast
+    using assms fk_alg_core_var[where k="k"] apply simp
+    using f2_var_1 by blast
 
   have f1_exp_1: "(real_of_rat (fk_value k xs)) = (\<Sum>i \<in> {0..<s\<^sub>1}. (real_of_rat (fk_value k xs))/real s\<^sub>1)"
     by (simp add:s1_nonzero)
@@ -795,29 +807,37 @@ proof -
     by (simp add: f2_exp)
 
   have f1_var: "\<And>i. i < s\<^sub>2 \<Longrightarrow> 
-      has_variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i) 
-    (\<lambda>r. r \<le> real_of_rat (\<delta> * fk_value k xs)^2/8)" (is "\<And>i. _ \<Longrightarrow> ?rhs i")
+      prob_space.variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i)  \<le> real_of_rat (\<delta> * fk_value k xs)^2/8" (is "\<And>i. _ \<Longrightarrow> ?rhs i")
   proof -
     fix i
     assume f1_var_1:"i < s\<^sub>2" 
-    show "?rhs i"
+    have "prob_space.variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i) = 
+       (\<Sum>j = 0..<s\<^sub>1. prob_space.variance  (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))  (\<lambda>\<omega>. f2 \<omega> j i / real s\<^sub>1))"
       apply (simp add:f1_def sum_divide_distrib)
-      apply (rule prob_space.has_variance_sum [where r="(\<lambda>i r. r \<le> real_of_rat (\<delta> * fk_value k xs)^2/(8*real s\<^sub>1))"])
-          apply (metis prob_space_measure_pmf)
-         apply (simp)
-        apply (rule indep_vars_restrict_intro[where f="\<lambda>j. {j} \<times> {i}"])
+      apply (subst measure_pmf.var_sum_all_indep, simp, simp)
+        apply (rule integrable_measure_pmf_finite[OF fin_omega_2])
+       apply (rule indep_vars_restrict_intro[where f="\<lambda>j. {j} \<times> {i}"])
             apply (simp add:f2_def)
            apply (simp add:disjoint_family_on_def)
           apply (simp add:s1_nonzero)
          apply (simp add:f1_var_1)
         apply simp
        apply simp
-       apply (rule has_variance_divide)
-       apply (subst pos_divide_le_eq) using s1_nonzero apply simp
-       apply (subst (2) power2_eq_square)
-       using f2_var[OF _ f1_var_1] apply (simp)
-      using s1_nonzero sum_mono[where K = "{0..<s\<^sub>1}" and g="\<lambda>_.  (real_of_rat (\<delta> * fk_value k xs))\<^sup>2/8/(real s\<^sub>1)"]
       by simp
+    also have "... = (\<Sum>j = 0..<s\<^sub>1. prob_space.variance  (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))  (\<lambda>\<omega>. f2 \<omega> j i) / real s\<^sub>1^2)"
+      apply (rule sum.cong, simp)
+      apply (rule measure_pmf.variance_divide)
+      by (rule integrable_measure_pmf_finite[OF fin_omega_2])
+    also have "... \<le> (\<Sum>j = 0..<s\<^sub>1. ((real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 8) / (real s\<^sub>1^2))"
+      apply (rule sum_mono)
+      apply (rule divide_right_mono)
+       apply (rule f2_var[OF _ f1_var_1], simp)
+      by simp
+    also have "... = real_of_rat (\<delta> * fk_value k xs)^2/8"
+      apply simp
+      apply (subst nonzero_divide_eq_eq, simp add:s1_nonzero)
+      by (simp add:power2_eq_square)
+    finally show "?rhs i" by simp
   qed
 
   have d: " \<And>i. i < s\<^sub>2 \<Longrightarrow>
@@ -830,14 +850,14 @@ proof -
     have d_2: "0 < a" apply (simp add:a_def)
       using assms fk_nonzero mult_pos_pos by blast
     have d_3: "integrable (measure_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))) (\<lambda>x. (f1 x i)\<^sup>2)"
-      using f1_var[OF d_1] by (simp add:has_variance_def) 
+      by (rule integrable_measure_pmf_finite[OF fin_omega_2])
     have "?lhs i \<le> prob_space.variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i)/a^2"
       using f1_exp[OF d_1]
       using prob_space.Chebyshev_inequality[OF prob_space_measure_pmf _ d_3 d_2, simplified]
       by (simp add:a_def[symmetric] has_bochner_integral_iff)
     also have "... \<le> 1/8" using d_2
       using f1_var[OF d_1] 
-      by (simp add:algebra_simps has_variance_def, simp add:a_def)
+      by (simp add:algebra_simps, simp add:a_def)
     finally show "?lhs i \<le> 1/8"
       by blast
   qed
