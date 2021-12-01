@@ -20,19 +20,26 @@ do
     shift
 done
 
+tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+
+mkdir $tmp_dir/src
+
 isabelle build \
   -D $THIS/thys \
   -o browser_info \
   -o document=pdf \
   -o document_variants="document:outline=/proof" \
+  -o document_output="$tmp_dir/src" \
+  -f \
   $OPTS \
   -v
 
 BROWSER_INFO=$(isabelle getenv -b ISABELLE_BROWSER_INFO)
+cp -r $BROWSER_INFO/Unsorted $tmp_dir/Unsorted
 
 if [ "$DEPLOY" = true ] ; then
   (
-    cd $BROWSER_INFO
+    cd $tmp_dir
     git init
     git add -A
     git commit -m "Push $(date -Ins)"
@@ -42,4 +49,5 @@ if [ "$DEPLOY" = true ] ; then
   )
 fi
 
+echo $tmp_dir
 echo $BROWSER_INFO
