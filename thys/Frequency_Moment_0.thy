@@ -490,9 +490,8 @@ theorem f0_alg_correct:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0 \<and> \<delta> < 1"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f0_result). \<bar>\<omega> - f0_value xs\<bar> \<ge> (\<delta> * f0_value xs)) \<le> of_rat \<epsilon>"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f0_result). \<bar>\<omega> - f0_value xs\<bar> > (\<delta> * f0_value xs)) \<le> of_rat \<epsilon>"
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -519,9 +518,6 @@ proof -
 
   have t_ge_0: "t > 0"
     using assms by (simp add:t_def)
-
-  have f0_ge_0: "f0_value xs \<ge> 1"
-    using assms(4) by (simp add: Suc_leI of_nat_ge_1_iff order_less_le f0_value_def)
 
   have r_bound: "4 * log 2 (1 / real_of_rat \<delta>) + 24 \<le> r"
     apply (simp add:r_def)                              
@@ -643,18 +639,6 @@ proof -
   have m_eq_f0_value: "real m = of_rat (f0_value xs)"
     by (simp add:m_def f0_value_def)
 
-  have m_ge_0: "real m > 0"
-    using m_def f0_ge_0 m_eq_f0_value by simp
-
-  have b_le_tpm :"b \<le> real t * real p / (real m * (1 - \<delta>'))"
-    by (simp add:b_def)
-  also have "... \<le> real t * real p / (real m * (1/4))"
-    apply (rule divide_left_mono)
-      apply (rule mult_left_mono)
-      using assms apply (simp add:\<delta>'_def)
-    using m_ge_0 \<delta>'_le_1 by (auto intro!:mult_pos_pos)
-  finally have b_le_tpm: "b \<le> 4 * real t * real p / real m"
-    by (simp add:algebra_simps)
 
   have fin_omega_1: "finite (set_pmf \<Omega>\<^sub>1)"
     apply (simp add:\<Omega>\<^sub>1_def)
@@ -750,10 +734,22 @@ proof -
     real m * (real_of_int a+1) / p" using exp_var_f by blast
 
   have b: "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. 
-    of_rat \<delta> * real_of_rat (f0_value xs) \<le> \<bar>g' (h \<omega>) - of_rat (f0_value xs)\<bar>) \<le> 1/3"
+    of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - of_rat (f0_value xs)\<bar>) \<le> 1/3"
   proof (cases "card (set xs) \<ge> t")
     case True
     hence t_le_m: "t \<le> card (set xs)" by simp
+    have m_ge_0: "real m > 0"
+      using m_def True t_ge_0 by simp
+  
+    have b_le_tpm :"b \<le> real t * real p / (real m * (1 - \<delta>'))"
+      by (simp add:b_def)
+    also have "... \<le> real t * real p / (real m * (1/4))"
+      apply (rule divide_left_mono)
+        apply (rule mult_left_mono)
+        using assms apply (simp add:\<delta>'_def)
+      using m_ge_0 \<delta>'_le_1 by (auto intro!:mult_pos_pos)
+    finally have b_le_tpm: "b \<le> 4 * real t * real p / real m"
+      by (simp add:algebra_simps)
 
     have a_ge_0: "a \<ge> 0" 
       apply (simp add:a_def)
@@ -866,11 +862,11 @@ proof -
         apply simp
        apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
        apply simp
-      using t_ge_0 a_ge_0 p_ge_0 f0_ge_0 m_eq_f0_value by auto
+      using t_ge_0 a_ge_0 p_ge_0 m_ge_0 m_eq_f0_value by auto
     also have "... \<le> 1/9"
-      apply (subst pos_divide_le_eq) using a_ge_0 p_ge_0 f0_ge_0 m_eq_f0_value apply force
+      apply (subst pos_divide_le_eq) using a_ge_0 p_ge_0 m_ge_0 m_eq_f0_value apply force
       apply simp
-      apply (subst real_sqrt_pow2) using a_ge_0 p_ge_0 f0_ge_0 m_eq_f0_value apply force
+      apply (subst real_sqrt_pow2) using a_ge_0 p_ge_0 m_ge_0 m_eq_f0_value apply force
       apply (rule var_f) using a_ge_0 apply linarith
       using a_le_p by simp
     finally have case_1: "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. f a \<omega> \<ge> t) \<le> 1/9"
@@ -965,13 +961,13 @@ proof -
           apply simp
          apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
          apply simp
-        using t_ge_0 b_ge_0 p_ge_0 f0_ge_0 m_eq_f0_value by auto
+        using t_ge_0 b_ge_0 p_ge_0 m_ge_0 m_eq_f0_value by auto
       also have "... \<le> 1/9"
         apply (subst pos_divide_le_eq) 
-        using b_ge_0 p_ge_0 f0_ge_0 m_eq_f0_value apply force
+        using b_ge_0 p_ge_0 m_ge_0 m_eq_f0_value apply force
         apply simp
         apply (subst real_sqrt_pow2)
-        using b_ge_0 p_ge_0 f0_ge_0 m_eq_f0_value apply force
+        using b_ge_0 p_ge_0 m_ge_0 m_eq_f0_value apply force
         apply (rule var_f) using b_ge_0 apply linarith
         using True by simp
       finally show ?thesis
@@ -1048,12 +1044,12 @@ proof -
       by simp
 
     have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1.
-        real_of_rat \<delta> * real_of_rat (f0_value xs) \<le> \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>) \<le> 
+        real_of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>) \<le> 
       \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. f a \<omega> \<ge> t \<or> f b \<omega> < t \<or> \<not>(has_no_collision \<omega>))"
     proof (rule prob_space.prob_mono[OF prob_space_measure_pmf in_events_pmf], rule ccontr)
       fix \<omega>
       assume "\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1)"
-      assume est: "real_of_rat \<delta> * real_of_rat (f0_value xs) \<le> \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>"
+      assume est: "real_of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>"
       assume "\<not>( t \<le> f a \<omega> \<or> f b \<omega> < t \<or> \<not> has_no_collision \<omega>)"
       hence lb: "f a \<omega> < t" and ub: "f b \<omega> \<ge> t" and no_col: "has_no_collision \<omega>" by simp+
 
@@ -1169,7 +1165,7 @@ proof -
         apply (rule mult_strict_right_mono)
          apply (simp add: \<delta>'_def algebra_simps)
         using assms apply simp
-        using r_le_\<delta> m_eq_f0_value f0_ge_0 b_ge_0 by simp
+        using r_le_\<delta> m_eq_f0_value m_ge_0 b_ge_0 by simp
       also have "... \<le> (1-\<delta>') * (real m * (real t * real p / (real m * (1-\<delta>'))))"
         apply (rule mult_left_mono)
         apply (rule mult_left_mono)
@@ -1198,14 +1194,14 @@ proof -
     finally show ?thesis by simp
   next
     case False
-    have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. real_of_rat \<delta> * real_of_rat (f0_value xs) \<le> \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>) \<le>
+    have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. real_of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>) \<le>
       \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<exists>x \<in> set xs. \<exists>y \<in> set xs. x \<noteq> y \<and> 
       truncate_down r (real (hash p x \<omega>)) \<le> real p \<and> 
       truncate_down r (real (hash p x \<omega>)) = truncate_down r (real (hash p y \<omega>)))" 
     proof (rule pmf_mono_1)
       fix \<omega>
       assume a:"\<omega> \<in> {\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1).
-              real_of_rat \<delta> * real_of_rat (f0_value xs) \<le> \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>}"
+              real_of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>}"
       assume b:"\<omega> \<in> set_pmf \<Omega>\<^sub>1" 
       have a_1: "card (set xs) < t" using False by auto
       have a_2:"card (h \<omega>) = card ((\<lambda>x. truncate_down r (real (hash p x \<omega>))) ` (set xs))"
@@ -1217,9 +1213,8 @@ proof -
         by (metis List.finite_set  a_1 a_2 card_image_le  order_le_less_trans)
       hence "g' (h \<omega>) = card (h \<omega>)" by (simp add:g'_def)
       hence "card (h \<omega>) \<noteq> real_of_rat (f0_value xs)"
-        using a f0_ge_0 assms(2) apply simp 
-        by (metis abs_zero cancel_comm_monoid_add_class.diff_cancel 
-            linorder_not_less m_eq_f0_value m_ge_0 zero_less_mult_iff zero_less_of_rat_iff)
+        using a assms(2) apply simp 
+        by (metis abs_zero cancel_comm_monoid_add_class.diff_cancel of_nat_less_0_iff pos_prod_lt zero_less_of_rat_iff)
       hence "card (h \<omega>) \<noteq> card (set xs)"
         using m_def m_eq_f0_value by linarith
       hence "\<not>inj_on (\<lambda>x. truncate_down r (real (hash p x \<omega>))) (set xs)"
@@ -1290,15 +1285,15 @@ proof -
     using card_eq[symmetric] card_gt_0_iff t_ge_0 apply (simp, force) 
     by (simp add:real_g_2)
  
-  have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<delta> * f0_value xs \<le> 
+  have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<delta> * f0_value xs < 
       \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar>) = 
-        \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. real_of_rat \<delta> * real_of_rat (f0_value xs) \<le> 
+        \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. real_of_rat \<delta> * real_of_rat (f0_value xs) < 
       \<bar>median (\<lambda>i. g' (h (\<omega> i))) s - real_of_rat (f0_value xs)\<bar>)"
     apply (rule arg_cong2[where f="measure"], simp)
     apply (rule Collect_cong, simp, subst real_g[symmetric])
     apply (subst of_rat_mult[symmetric], subst median_rat[OF s_ge_0, symmetric])
     apply (subst of_rat_diff[symmetric], simp)
-    using of_rat_less_eq by blast
+    using of_rat_less by blast
   also have "... \<le> real_of_rat \<epsilon>"
     apply (rule prob_space.median_bound_3, simp add:prob_space_measure_pmf, simp add:assms, simp add:assms)
     apply (subst \<Omega>\<^sub>0_def)
@@ -1310,7 +1305,7 @@ proof -
     apply (subst \<Omega>\<^sub>0_def)
     apply (subst prob_prod_pmf_slice, simp, simp)
     using b by (simp add:\<Omega>\<^sub>1_def)
-  finally have a:"\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<delta> * f0_value xs \<le> 
+  finally have a:"\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<delta> * f0_value xs < 
       \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar>) \<le> real_of_rat \<epsilon>"
     by blast
 

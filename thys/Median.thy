@@ -121,13 +121,12 @@ proof -
     by (metis b)
 qed
 
-
 lemma median_est:
   fixes \<delta> :: "real"
-  assumes "2*card {k. k < n \<and> abs (f k - \<mu>) < \<delta>} > n"
-  shows "abs (median f n - \<mu>) < \<delta>"
+  assumes "2*card {k. k < n \<and> abs (f k - \<mu>) \<le> \<delta>} > n"
+  shows "abs (median f n - \<mu>) \<le> \<delta>"
 proof -
-  have a:"{k. k < n \<and> abs (f k - \<mu>) < \<delta>} = {i. i < n \<and> \<bar>map f [0..<n] ! i - \<mu>\<bar> < \<delta>}"
+  have a:"{k. k < n \<and> abs (f k - \<mu>) \<le> \<delta>} = {i. i < n \<and> \<bar>map f [0..<n] ! i - \<mu>\<bar> \<le> \<delta>}"
     apply (rule order_antisym)
      apply (rule subsetI, simp)
     apply (rule subsetI, simp) 
@@ -135,7 +134,7 @@ proof -
 
   show ?thesis
     apply (simp add:median_def)
-    apply (rule mid_in_interval[where I="{x. abs (x-\<mu>) < \<delta>}" and xs="sort (map f [0..<n])", simplified])
+    apply (rule mid_in_interval[where I="{x. abs (x-\<mu>) \<le> \<delta>}" and xs="sort (map f [0..<n])", simplified])
      using assms apply (simp add:filter_sort comp_def length_filter_conv_card a)
     by (simp add:interval_def, auto)
 qed
@@ -154,18 +153,18 @@ lemma (in prob_space) median_bound_gen:
   assumes "\<epsilon> < 1"
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> - ln \<epsilon> / (2 * \<alpha>^2)"
-  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) \<ge> \<delta>) \<le> 1/2-\<alpha>" 
-  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<ge> \<delta>) \<le> \<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<le> ?C") 
+  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) > \<delta>) \<le> 1/2-\<alpha>" 
+  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) > \<delta>) \<le> \<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<le> ?C") 
 proof -
-  define E where "E = (\<lambda>i \<omega>. (if abs (X i \<omega> - \<mu>) \<ge> \<delta> then 1 else 0::real))"
+  define E where "E = (\<lambda>i \<omega>. (if abs (X i \<omega> - \<mu>) > \<delta> then 1 else 0::real))"
   have E_indep: "indep_vars (\<lambda>_. borel) E {0..<n}"
-    using indep_vars_compose[OF assms(4), where Y = "(\<lambda>i v. if abs (v - \<mu>) \<ge> \<delta> then 1 else 0::real)"] 
+    using indep_vars_compose[OF assms(4), where Y = "(\<lambda>i v. if abs (v - \<mu>) > \<delta> then 1 else 0::real)"] 
     by (simp add:comp_def E_def)
   have b:"Hoeffding_ineq M {0..<n} E (\<lambda>i. 0) (\<lambda>i. 1)" 
     apply (simp add:Hoeffding_ineq_def indep_interval_bounded_random_variables_def)
     apply (simp add:prob_space_axioms indep_interval_bounded_random_variables_axioms_def E_indep)
     by (simp add:E_def)
-  have "0 < - ln \<epsilon> / (2* \<alpha>^2)" 
+  have "0 < - ln \<epsilon> / (2 * \<alpha>^2)" 
     apply (rule divide_pos_pos)
     using assms(3) 
      apply (simp add: assms(2))
@@ -189,13 +188,13 @@ proof -
   have m1: "{\<omega> \<in> space M. ?lhs \<omega>} \<subseteq> ?A"
   proof (rule subsetI)
     fix x 
-    have diff: "{k. k < n \<and> \<bar>X k x - \<mu>\<bar> \<ge> \<delta>} = {0..< n} - {k. k < n \<and> \<bar>X k x - \<mu>\<bar> < \<delta>}"
+    have diff: "{k. k < n \<and> \<bar>X k x - \<mu>\<bar> > \<delta>} = {0..< n} - {k. k < n \<and> \<bar>X k x - \<mu>\<bar> \<le> \<delta>}"
       by (rule order_antisym, rule subsetI, simp, rule subsetI, simp, force)
-    assume a:"x \<in> {\<omega> \<in> space M. \<delta> \<le> \<bar>median (\<lambda>i. X i \<omega>) n - \<mu>\<bar>}"
-    hence "2 * card {k. k < n \<and> \<bar>X k x - \<mu>\<bar> < \<delta>} \<le> n"
+    assume a:"x \<in> {\<omega> \<in> space M. \<delta> < \<bar>median (\<lambda>i. X i \<omega>) n - \<mu>\<bar>}"
+    hence "2 * card {k. k < n \<and> \<bar>X k x - \<mu>\<bar> \<le> \<delta>} \<le> n"
       using median_est[where f="\<lambda>i. X i x" and n="n" and \<mu>="\<mu>" and \<delta>="\<delta>"]
       by (simp, fastforce)
-    hence "n \<le> 2 * card {k. k < n \<and> \<bar>X k x - \<mu>\<bar> \<ge> \<delta>}"
+    hence "n \<le> 2 * card {k. k < n \<and> \<bar>X k x - \<mu>\<bar> > \<delta>}"
       apply (simp add:diff)
       apply (subst card_Diff_subset, simp, rule subsetI, simp)
       by simp
@@ -203,7 +202,7 @@ proof -
       by (induction n, simp, simp add:set_Suc_split E_def) 
     finally have "(\<Sum>i = 0..<n. E i x) \<ge> n/2" by linarith
     moreover 
-    have "\<And>i \<omega>. i < n \<Longrightarrow> \<omega> \<in> space M \<Longrightarrow> E i \<omega> = indicat_real {\<omega>. abs (X i \<omega> - \<mu>) \<ge> \<delta>} \<omega>" 
+    have "\<And>i \<omega>. i < n \<Longrightarrow> \<omega> \<in> space M \<Longrightarrow> E i \<omega> = indicat_real {\<omega>. abs (X i \<omega> - \<mu>) > \<delta>} \<omega>" 
       by (simp add:E_def split:split_indicator)
     hence "\<And>i. i < n \<Longrightarrow> expectation (\<lambda>\<omega>. E i \<omega>) \<le> 1/2-\<alpha>"
       using assms(6) by (simp add:measure_inters cong:Bochner_Integration.integral_cong) 
@@ -227,12 +226,11 @@ qed
 lemma (in prob_space) median_bound_3:
   fixes \<mu> :: real
   fixes \<delta> :: real
-  assumes "\<epsilon> > 0"
-  assumes "\<epsilon> < 1"
+  assumes "0 < \<epsilon>" "\<epsilon> < 1"
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> -18 * ln \<epsilon>"
-  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) \<ge> \<delta>) \<le> 1/3" 
-  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<ge> \<delta>) \<le> \<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<le> ?C") 
+  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) > \<delta>) \<le> 1/3" 
+  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) > \<delta>) \<le> \<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<le> ?C") 
   apply (rule median_bound_gen[where \<alpha>="1/6"], simp, simp add:assms, simp add:assms, simp add:assms)
   using assms(4) apply (simp add:algebra_simps power2_eq_square) 
   using assms(5) by simp
@@ -278,6 +276,23 @@ proof -
     apply (subst nth_map[where f="real_of_rat"]) using assms 
     apply fastforce
     by simp
+qed
+
+lemma median_const:
+  assumes "k > 0"
+  shows "median (\<lambda>i \<in> {0..<k}. a) k = a"
+proof -
+  have b: "sorted (map (\<lambda>_. a) [0..<k])" 
+    by (subst sorted_wrt_map, simp)
+  have a: "sort (map (\<lambda>_. a) [0..<k]) = map (\<lambda>_. a) [0..<k]"
+    by (subst sorted_sort_id[OF b], simp)
+  have "median (\<lambda>i \<in> {0..<k}. a) k = median (\<lambda>_. a) k"
+    by (subst median_restrict[OF assms(1)], simp)
+  also have "... = a"
+    apply (simp add:median_def a)
+    apply (subst nth_map)
+    using assms by simp+
+  finally show ?thesis by simp
 qed
 
 end

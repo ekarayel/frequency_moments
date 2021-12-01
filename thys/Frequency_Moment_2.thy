@@ -349,9 +349,8 @@ theorem f2_alg_correct:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). \<bar>\<omega> - f2_value xs\<bar> \<ge> \<delta> * f2_value xs) \<le> of_rat \<epsilon>"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). \<bar>\<omega> - f2_value xs\<bar> > \<delta> * f2_value xs) \<le> of_rat \<epsilon>"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
@@ -402,16 +401,6 @@ proof -
 
   have s1_nonzero: "s\<^sub>1 > 0"  
     using assms by (simp add:s\<^sub>1_def)
-
-  have "rat_of_nat 1 \<le> rat_of_nat (card (set xs))"
-    apply (rule of_nat_mono)
-    using assms(4) card_0_eq[where A="set xs"] 
-    by (metis List.finite_set One_nat_def Suc_leI neq0_conv set_empty)
-  also have "... \<le> f2_value xs"
-    apply (simp add:f2_value_def)
-    apply (rule sum_mono[where K="set xs" and f="\<lambda>_.(1::rat)", simplified])
-    by (metis count_list_gr_1 of_nat_1 of_nat_power_le_of_nat_cancel_iff one_le_power)
-  finally have f2_value_nonzero: "f2_value xs > 0" by (simp)
 
   have split_f2_space: "\<And>x. x = (s\<^sub>1_from x, s\<^sub>2_from x, p_from x, h_from x, sketch_from x)"
     by (simp add:prod_eq_iff s\<^sub>1_from_def s\<^sub>2_from_def p_from_def h_from_def sketch_from_def)
@@ -511,13 +500,13 @@ proof -
     apply (simp add:s\<^sub>2_from_def s\<^sub>1_from_def p_from_def h_from_def sketch_from_def cong:restrict_cong)
     by (simp add:map_pmf_def[symmetric] f_def)
 
-  define g where "g = (\<lambda>\<omega>. real_of_rat (\<delta> * f2_value xs) \<le> \<bar>\<omega> - real_of_rat (f2_value xs)\<bar>)"
-  have e: "{\<omega>. \<delta> * f2_value xs \<le> \<bar>\<omega> - f2_value xs\<bar>} = {\<omega>. (g \<circ> real_of_rat) \<omega>}"
+  define g where "g = (\<lambda>\<omega>. real_of_rat (\<delta> * f2_value xs) < \<bar>\<omega> - real_of_rat (f2_value xs)\<bar>)"
+  have e: "{\<omega>. \<delta> * f2_value xs < \<bar>\<omega> - f2_value xs\<bar>} = {\<omega>. (g \<circ> real_of_rat) \<omega>}"
     apply (simp add:g_def)
     apply (rule order_antisym, rule subsetI, simp) 
-    apply (metis abs_of_rat of_rat_diff of_rat_less_eq)
+    apply (metis abs_of_rat of_rat_diff of_rat_less)
     apply (rule subsetI, simp)
-    by (metis abs_of_rat of_rat_diff of_rat_less_eq)
+    by (metis abs_of_rat of_rat_diff of_rat_less)
 
   have median_bound_2': "prob_space.indep_vars \<Omega>\<^sub>0 (\<lambda>_. borel) (\<lambda>i \<omega>. f2 \<omega> i) {0..<s\<^sub>2}"
     apply (subst \<Omega>\<^sub>0_def)
@@ -533,33 +522,56 @@ proof -
     apply (simp add:s\<^sub>2_def)
     using of_nat_ceiling by blast
 
+
   have median_bound_4: "\<And>i. i < s\<^sub>2 \<Longrightarrow>
-           \<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * f2_value xs) \<le> \<bar>f2 \<omega> i - real_of_rat (f2_value xs)\<bar>) \<le> 1/3"
-    (is "\<And>i. _ \<Longrightarrow> ?lhs i \<le> _")
+    \<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * f2_value xs) < \<bar>f2 \<omega> i - real_of_rat (f2_value xs)\<bar>) \<le> 1/3"
   proof -
     fix i
-    assume a: "i < s\<^sub>2"
-    define var where  "var = prob_space.variance \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i)"
-    have "real_of_rat (f2_value xs) = prob_space.expectation \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i)"
-      using f2_exp'' a by metis
-    moreover have "0 < real_of_rat (\<delta> * f2_value xs)"
-      using assms(2) f2_value_nonzero by simp
-    moreover have "integrable \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i^2)"
-      by (rule integrable_measure_pmf_finite[OF fin_omega_1])
-    moreover have "(\<lambda>\<omega>. f2 \<omega> i) \<in> borel_measurable \<Omega>\<^sub>0"
-      by (simp add:\<Omega>\<^sub>0_def)
-    ultimately have "?lhs i \<le> var / (real_of_rat (\<delta> * f2_value xs))\<^sup>2"
-      using prob_space.Chebyshev_inequality[where M="\<Omega>\<^sub>0" and a="real_of_rat (\<delta> * f2_value xs)"
-          and f="\<lambda>\<omega>. f2 \<omega> i",simplified] assms(2) prob_space_measure_pmf[where p="\<Omega>\<^sub>0"] f2_value_nonzero
-      by (simp add:var_def)
-    also  have "... \<le> 1/3" (is ?ths)
-      apply (subst pos_divide_le_eq )
-      using f2_value_nonzero assms(2) apply simp
-      apply (simp add:var_def)
-      using f2_var'' a by fastforce
-    finally show "?lhs i \<le> 1/3"
-      by blast
+    assume a:"i < s\<^sub>2"
+    show "\<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * f2_value xs) < \<bar>f2 \<omega> i - real_of_rat (f2_value xs)\<bar>) \<le> 1/3"
+    proof (cases "xs = []")
+      case True
+      then show ?thesis using a by (simp add:f2_def f2_value_def f3_def)
+    next
+      case False
+      have "rat_of_nat 1 \<le> rat_of_nat (card (set xs))"
+        apply (rule of_nat_mono)
+        using False card_0_eq[where A="set xs"] 
+        by (metis List.finite_set One_nat_def Suc_leI neq0_conv set_empty)
+      also have "... \<le> f2_value xs"
+        apply (simp add:f2_value_def)
+        apply (rule sum_mono[where K="set xs" and f="\<lambda>_.(1::rat)", simplified])
+        by (metis count_list_gr_1 of_nat_1 of_nat_power_le_of_nat_cancel_iff one_le_power)
+      finally have f2_value_nonzero: "f2_value xs > 0" by (simp)
+
+      define var where  "var = prob_space.variance \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i)"
+      have b_1: "real_of_rat (f2_value xs) = prob_space.expectation \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i)"
+        using f2_exp'' a by metis
+      have b_2: "0 < real_of_rat (\<delta> * f2_value xs)"
+        using assms(2) f2_value_nonzero by simp
+      have b_3: "integrable \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i^2)"
+        by (rule integrable_measure_pmf_finite[OF fin_omega_1])
+      have b_4: "(\<lambda>\<omega>. f2 \<omega> i) \<in> borel_measurable \<Omega>\<^sub>0"
+        by (simp add:\<Omega>\<^sub>0_def)
+      have "\<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * f2_value xs) < \<bar>f2 \<omega> i - real_of_rat (f2_value xs)\<bar>) \<le> 
+          \<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * f2_value xs) \<le> \<bar>f2 \<omega> i - real_of_rat (f2_value xs)\<bar>)"
+          apply (simp add:\<Omega>\<^sub>0_def)
+          apply (rule pmf_mono_1)
+        by simp 
+      also have "... \<le> var / (real_of_rat (\<delta> * f2_value xs))\<^sup>2"
+        using prob_space.Chebyshev_inequality[where M="\<Omega>\<^sub>0" and a="real_of_rat (\<delta> * f2_value xs)"
+            and f="\<lambda>\<omega>. f2 \<omega> i",simplified] assms(2) prob_space_measure_pmf[where p="\<Omega>\<^sub>0"] f2_value_nonzero
+          b_1 b_2 b_3 b_4 by (simp add:var_def)
+      also  have "... \<le> 1/3" (is ?ths)
+        apply (subst pos_divide_le_eq )
+        using f2_value_nonzero assms(2) apply simp
+        apply (simp add:var_def)
+        using f2_var'' a by fastforce
+      finally show ?thesis
+        by blast
+    qed
   qed
+
   show ?thesis
     apply (simp add: distr' e real_f f'_def g_def \<Omega>\<^sub>0_def[symmetric])
     apply (rule prob_space.median_bound_3[where M="\<Omega>\<^sub>0" and \<epsilon>="real_of_rat \<epsilon>" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])

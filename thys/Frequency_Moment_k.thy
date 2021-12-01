@@ -681,15 +681,21 @@ theorem fk_alg_sketch:
   apply (subst fk_alg_aux_4[OF assms(5), simplified], simp)
   by (subst fk_alg_aux_5[OF assms(5), simplified], simp)
 
+
 lemma fk_alg_correct:
   assumes "k \<ge> 1"
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> fk_result). abs \<bar>\<omega> - fk_value k xs\<bar> \<ge> (\<delta> * fk_value k xs)) \<le> real_of_rat \<epsilon>"
-proof -
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> fk_result). abs \<bar>\<omega> - fk_value k xs\<bar> > (\<delta> * fk_value k xs)) \<le> real_of_rat \<epsilon>"
+proof (cases "xs = []")
+  case True
+  have a: "nat \<lceil>- (18 * ln (real_of_rat \<epsilon>))\<rceil> > 0"  using assms by simp 
+  show ?thesis using True apply (simp add:fk_value_def sketch_def bind_return_pmf median_const[OF a])
+    using assms(2) by simp
+next
+  case False
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
 
@@ -707,10 +713,10 @@ proof -
   define f' :: "(nat \<times> nat \<Rightarrow> (nat \<times> nat)) \<Rightarrow> real"
     where "f' = (\<lambda>x. median (f1 x) s\<^sub>2)"
 
-  have "set xs \<noteq> {}" using assms by blast
+  have "set xs \<noteq> {}" using assms False by blast
   hence n_nonzero: "n > 0" using assms(4) by fastforce
 
-  have fk_nonzero: "fk_value k xs > 0" using fk_value_ge_0 assms by simp
+  have fk_nonzero: "fk_value k xs > 0" using fk_value_ge_0 assms False by simp
 
   have s1_nonzero: "s\<^sub>1 > 0"
     apply (simp add:s\<^sub>1_def)
@@ -728,7 +734,7 @@ proof -
   define \<Omega> where "\<Omega> = pmf_of_set {(u, v). v < count_list xs u}"
   have fin_omega: "finite (set_pmf \<Omega>)"
     apply (subst \<Omega>_def, subst set_pmf_of_set)
-    using assms(5) fin_space non_empty_space by auto
+    using assms(5) fin_space non_empty_space False by auto
   have fin_omega_2: "finite (set_pmf ((prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))))"
     apply (subst set_prod_pmf, simp)
     apply (rule finite_PiE, simp)
@@ -737,7 +743,7 @@ proof -
   have a:"sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list xs u}))"
     apply (subst sketch_def)
-    apply (subst fk_alg_sketch[OF assms(1) assms(2) assms(3) assms(4) assms(5)], simp)
+    apply (subst fk_alg_sketch[OF assms(1) assms(2) assms(3) assms(4) False], simp)
     by (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
 
   have "sketch \<bind> fk_result = sketch \<bind> (\<lambda>(x,y,z,u,v). fk_result (x,y,z,u,v))"
@@ -750,17 +756,17 @@ proof -
   finally have b: "sketch \<bind> fk_result = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>) \<bind> return_pmf \<circ> f"
     by blast
 
-  have c: "{y. real_of_rat (\<delta> * fk_value k xs) \<le> \<bar>f' y - real_of_rat (fk_value k xs)\<bar>} = 
-    {y. (\<delta> * fk_value k xs) \<le> \<bar>f y - (fk_value k xs)\<bar>}"
+  have c: "{y. real_of_rat (\<delta> * fk_value k xs) < \<bar>f' y - real_of_rat (fk_value k xs)\<bar>} = 
+    {y. (\<delta> * fk_value k xs) < \<bar>f y - (fk_value k xs)\<bar>}"
     apply (simp add:real_of_rat_f) 
-    by (metis abs_of_rat of_rat_diff of_rat_less_eq)
+    by (metis abs_of_rat of_rat_diff of_rat_less)
 
   have f2_exp: "\<And>i\<^sub>1 i\<^sub>2. i\<^sub>1 < s\<^sub>1 \<Longrightarrow> i\<^sub>2 < s\<^sub>2 \<Longrightarrow> 
     has_bochner_integral (measure_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))) (\<lambda>x. f2 x i\<^sub>1 i\<^sub>2)
             (real_of_rat (fk_value k xs))"
     apply (simp add:f2_def \<Omega>_def of_rat_mult  of_rat_sum of_rat_power)
     apply (rule has_bochner_integral_prod_pmf_sliceI, simp, simp)
-    by (rule fk_alg_core_exp, metis assms(5), metis assms(1))
+    by (rule fk_alg_core_exp, metis False, metis assms(1))
 
   have "3 * real k * real n powr (1 - 1 / real k) = (real_of_rat \<delta>)\<^sup>2 * (3 * real k * real n powr (1 - 1 / real k) / (real_of_rat \<delta>)\<^sup>2)"
     using assms by simp
@@ -791,7 +797,7 @@ proof -
     apply (rule order_trans [where y="(real_of_rat (fk_value k xs))\<^sup>2 *
                  real k * real n powr (1 - 1 / real k)"])
     apply (simp add: \<Omega>_def)
-    using assms fk_alg_core_var[where k="k"] apply simp
+    using assms False fk_alg_core_var[where k="k"] apply simp
     using f2_var_1 by blast
 
   have f1_exp_1: "(real_of_rat (fk_value k xs)) = (\<Sum>i \<in> {0..<s\<^sub>1}. (real_of_rat (fk_value k xs))/real s\<^sub>1)"
@@ -840,9 +846,8 @@ proof -
     finally show "?rhs i" by simp
   qed
 
-  have d: " \<And>i. i < s\<^sub>2 \<Longrightarrow>
-    measure_pmf.prob (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))
-      {y. real_of_rat (\<delta> * fk_value k xs) \<le> \<bar>f1 y i - real_of_rat (fk_value k xs)\<bar>} \<le> 1/3" (is "\<And>i. _ \<Longrightarrow> ?lhs i \<le> _")
+  have d: " \<And>i. i < s\<^sub>2 \<Longrightarrow> measure_pmf.prob (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) 
+  {y. real_of_rat (\<delta> * fk_value k xs) < \<bar>f1 y i - real_of_rat (fk_value k xs)\<bar>} \<le> 1/3" (is "\<And>i. _ \<Longrightarrow> ?lhs i \<le> _")
   proof -
     fix i
     assume d_1:"i < s\<^sub>2"
@@ -851,7 +856,10 @@ proof -
       using assms fk_nonzero mult_pos_pos by blast
     have d_3: "integrable (measure_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))) (\<lambda>x. (f1 x i)\<^sup>2)"
       by (rule integrable_measure_pmf_finite[OF fin_omega_2])
-    have "?lhs i \<le> prob_space.variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i)/a^2"
+    have "?lhs i \<le> measure_pmf.prob (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))
+      {y. real_of_rat (\<delta> * fk_value k xs) \<le> \<bar>f1 y i - real_of_rat (fk_value k xs)\<bar>}"
+      by (rule pmf_mono_1, simp)
+    also have "... \<le> prob_space.variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i)/a^2"
       using f1_exp[OF d_1]
       using prob_space.Chebyshev_inequality[OF prob_space_measure_pmf _ d_3 d_2, simplified]
       by (simp add:a_def[symmetric] has_bochner_integral_iff)
