@@ -38,8 +38,8 @@ lemma "is_encoding encode_state"
 fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
   "f2_init \<delta> \<epsilon> n =
     do {
-      let s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>;
-      let s\<^sub>2 = nat \<lceil>-32/9 * ln (real_of_rat \<epsilon>)\<rceil>;
+      let s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>;
+      let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>;
       let p = find_prime_above (max n 3);
       h \<leftarrow> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4));
       return_pmf (s\<^sub>1, s\<^sub>2, p, h, (\<lambda>_ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0 :: int)))
@@ -311,8 +311,8 @@ lemma f2_alg_sketch:
   fixes xs :: "nat list"
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
-  defines "s\<^sub>1 \<equiv> nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
-  defines "s\<^sub>2 \<equiv> nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
+  defines "s\<^sub>1 \<equiv> nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
+  defines "s\<^sub>2 \<equiv> nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   defines "p \<equiv> find_prime_above (max n 3)"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
   defines "\<Omega> \<equiv> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))" 
@@ -353,8 +353,8 @@ theorem f2_alg_correct:
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
   shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). \<bar>\<omega> - f2_value xs\<bar> \<ge> \<delta> * f2_value xs) \<le> of_rat \<epsilon>"
 proof -
-  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
-  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
+  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
+  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define p where "p = find_prime_above (max n 3)"
   define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = 
     prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))"
@@ -430,7 +430,7 @@ proof -
 
   define f2 where "f2 = (\<lambda>x. \<lambda>i\<in>{0..<s\<^sub>2}. (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. f3 x i\<^sub>1 i) / (((real p)\<^sup>2 - 1) * real s\<^sub>1))"
   
-  have f2_var'': "\<And>i. i < s\<^sub>2 \<Longrightarrow> prob_space.variance \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i) \<le> (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / 8"
+  have f2_var'': "\<And>i. i < s\<^sub>2 \<Longrightarrow> prob_space.variance \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i) \<le> (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / 3"
   proof -
     fix i
     assume a:"i < s\<^sub>2"
@@ -460,7 +460,7 @@ proof -
       apply (simp)
       apply (subst frac_eq_eq, simp add:s1_nonzero, metis p_sq_ne_1, simp add:s1_nonzero)
       by (simp add:power2_eq_square)
-    also have "... \<le> 2 * (real_of_rat (f2_value xs)^2) / (16 / (real_of_rat \<delta>)\<^sup>2)"
+    also have "... \<le> 2 * (real_of_rat (f2_value xs)^2) / (6 / (real_of_rat \<delta>)\<^sup>2)"
       apply (rule divide_left_mono)
       apply (simp add:s\<^sub>1_def) 
         apply (metis (mono_tags, opaque_lifting) of_rat_ceiling of_rat_divide of_rat_numeral_eq of_rat_power real_nat_ceiling_ge)
@@ -468,9 +468,9 @@ proof -
       apply (rule mult_pos_pos)
       using s1_nonzero apply simp
       using assms(2) by simp
-    also have "... = (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / 8"
+    also have "... = (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / 3"
       by (simp add:of_rat_mult algebra_simps)
-    finally show "prob_space.variance \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i) \<le> (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / 8"
+    finally show "prob_space.variance \<Omega>\<^sub>0 (\<lambda>\<omega>. f2 \<omega> i) \<le> (real_of_rat (\<delta> * f2_value xs))\<^sup>2 / 3"
       by simp
   qed
 
@@ -529,12 +529,12 @@ proof -
      apply simp
     by simp
 
-  have median_bound_3: " - (32 * ln (real_of_rat \<epsilon>) / 9) \<le> real s\<^sub>2"
+  have median_bound_3: " - (18 * ln (real_of_rat \<epsilon>)) \<le> real s\<^sub>2"
     apply (simp add:s\<^sub>2_def)
     using of_nat_ceiling by blast
 
   have median_bound_4: "\<And>i. i < s\<^sub>2 \<Longrightarrow>
-           \<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * f2_value xs) \<le> \<bar>f2 \<omega> i - real_of_rat (f2_value xs)\<bar>) \<le> 1/8"
+           \<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * f2_value xs) \<le> \<bar>f2 \<omega> i - real_of_rat (f2_value xs)\<bar>) \<le> 1/3"
     (is "\<And>i. _ \<Longrightarrow> ?lhs i \<le> _")
   proof -
     fix i
@@ -552,17 +552,17 @@ proof -
       using prob_space.Chebyshev_inequality[where M="\<Omega>\<^sub>0" and a="real_of_rat (\<delta> * f2_value xs)"
           and f="\<lambda>\<omega>. f2 \<omega> i",simplified] assms(2) prob_space_measure_pmf[where p="\<Omega>\<^sub>0"] f2_value_nonzero
       by (simp add:var_def)
-    also  have "... \<le> 1/8" (is ?ths)
+    also  have "... \<le> 1/3" (is ?ths)
       apply (subst pos_divide_le_eq )
       using f2_value_nonzero assms(2) apply simp
       apply (simp add:var_def)
       using f2_var'' a by fastforce
-    finally show "?lhs i \<le> 1/8"
+    finally show "?lhs i \<le> 1/3"
       by blast
   qed
   show ?thesis
     apply (simp add: distr' e real_f f'_def g_def \<Omega>\<^sub>0_def[symmetric])
-    apply (rule prob_space.median_bound[where M="\<Omega>\<^sub>0" and \<epsilon>="real_of_rat \<epsilon>" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])
+    apply (rule prob_space.median_bound_3[where M="\<Omega>\<^sub>0" and \<epsilon>="real_of_rat \<epsilon>" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])
          apply (metis prob_space_measure_pmf)
         apply (metis assms(1))
        apply (metis assms(1))
@@ -573,8 +573,8 @@ qed
 
 fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
   "f2_space_usage (n, m, \<epsilon>, \<delta>) = (
-    let s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2 \<rceil> in
-    let s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil> in 
+    let s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2 \<rceil> in
+    let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil> in 
     5 +
     2 * log 2 (1 + s\<^sub>1) +
     2 * log 2 (1 + s\<^sub>2) +
@@ -588,8 +588,8 @@ theorem f2_space_usage:
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
   shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f2_space_usage (n, length xs, \<epsilon>, \<delta>)"
 proof -
-  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
-  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
+  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
+  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
   define p where "p = find_prime_above (max n 3)"
 
   have find_prime_above_3: "find_prime_above 3 = 3" 
@@ -698,7 +698,7 @@ theorem f2_asympotic_space_complexity:
   (ln (1 / of_rat \<epsilon>)) / (of_rat \<delta>)\<^sup>2 * (ln (real n) + ln (real m)))"
   (is "?lhs \<in> O[?evt](?rhs)")
 proof -
-  define c where "c=(5865::real)"
+  define c where "c=(9177::real)"
 
   have b:"\<And>n m \<epsilon> \<delta>.  n \<ge> 4  \<Longrightarrow> m \<ge> 1 \<Longrightarrow> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<Longrightarrow> (0 < \<delta> \<and> \<delta> < 1) \<Longrightarrow>
      abs (f2_space_usage  (n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, m, \<epsilon>, \<delta>))"
@@ -708,10 +708,10 @@ proof -
     assume m_ge_1: "m \<ge> (1::nat)"
     assume eps_bound: "(0::rat) < \<epsilon> \<and> \<epsilon> < 1/3"
     assume delta_bound: "(0::rat) < \<delta> \<and> \<delta> < 1"
-    define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>16 / \<delta>\<^sup>2\<rceil>"
-    define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32* ln (real_of_rat \<epsilon>) /9)\<rceil>"
-    define s\<^sub>1' where "s\<^sub>1' = 17/ (real_of_rat \<delta>)\<^sup>2"
-    define s\<^sub>2' where "s\<^sub>2' = 5 * ln (1 / real_of_rat  \<epsilon>)"
+    define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
+    define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
+    define s\<^sub>1' where "s\<^sub>1' = 7/ (real_of_rat \<delta>)\<^sup>2"
+    define s\<^sub>2' where "s\<^sub>2' = 19 * ln (1 / real_of_rat  \<epsilon>)"
 
     have n_ge_1: "n \<ge> 1" using n_ge_4 by simp
     have \<epsilon>_inv_ge_1: "1/ real_of_rat \<epsilon> \<ge> 1" using eps_bound by simp
@@ -732,12 +732,12 @@ proof -
     finally have \<epsilon>_le_1_over_e: "real_of_rat \<epsilon> * exp 1 \<le> 1"
       by blast
 
-    have "s\<^sub>1 \<le> 16/ (real_of_rat \<delta>)\<^sup>2 + 1"
+    have "s\<^sub>1 \<le> 6/ (real_of_rat \<delta>)\<^sup>2 + 1"
       apply (simp add:s\<^sub>1_def, subst of_nat_nat, simp)
        apply (rule order_less_le_trans[where y="0"], simp)
       using delta_bound apply simp
       by (metis (no_types, opaque_lifting) of_int_ceiling_le_add_one of_rat_ceiling of_rat_divide of_rat_numeral_eq of_rat_power)
-    also have "... \<le> (16+1)/(real_of_rat \<delta>)\<^sup>2"
+    also have "... \<le> (6+1)/(real_of_rat \<delta>)\<^sup>2"
       apply (subst add_divide_distrib)
       apply (rule add_mono, simp)
       using delta_bound 
@@ -747,7 +747,7 @@ proof -
     finally have s1_le_s1': "s\<^sub>1 \<le> s\<^sub>1'"
       by blast
 
-    have "s\<^sub>2 = real_of_int \<lceil>(32 * ln (1 / real_of_rat \<epsilon>) / 9)\<rceil> "
+    have "s\<^sub>2 = real_of_int \<lceil>(18 * ln (1 / real_of_rat \<epsilon>))\<rceil> "
       apply (simp add:s\<^sub>2_def, subst of_nat_nat, simp)
        apply (rule order_less_le_trans[where y="0"], simp)
       using  eps_bound apply simp
@@ -755,9 +755,9 @@ proof -
       apply simp
       apply (rule arg_cong[where f="\<lambda>x. \<lceil>x\<rceil>"])
       using eps_bound by (simp add: ln_div)
-    also have "... \<le>  (32 * ln (1 / real_of_rat  \<epsilon>)/ 9) + 1"
+    also have "... \<le> (18 * ln (1 / real_of_rat  \<epsilon>)) + 1"
       by (simp add:s\<^sub>2'_def)
-    also have  "... \<le> (4+1) * ln (1 / real_of_rat \<epsilon>)"
+    also have  "... \<le> (18+1) * ln (1 / real_of_rat \<epsilon>)"
       apply (subst distrib_right)
       apply (rule add_mono)
       using eps_bound apply simp

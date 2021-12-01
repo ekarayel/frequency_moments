@@ -10,7 +10,7 @@ fun median_list where
 definition median where
   "median f n = median_list (map f [0..<n])"
 
-definition interval where
+definition interval :: "('a :: linorder) set \<Rightarrow> bool" where
   "interval I = (\<forall>x y z. x \<in> I \<longrightarrow> z \<in> I \<longrightarrow> x \<le> y \<longrightarrow> y \<le> z \<longrightarrow> y \<in> I)"
 
 lemma interval_rule:
@@ -30,7 +30,7 @@ and a consecutive subsequence must contain the median if it is longer than
 half the length of the list.\<close>
 
 lemma sorted_int:
-  assumes "interval (I :: real set)"
+  assumes "interval I"
   assumes "sorted xs"
   assumes "k < length xs" "i \<le> j" "j \<le> k "
   assumes "xs ! i \<in> I" "xs ! k \<in> I"
@@ -38,9 +38,10 @@ lemma sorted_int:
   apply (rule interval_rule[where a="xs ! i" and b="xs ! k"])
   using assms by (simp add: sorted_nth_mono)+
 
+
 lemma mid_in_interval:
   assumes "2*length (filter (\<lambda>x. x \<in> I) xs) > length xs"
-  assumes "interval (I :: real set)"
+  assumes "interval I"
   assumes "sorted xs"
   shows "xs ! (length xs div 2) \<in> I"
 proof -
@@ -93,6 +94,33 @@ proof -
     then show ?thesis using card_J_min by linarith
   qed
 qed
+
+lemma median_est':
+  assumes "interval I"
+  assumes "card {k. k < 2*n+1 \<and> f k \<in> I} \<ge> n+1"
+  shows "median f (2*n+1) \<in> I"
+proof -
+  define m where "m=2*n + 1"
+  have a: "{i. i < m \<and> map f [0..<m] ! i \<in> I} = {i. i < m \<and> f i \<in> I}"
+    apply (rule order_antisym)
+     apply (rule subsetI, simp)
+     apply (metis nth_map_upt add_0 diff_zero)
+    by (rule subsetI, simp) 
+
+  have "m < 2*(n+1)"
+    by (simp add:m_def)
+  also have "... \<le> 2 * card {i. i < m \<and> f i \<in> I}"
+    apply (rule mult_left_mono)
+    using assms(2) by (simp add:m_def)+
+  finally have b:"m < 2 * card {i. i < m \<and> f i \<in> I}" by simp
+
+  show ?thesis
+    apply (subst m_def[symmetric], simp add:median_def)
+    apply (rule mid_in_interval[OF _ assms(1), where xs="sort (map f [0..<m])", simplified])
+    apply (simp add:filter_sort comp_def length_filter_conv_card a)
+    by (metis b)
+qed
+
 
 lemma median_est:
   fixes \<delta> :: "real"
@@ -195,19 +223,6 @@ proof -
   show ?thesis
     using finite_measure_mono[OF m1 m2] d by linarith
 qed
-
-lemma (in prob_space) median_bound:
-  fixes \<mu> :: real
-  fixes \<delta> :: real
-  assumes "\<epsilon> > 0"
-  assumes "\<epsilon> < 1"
-  assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
-  assumes "n \<ge> -32/9 * ln \<epsilon>"
-  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) \<ge> \<delta>) \<le> 1/8" 
-  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<ge> \<delta>) \<le> \<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<le> ?C") 
-  apply (rule median_bound_gen[where \<alpha>="3/8"], simp, simp add:assms, simp add:assms, simp add:assms)
-  using assms(4) apply (simp add:algebra_simps power2_eq_square) 
-  using assms(5) by simp
 
 lemma (in prob_space) median_bound_3:
   fixes \<mu> :: real

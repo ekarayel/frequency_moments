@@ -12,8 +12,8 @@ type_synonym fk_space = "nat \<times> nat \<times> nat \<times> nat \<times> (na
 fun fk_init :: "nat \<Rightarrow> rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> fk_space pmf" where
   "fk_init k \<delta> \<epsilon> n =
     do {
-      let s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>;
-      let s\<^sub>2 = nat \<lceil>-32/9 * ln (real_of_rat \<epsilon>)\<rceil>;
+      let s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>;
+      let s\<^sub>2 = nat \<lceil>-18 * ln (real_of_rat \<epsilon>)\<rceil>;
       return_pmf (s\<^sub>1, s\<^sub>2, k, 0, (\<lambda>_. undefined))
     }"
 
@@ -323,8 +323,8 @@ lemma fk_alg_aux_1:
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
-  defines "s\<^sub>1 \<equiv> nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  defines "s\<^sub>2 \<equiv> nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil>"
+  defines "s\<^sub>1 \<equiv> nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
+  defines "s\<^sub>2 \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
   shows "sketch = 
     map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
     (snd (fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update' x s\<^sub>1 s\<^sub>2 c)) xs (0, return_pmf (\<lambda>_. undefined))))"
@@ -669,8 +669,8 @@ theorem fk_alg_sketch:
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
-  defines "s\<^sub>1 \<equiv> nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  defines "s\<^sub>2 \<equiv> nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil>"
+  defines "s\<^sub>1 \<equiv> nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
+  defines "s\<^sub>2 \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
   shows "sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list xs u}))" 
   apply (simp add:sketch_def)
@@ -690,8 +690,8 @@ lemma fk_alg_correct:
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
   shows "\<P>(\<omega> in measure_pmf (sketch \<bind> fk_result). abs \<bar>\<omega> - fk_value k xs\<bar> \<ge> (\<delta> * fk_value k xs)) \<le> real_of_rat \<epsilon>"
 proof -
-  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil>"
+  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
+  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
 
   define f :: "(nat \<times> nat \<Rightarrow> (nat \<times> nat)) \<Rightarrow> rat"
     where "f = (\<lambda>x. median
@@ -762,7 +762,7 @@ proof -
     apply (rule has_bochner_integral_prod_pmf_sliceI, simp, simp)
     by (rule fk_alg_core_exp, metis assms(5), metis assms(1))
 
-  have "8 * real k * real n powr (1 - 1 / real k) = (real_of_rat \<delta>)\<^sup>2 * (8 * real k * real n powr (1 - 1 / real k) / (real_of_rat \<delta>)\<^sup>2)"
+  have "3 * real k * real n powr (1 - 1 / real k) = (real_of_rat \<delta>)\<^sup>2 * (3 * real k * real n powr (1 - 1 / real k) / (real_of_rat \<delta>)\<^sup>2)"
     using assms by simp
   also have "... \<le>  (real_of_rat \<delta>)\<^sup>2 * (real s\<^sub>1)"
     apply (rule mult_mono, simp)
@@ -770,22 +770,22 @@ proof -
       apply (meson of_nat_ceiling)
     using assms apply simp
     by simp
-  finally have f2_var_2: "8 * real k * real n powr (1 - 1 / real k) \<le> (real_of_rat \<delta>)\<^sup>2 * (real s\<^sub>1)"
+  finally have f2_var_2: "3 * real k * real n powr (1 - 1 / real k) \<le> (real_of_rat \<delta>)\<^sup>2 * (real s\<^sub>1)"
     by blast
   have "(real_of_rat (fk_value k xs))\<^sup>2 * real k * real n powr (1 - 1 / real k) =
     (real_of_rat (fk_value k xs))\<^sup>2 * (real k * real n powr (1 - 1 / real k))"
     by (simp add:ac_simps)
-  also have "... \<le> (real_of_rat (fk_value k xs * \<delta>))\<^sup>2 * (real s\<^sub>1 / 8)"
+  also have "... \<le> (real_of_rat (fk_value k xs * \<delta>))\<^sup>2 * (real s\<^sub>1 / 3)"
     apply (subst of_rat_mult, subst power_mult_distrib) 
-    apply (subst mult.assoc[where c="real s\<^sub>1 / 8"])
-    apply (rule mult_mono, simp) using f2_var_2
+    apply (subst mult.assoc[where c="real s\<^sub>1 / 3"])
+    apply (rule mult_mono, simp) using f2_var_2 
     by (simp+)
-  finally have f2_var_1: "(real_of_rat (fk_value k xs))\<^sup>2 * real k * real n powr (1 - 1 / real k) \<le> (real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 8"
+  finally have f2_var_1: "(real_of_rat (fk_value k xs))\<^sup>2 * real k * real n powr (1 - 1 / real k) \<le> (real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 3"
     by (simp add: mult.commute)
   
   have f2_var: "\<And>i\<^sub>1 i\<^sub>2. i\<^sub>1 < s\<^sub>1 \<Longrightarrow> i\<^sub>2 < s\<^sub>2 \<Longrightarrow>
        prob_space.variance (measure_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))) (\<lambda>\<omega>. f2 \<omega> i\<^sub>1 i\<^sub>2)
-           \<le> (real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 8" 
+           \<le> (real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 3" 
     apply (simp only: f2_def)
     apply (subst variance_prod_pmf_slice, simp, simp, rule integrable_measure_pmf_finite[OF fin_omega])
     apply (rule order_trans [where y="(real_of_rat (fk_value k xs))\<^sup>2 *
@@ -807,7 +807,7 @@ proof -
     by (simp add: f2_exp)
 
   have f1_var: "\<And>i. i < s\<^sub>2 \<Longrightarrow> 
-      prob_space.variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i)  \<le> real_of_rat (\<delta> * fk_value k xs)^2/8" (is "\<And>i. _ \<Longrightarrow> ?rhs i")
+      prob_space.variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i)  \<le> real_of_rat (\<delta> * fk_value k xs)^2/3" (is "\<And>i. _ \<Longrightarrow> ?rhs i")
   proof -
     fix i
     assume f1_var_1:"i < s\<^sub>2" 
@@ -828,21 +828,21 @@ proof -
       apply (rule sum.cong, simp)
       apply (rule measure_pmf.variance_divide)
       by (rule integrable_measure_pmf_finite[OF fin_omega_2])
-    also have "... \<le> (\<Sum>j = 0..<s\<^sub>1. ((real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 8) / (real s\<^sub>1^2))"
+    also have "... \<le> (\<Sum>j = 0..<s\<^sub>1. ((real_of_rat (\<delta> * fk_value k xs))\<^sup>2 * real s\<^sub>1 / 3) / (real s\<^sub>1^2))"
       apply (rule sum_mono)
-      apply (rule divide_right_mono)
+      apply (rule divide_right_mono) 
        apply (rule f2_var[OF _ f1_var_1], simp)
       by simp
-    also have "... = real_of_rat (\<delta> * fk_value k xs)^2/8"
+    also have "... = real_of_rat (\<delta> * fk_value k xs)^2/3"
       apply simp
       apply (subst nonzero_divide_eq_eq, simp add:s1_nonzero)
-      by (simp add:power2_eq_square)
+      by (simp add:power2_eq_square) 
     finally show "?rhs i" by simp
   qed
 
   have d: " \<And>i. i < s\<^sub>2 \<Longrightarrow>
     measure_pmf.prob (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))
-      {y. real_of_rat (\<delta> * fk_value k xs) \<le> \<bar>f1 y i - real_of_rat (fk_value k xs)\<bar>} \<le> 1/8" (is "\<And>i. _ \<Longrightarrow> ?lhs i \<le> _")
+      {y. real_of_rat (\<delta> * fk_value k xs) \<le> \<bar>f1 y i - real_of_rat (fk_value k xs)\<bar>} \<le> 1/3" (is "\<And>i. _ \<Longrightarrow> ?lhs i \<le> _")
   proof -
     fix i
     assume d_1:"i < s\<^sub>2"
@@ -855,10 +855,10 @@ proof -
       using f1_exp[OF d_1]
       using prob_space.Chebyshev_inequality[OF prob_space_measure_pmf _ d_3 d_2, simplified]
       by (simp add:a_def[symmetric] has_bochner_integral_iff)
-    also have "... \<le> 1/8" using d_2
+    also have "... \<le> 1/3" using d_2
       using f1_var[OF d_1] 
       by (simp add:algebra_simps, simp add:a_def)
-    finally show "?lhs i \<le> 1/8"
+    finally show "?lhs i \<le> 1/3"
       by blast
   qed
 
@@ -866,7 +866,7 @@ proof -
     apply (simp add: b comp_def map_pmf_def[symmetric])
     apply (subst c[symmetric])
     apply (simp add:f'_def)
-    apply (rule prob_space.median_bound[where X="\<lambda>i \<omega>. f1 \<omega> i" and M="(prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))", simplified])
+    apply (rule prob_space.median_bound_3[where X="\<lambda>i \<omega>. f1 \<omega> i" and M="(prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))", simplified])
          apply (simp add:prob_space_measure_pmf)
         using assms(2) apply simp
        using assms(2) apply simp
@@ -885,8 +885,8 @@ qed
 
 fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
   "fk_space_usage (k, n, m, \<epsilon>, \<delta>) = (
-    let s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k) / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
-    let s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil> in 
+    let s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k) / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
+    let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil> in 
     5 +
     2 * log 2 (1 + s\<^sub>1) +
     2 * log 2 (1 + s\<^sub>2) +
@@ -903,8 +903,8 @@ theorem fk_space_usage:
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
   shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> fk_space_usage (k, n, length xs, \<epsilon>, \<delta>)" (is "AE \<omega> in sketch. (_  \<le> ?rhs)")
 proof -
-  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil>"
+  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
+  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
 
   have a:"sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x))
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list xs u}))"
@@ -969,7 +969,7 @@ lemma fk_asympotic_space_complexity:
   real k*(real n) powr (1-1/ real k) / (of_rat \<delta>)\<^sup>2 * (ln (1 / of_rat \<epsilon>)) * (ln (real n) + ln (real m)))"
   (is "?lhs \<in> O[?evt](?rhs)")
 proof -
-  define c where "c=(270::real)"
+  define c where "c=(456::real)"
 
   have b:"\<And>k n m \<epsilon> \<delta>. k \<ge> 1 \<Longrightarrow> n \<ge> 729  \<Longrightarrow> m \<ge> 1 \<Longrightarrow> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<Longrightarrow> (0 < \<delta> \<and> \<delta> < 1) \<Longrightarrow>
      abs (fk_space_usage  (k, n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (k, n, m, \<epsilon>, \<delta>))"
@@ -980,10 +980,10 @@ proof -
     assume m_ge_1: "m \<ge> (1::nat)"
     assume eps_bound: "(0::rat) < \<epsilon> \<and> \<epsilon> < 1/3"
     assume delta_bound: "(0::rat) < \<delta> \<and> \<delta> < 1"
-    define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-    define s\<^sub>1' where "s\<^sub>1' = 9*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2"
-    define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(32 * ln (real_of_rat \<epsilon>)/ 9)\<rceil>"
-    define s\<^sub>2' where "s\<^sub>2' = 5 * ln (1 / real_of_rat  \<epsilon>)"
+    define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
+    define s\<^sub>1' where "s\<^sub>1' = 4*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2"
+    define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
+    define s\<^sub>2' where "s\<^sub>2' = 19 * ln (1 / real_of_rat \<epsilon>)"
 
     have "exp(16/3) \<le> exp (6::real)" 
       by (subst exp_le_cancel_iff, simp)
@@ -1023,14 +1023,14 @@ proof -
     finally have \<epsilon>_le_1_over_e: "real_of_rat \<epsilon> * exp 1 \<le> 1"
       by blast
 
-    have "s\<^sub>1 \<le> 8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2 + 1"
+    have "s\<^sub>1 \<le> 3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2 + 1"
       apply (simp add:s\<^sub>1_def s\<^sub>1'_def, subst of_nat_nat, simp)
        apply (rule order_less_le_trans[where y="0"], simp)
        apply (rule divide_nonneg_nonneg)
         apply (rule mult_nonneg_nonneg)
          apply (rule mult_nonneg_nonneg)
       by (simp add:k_ge_0)+
-    also have "... \<le> (8+1)*(real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2)"
+    also have "... \<le> (3+1)*(real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2)"
       apply (subst distrib_right)
       apply (rule add_mono, simp, simp)
       apply (subst pos_le_divide_eq) using delta_bound apply simp
@@ -1047,7 +1047,7 @@ proof -
     finally have s1_le_s1': "s\<^sub>1 \<le> s\<^sub>1'"
       by blast
 
-    have "real k \<le> 8*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2"
+    have "real k \<le> 3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2"
       apply (subst pos_le_divide_eq)
       using delta_bound apply simp
       apply (rule mult_mono, simp)
@@ -1060,7 +1060,7 @@ proof -
       using of_nat_ceiling by blast
     finally have k_le_s1: "real k \<le> real s\<^sub>1" by blast
 
-    have "s\<^sub>2 = real_of_int \<lceil>(32 * ln (1 / real_of_rat \<epsilon>) / 9)\<rceil> "
+    have "s\<^sub>2 = real_of_int \<lceil>(18 * ln (1 / real_of_rat \<epsilon>))\<rceil> "
       apply (simp add:s\<^sub>2_def, subst of_nat_nat, simp)
        apply (rule order_less_le_trans[where y="0"], simp)
       using  eps_bound apply simp
@@ -1068,9 +1068,9 @@ proof -
       apply simp
       apply (rule arg_cong[where f="\<lambda>x. \<lceil>x\<rceil>"])
       using eps_bound by (simp add: ln_div)
-    also have "... \<le>  (32 * ln (1 / real_of_rat  \<epsilon>)/ 9) + 1"
+    also have "... \<le>  (18 * ln (1 / real_of_rat  \<epsilon>)) + 1"
       by (simp add:s\<^sub>2'_def)
-    also have  "... \<le> (4+1) * ln (1 / real_of_rat \<epsilon>)"
+    also have  "... \<le> (18+1) * ln (1 / real_of_rat \<epsilon>)"
       apply (subst distrib_right)
       apply (rule add_mono)
       using eps_bound apply simp
