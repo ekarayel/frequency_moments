@@ -6,6 +6,13 @@ theory UniversalHashFamily
   "HOL-Probability.Independent_Family" Probability_Ext "HOL-Probability.Distributions" Prod_PMF
 begin
 
+definition k_universal where
+  "k_universal k H f U V = (
+    (\<forall>x \<in> U. \<forall>h \<in> H. f h x \<in> V) \<and> finite V \<and> V \<noteq> {} \<and>
+    (\<forall>x \<in> U. \<forall>v \<in> V. \<P>(h in pmf_of_set H. f h x = v) = 1 / real (card V)) \<and>
+    (\<forall>x \<subseteq> U. card x \<le> k \<and> finite x \<longrightarrow> prob_space.indep_vars (pmf_of_set H) (\<lambda>_. pmf_of_set V) f x))"
+
+
 text \<open>A k-independent hash family $\mathcal H$ is probability space, whose elements are hash functions 
 with domain $U$ and range ${i. i < m}$ such that:
 
@@ -87,11 +94,17 @@ proof -
     by (metis assms(4) le_add_diff_inverse2 power_add)
 qed
 
-text \<open>Key result: The hash function forms an independent hash family.\<close>
+lemma hash_prob_single:
+  assumes "field F" "finite (carrier F)"
+  assumes "x \<in> carrier F"
+  assumes "1 \<le> n"
+  assumes "y \<in> carrier F"
+  shows "\<P>(\<omega> in pmf_of_set (bounded_degree_polynomials F n). hash F x \<omega> = y) = 1/(real (card (carrier F)))" 
+  using hash_prob[OF assms(1) assms(2), where K="{x}" and y="\<lambda>_. y", simplified] assms 
+  by (metis (no_types, lifting) Collect_cong One_nat_def UNIV_I space_measure_pmf)
 
 lemma hash_indep_pmf:
-  assumes "field F"
-  assumes "finite (carrier F)"
+  assumes "field F" "finite (carrier F)"
   assumes "J\<subseteq>carrier F"
   assumes "finite J" 
   assumes "card J \<le> n"
@@ -170,12 +183,19 @@ proof -
     using a by (simp add:\<Omega>_def)
 qed
 
-
 text \<open>We introduce k-wise independent random variables using the existing definition of
 independent random variables.\<close>
 
 definition (in prob_space) k_wise_indep_vars where
   "k_wise_indep_vars k M' X' I = (\<forall>J \<subseteq> I. card J \<le> k \<longrightarrow> finite J \<longrightarrow> indep_vars M' X' J)" 
+
+lemma hash_k_wise_indep:
+  assumes "field F" "finite (carrier F)"
+  assumes "1 \<le> n"
+  shows "prob_space.k_wise_indep_vars (pmf_of_set (bounded_degree_polynomials F n)) n
+    (\<lambda>_. pmf_of_set (carrier F)) (hash F) (carrier F)"
+  apply (simp add:measure_pmf.k_wise_indep_vars_def)
+  using hash_indep_pmf[OF assms(1) assms(2) _ _ _ assms(3)] by blast
 
 lemma (in prob_space) k_wise_subset:
   assumes "k_wise_indep_vars k M' X' I"
