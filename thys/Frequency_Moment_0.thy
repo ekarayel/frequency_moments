@@ -491,7 +491,7 @@ theorem f0_alg_correct:
   assumes "\<delta> > 0 \<and> \<delta> < 1"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f0_result). \<bar>\<omega> - f0_value xs\<bar> > (\<delta> * f0_value xs)) \<le> of_rat \<epsilon>"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f0_result). \<bar>\<omega> - f0_value xs\<bar> \<le> \<delta> * f0_value xs) \<ge> 1 - of_rat \<epsilon>"
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -1285,17 +1285,9 @@ proof -
     using card_eq[symmetric] card_gt_0_iff t_ge_0 apply (simp, force) 
     by (simp add:real_g_2)
  
-  have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<delta> * f0_value xs < 
-      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar>) = 
-        \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. real_of_rat \<delta> * real_of_rat (f0_value xs) < 
-      \<bar>median (\<lambda>i. g' (h (\<omega> i))) s - real_of_rat (f0_value xs)\<bar>)"
-    apply (rule arg_cong2[where f="measure"], simp)
-    apply (rule Collect_cong, simp, subst real_g[symmetric])
-    apply (subst of_rat_mult[symmetric], subst median_rat[OF s_ge_0, symmetric])
-    apply (subst of_rat_diff[symmetric], simp)
-    using of_rat_less by blast
-  also have "... \<le> real_of_rat \<epsilon>"
-    apply (rule prob_space.median_bound_3, simp add:prob_space_measure_pmf, simp add:assms, simp add:assms)
+  have "1-real_of_rat \<epsilon> \<le> \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.
+      \<bar>median (\<lambda>i. g' (h (\<omega> i))) s - real_of_rat (f0_value xs)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (f0_value xs))"
+    apply (rule prob_space.median_bound_2, simp add:prob_space_measure_pmf, simp add:assms, simp add:assms)
     apply (subst \<Omega>\<^sub>0_def)
       apply (rule indep_vars_restrict_intro [where f="\<lambda>j. {j}"], simp, 
           simp add:disjoint_family_on_def, simp add: s_ge_0, simp, simp, simp)
@@ -1305,8 +1297,15 @@ proof -
     apply (subst \<Omega>\<^sub>0_def)
     apply (subst prob_prod_pmf_slice, simp, simp)
     using b by (simp add:\<Omega>\<^sub>1_def)
-  finally have a:"\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<delta> * f0_value xs < 
-      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar>) \<le> real_of_rat \<epsilon>"
+  also have "... = \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. 
+      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar> \<le>  \<delta> * f0_value xs)"
+    apply (rule arg_cong2[where f="measure"], simp)
+    apply (rule Collect_cong, simp, subst real_g[symmetric])
+    apply (subst of_rat_mult[symmetric], subst median_rat[OF s_ge_0, symmetric])
+    apply (subst of_rat_diff[symmetric], simp)
+    using of_rat_less_eq by blast
+  finally have a:"\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.  
+      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar> \<le> \<delta> * f0_value xs) \<ge> 1-real_of_rat \<epsilon>"
     by blast
 
   show ?thesis

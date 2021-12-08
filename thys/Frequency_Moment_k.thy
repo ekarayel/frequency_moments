@@ -688,7 +688,7 @@ lemma fk_alg_correct:
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> fk_result). abs \<bar>\<omega> - fk_value k xs\<bar> > (\<delta> * fk_value k xs)) \<le> real_of_rat \<epsilon>"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> fk_result). \<bar>\<omega> - fk_value k xs\<bar> \<le> \<delta> * fk_value k xs) \<ge> 1 - of_rat \<epsilon>"
 proof (cases "xs = []")
   case True
   have a: "nat \<lceil>- (18 * ln (real_of_rat \<epsilon>))\<rceil> > 0"  using assms by simp 
@@ -756,10 +756,10 @@ next
   finally have b: "sketch \<bind> fk_result = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>) \<bind> return_pmf \<circ> f"
     by blast
 
-  have c: "{y. real_of_rat (\<delta> * fk_value k xs) < \<bar>f' y - real_of_rat (fk_value k xs)\<bar>} = 
-    {y. (\<delta> * fk_value k xs) < \<bar>f y - (fk_value k xs)\<bar>}"
-    apply (simp add:real_of_rat_f) 
-    by (metis abs_of_rat of_rat_diff of_rat_less)
+  have c: "{y. real_of_rat (\<delta> * fk_value k xs) \<ge> \<bar>f' y - real_of_rat (fk_value k xs)\<bar>} = 
+    {y. (\<delta> * fk_value k xs) \<ge> \<bar>f y - (fk_value k xs)\<bar>}"
+    apply (simp add:real_of_rat_f)
+    by (metis abs_of_rat of_rat_diff of_rat_less_eq)
 
   have f2_exp: "\<And>i\<^sub>1 i\<^sub>2. i\<^sub>1 < s\<^sub>1 \<Longrightarrow> i\<^sub>2 < s\<^sub>2 \<Longrightarrow> 
     has_bochner_integral (measure_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))) (\<lambda>x. f2 x i\<^sub>1 i\<^sub>2)
@@ -874,7 +874,7 @@ next
     apply (simp add: b comp_def map_pmf_def[symmetric])
     apply (subst c[symmetric])
     apply (simp add:f'_def)
-    apply (rule prob_space.median_bound_3[where X="\<lambda>i \<omega>. f1 \<omega> i" and M="(prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))", simplified])
+    apply (rule prob_space.median_bound_2[where X="\<lambda>i \<omega>. f1 \<omega> i" and M="(prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))", simplified])
          apply (simp add:prob_space_measure_pmf)
         using assms(2) apply simp
        using assms(2) apply simp

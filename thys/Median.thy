@@ -436,39 +436,6 @@ proof -
   finally show ?thesis by simp
 qed
 
-lemma (in prob_space) median_bound_3:
-  fixes \<mu> :: real
-  fixes \<delta> :: real
-  assumes "0 < \<epsilon>" "\<epsilon> < 1"
-  assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
-  assumes "n \<ge> -18 * ln \<epsilon>"
-  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) > \<delta>) \<le> 1/3" 
-  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) > \<delta>) \<le> \<epsilon>"
-proof -
-  have a:"\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<le> \<delta>) \<ge> 1-\<epsilon>"
-    using median_bound_2[OF assms(1) assms(2) assms(3) assms(4) assms(5)]
-    by simp
-
-  have "0 < -18 * ln \<epsilon>" 
-    by (simp, subst ln_less_zero_iff, simp add:assms, simp add:assms)
-  also have "... \<le> n" using assms by simp
-  finally have n_ge_0:"n > 0" by simp
-
-  have "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) > \<delta>) = 1 - \<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<le> \<delta>)"
-    apply (subst prob_compl[symmetric])
-     apply measurable
-      apply (rule median_measurable)
-    using n_ge_0 apply simp
-    using assms(3) apply (simp add:indep_vars_def)
-     apply simp
-    apply (rule arg_cong2[where f="measure"], simp)
-    by (rule order_antisym, rule subsetI, simp, rule subsetI, simp add:not_le)
-
-  also have "... \<le> \<epsilon>"
-    using a by simp
-  finally show ?thesis by simp
-qed
-
 lemma sorted_mono_map: 
   assumes "sorted xs"
   assumes "mono f"

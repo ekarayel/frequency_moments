@@ -350,7 +350,7 @@ theorem f2_alg_correct:
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). \<bar>\<omega> - f2_value xs\<bar> > \<delta> * f2_value xs) \<le> of_rat \<epsilon>"
+  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). \<bar>\<omega> - f2_value xs\<bar> \<le> \<delta> * f2_value xs) \<ge> 1-of_rat \<epsilon>"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
@@ -500,13 +500,13 @@ proof -
     apply (simp add:s\<^sub>2_from_def s\<^sub>1_from_def p_from_def h_from_def sketch_from_def cong:restrict_cong)
     by (simp add:map_pmf_def[symmetric] f_def)
 
-  define g where "g = (\<lambda>\<omega>. real_of_rat (\<delta> * f2_value xs) < \<bar>\<omega> - real_of_rat (f2_value xs)\<bar>)"
-  have e: "{\<omega>. \<delta> * f2_value xs < \<bar>\<omega> - f2_value xs\<bar>} = {\<omega>. (g \<circ> real_of_rat) \<omega>}"
+  define g where "g = (\<lambda>\<omega>. real_of_rat (\<delta> * f2_value xs) \<ge> \<bar>\<omega> - real_of_rat (f2_value xs)\<bar>)"
+  have e: "{\<omega>. \<delta> * f2_value xs \<ge> \<bar>\<omega> - f2_value xs\<bar>} = {\<omega>. (g \<circ> real_of_rat) \<omega>}"
     apply (simp add:g_def)
     apply (rule order_antisym, rule subsetI, simp) 
-    apply (metis abs_of_rat of_rat_diff of_rat_less)
+    apply (metis abs_of_rat of_rat_diff of_rat_less_eq)
     apply (rule subsetI, simp)
-    by (metis abs_of_rat of_rat_diff of_rat_less)
+    by (metis abs_of_rat of_rat_diff of_rat_less_eq)
 
   have median_bound_2': "prob_space.indep_vars \<Omega>\<^sub>0 (\<lambda>_. borel) (\<lambda>i \<omega>. f2 \<omega> i) {0..<s\<^sub>2}"
     apply (subst \<Omega>\<^sub>0_def)
@@ -574,7 +574,7 @@ proof -
 
   show ?thesis
     apply (simp add: distr' e real_f f'_def g_def \<Omega>\<^sub>0_def[symmetric])
-    apply (rule prob_space.median_bound_3[where M="\<Omega>\<^sub>0" and \<epsilon>="real_of_rat \<epsilon>" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])
+    apply (rule prob_space.median_bound_2[where M="\<Omega>\<^sub>0" and \<epsilon>="real_of_rat \<epsilon>" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])
          apply (metis prob_space_measure_pmf)
         apply (metis assms(1))
        apply (metis assms(1))
