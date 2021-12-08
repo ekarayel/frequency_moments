@@ -309,7 +309,7 @@ qed
 lemma f2_alg_sketch:
   fixes n :: nat
   fixes xs :: "nat list"
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
   defines "s\<^sub>1 \<equiv> nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
   defines "s\<^sub>2 \<equiv> nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
@@ -346,11 +346,11 @@ proof -
 qed
 
 theorem f2_alg_correct:
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f2_result). \<bar>\<omega> - f2_value xs\<bar> \<le> \<delta> * f2_value xs) \<ge> 1-of_rat \<epsilon>"
+  defines "M \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n) \<bind> f2_result"
+  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - f2_value xs\<bar> \<le> \<delta> * f2_value xs) \<ge> 1-of_rat \<epsilon>"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
@@ -491,9 +491,9 @@ proof -
     using s2_nonzero apply (simp add:f'_def f2_def f3_def f_def median_rat median_restrict cong:restrict_cong)
     by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
 
-  have distr': "sketch \<bind> f2_result = map_pmf f (prod_pmf  ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)))"
+  have distr': "M = map_pmf f (prod_pmf  ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)))"
     using f2_alg_sketch[OF assms(1) assms(2), where xs="xs" and n="n"]
-    apply (simp add:sketch_def Let_def s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
+    apply (simp add:M_def Let_def s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
     apply (subst bind_assoc_pmf)
     apply (subst bind_return_pmf)
     apply (subst f2_result_conv, simp)
@@ -575,12 +575,11 @@ proof -
   show ?thesis
     apply (simp add: distr' e real_f f'_def g_def \<Omega>\<^sub>0_def[symmetric])
     apply (rule prob_space.median_bound_2[where M="\<Omega>\<^sub>0" and \<epsilon>="real_of_rat \<epsilon>" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])
-         apply (metis prob_space_measure_pmf)
-        apply (metis assms(1))
-       apply (metis assms(1))
+        apply (metis prob_space_measure_pmf)
+       using assms apply simp 
       apply (metis median_bound_2')
      apply (metis median_bound_3)
-    using  median_bound_4 by simp
+    using median_bound_4 by simp
 qed
 
 fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
@@ -594,7 +593,7 @@ fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow
     s\<^sub>1 * s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1 )))"
 
 theorem f2_space_usage:
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f2_update x) xs (f2_init \<delta> \<epsilon> n)"

@@ -490,8 +490,8 @@ theorem f0_alg_correct:
   assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0 \<and> \<delta> < 1"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> f0_result). \<bar>\<omega> - f0_value xs\<bar> \<le> \<delta> * f0_value xs) \<ge> 1 - of_rat \<epsilon>"
+  defines "M \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n) \<bind> f0_result"
+  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - f0_value xs\<bar> \<le> \<delta> * f0_value xs) \<ge> 1 - of_rat \<epsilon>"
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -1309,7 +1309,7 @@ proof -
     by blast
 
   show ?thesis
-    apply (subst sketch_def)
+    apply (subst M_def)
     apply (subst f0_alg_sketch[OF assms(1) assms(2) assms(3)], simp)
     apply (simp add:t_def[symmetric] p_def[symmetric] r_def[symmetric] s_def[symmetric] map_pmf_def)
     apply (subst bind_assoc_pmf)

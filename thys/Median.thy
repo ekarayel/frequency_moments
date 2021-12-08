@@ -403,7 +403,7 @@ qed
 lemma (in prob_space) median_bound_2:
   fixes \<mu> :: real
   fixes \<delta> :: real
-  assumes "0 < \<epsilon>" "\<epsilon> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> -18 * ln \<epsilon>"
   assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) > \<delta>) \<le> 1/3" 
@@ -417,16 +417,16 @@ proof -
   have "\<And>i. i < n \<Longrightarrow> 1 - \<P>(\<omega> in M. X i \<omega> \<in> {\<mu>- \<delta>..\<mu>+\<delta>}) \<le> 1/3"
     apply (subst prob_compl[symmetric])
      apply (measurable)
-    using assms(3) apply (simp add:indep_vars_def)
+    using assms(2) apply (simp add:indep_vars_def)
     apply (subst b, simp)
-    using assms(5) by simp
+    using assms(4) by simp
 
   hence a:"\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> {\<mu>- \<delta>..\<mu>+\<delta>}) \<ge> 2/3" by simp
   
   have "1-\<epsilon> \<le> \<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> {\<mu>-\<delta>..\<mu>+\<delta>})"
-    apply (rule median_bound_gen[where \<alpha>="1/6"], simp, simp add:assms, simp add:assms, simp add:assms)
+    apply (rule median_bound_gen[OF _ assms(1) assms(2), where \<alpha>="1/6"], simp) 
      apply (simp add:power2_eq_square)
-    using assms(4) apply simp
+    using assms(3) apply simp
     using a by simp
   also have "... = \<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<le> \<delta>)"
     apply (rule arg_cong2[where f="measure"], simp)

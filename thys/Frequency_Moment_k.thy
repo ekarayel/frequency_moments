@@ -318,7 +318,7 @@ qed
 
 lemma fk_alg_aux_1:
   fixes k :: nat
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
+  fixes \<epsilon> :: rat
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
@@ -328,7 +328,7 @@ lemma fk_alg_aux_1:
   shows "sketch = 
     map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
     (snd (fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update' x s\<^sub>1 s\<^sub>2 c)) xs (0, return_pmf (\<lambda>_. undefined))))"
-  using assms(4)
+  using assms(3)
 proof (subst sketch_def, induction xs rule:rev_nonempty_induct)
   case (single x)
   then show ?case 
@@ -663,8 +663,8 @@ proof -
 qed
 
 theorem fk_alg_sketch:
+  fixes \<epsilon> :: rat
   assumes "k \<ge> 1"
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
@@ -674,25 +674,24 @@ theorem fk_alg_sketch:
   shows "sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list xs u}))" 
   apply (simp add:sketch_def)
-  using fk_alg_aux_1[OF assms(2) assms(3) assms(4) assms(5), where k="k"]
+  using fk_alg_aux_1[OF assms(2) assms(3) assms(4), where k="k" and \<epsilon>="\<epsilon>"]
   apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
   apply (rule arg_cong2[where f="map_pmf"], simp)
   apply (subst fk_alg_aux_2[simplified], simp)
-  apply (subst fk_alg_aux_4[OF assms(5), simplified], simp)
-  by (subst fk_alg_aux_5[OF assms(5), simplified], simp)
-
+  apply (subst fk_alg_aux_4[OF assms(4), simplified], simp)
+  by (subst fk_alg_aux_5[OF assms(4), simplified], simp)
 
 lemma fk_alg_correct:
   assumes "k \<ge> 1"
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
-  shows "\<P>(\<omega> in measure_pmf (sketch \<bind> fk_result). \<bar>\<omega> - fk_value k xs\<bar> \<le> \<delta> * fk_value k xs) \<ge> 1 - of_rat \<epsilon>"
+  defines "M \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n) \<bind> fk_result"
+  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - fk_value k xs\<bar> \<le> \<delta> * fk_value k xs) \<ge> 1 - of_rat \<epsilon>"
 proof (cases "xs = []")
   case True
   have a: "nat \<lceil>- (18 * ln (real_of_rat \<epsilon>))\<rceil> > 0"  using assms by simp 
-  show ?thesis using True apply (simp add:fk_value_def sketch_def bind_return_pmf median_const[OF a])
+  show ?thesis using True apply (simp add:fk_value_def M_def bind_return_pmf median_const[OF a])
     using assms(2) by simp
 next
   case False
@@ -740,21 +739,22 @@ next
     apply (rule finite_PiE, simp)
     by (simp add:fin_omega)
 
-  have a:"sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
+  have a:"fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n) = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list xs u}))"
-    apply (subst sketch_def)
-    apply (subst fk_alg_sketch[OF assms(1) assms(2) assms(3) assms(4) False], simp)
+    apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) False], simp)
     by (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
 
-  have "sketch \<bind> fk_result = sketch \<bind> (\<lambda>(x,y,z,u,v). fk_result (x,y,z,u,v))"
-    by (rule arg_cong2[where f="bind_pmf"], simp, simp del:fk_result.simps)
-  also have "... = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>) \<bind> return_pmf \<circ> f"
-    apply (simp add:a map_pmf_def)
+  have fk_result_exp: "fk_result = (\<lambda>(x,y,z,u,v). fk_result (x,y,z,u,v))" 
+    by (rule ext, fastforce) 
+
+  have b:"M = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>) \<bind> return_pmf \<circ> f"
+    apply (subst M_def)
+    apply (subst a)
+    apply (subst fk_result_exp, simp)
+    apply (simp add:map_pmf_def)
     apply (subst bind_assoc_pmf)
     apply (subst bind_return_pmf)
     by (simp add:f_def comp_def \<Omega>_def)
-  finally have b: "sketch \<bind> fk_result = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>) \<bind> return_pmf \<circ> f"
-    by blast
 
   have c: "{y. real_of_rat (\<delta> * fk_value k xs) \<ge> \<bar>f' y - real_of_rat (fk_value k xs)\<bar>} = 
     {y. (\<delta> * fk_value k xs) \<ge> \<bar>f y - (fk_value k xs)\<bar>}"
@@ -904,7 +904,7 @@ fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat)
 
 theorem fk_space_usage:
   assumes "k \<ge> 1"
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   assumes "xs \<noteq> []"
@@ -917,7 +917,7 @@ proof -
   have a:"sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x))
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list xs u}))"
     apply (subst sketch_def)
-    apply (subst fk_alg_sketch[OF assms(1) assms(2) assms(3) assms(4) assms(5)], simp)
+    apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) assms(5)], simp)
     by (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
 
   have "set xs \<noteq> {}" using assms by blast
