@@ -18,8 +18,6 @@ fun f0_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f0_space p
       return_pmf (s, t, p, r, h, (\<lambda>_ \<in> {0..<s}. {}))
     }"
 
-(* TODO: no need for real_of_rat when defining t *)
-
 fun f0_update :: "nat \<Rightarrow> f0_space \<Rightarrow> f0_space pmf" where
   "f0_update x (s, t, p, r, h, sketch) = 
     return_pmf (s, t, p, r, h, \<lambda>i \<in> {0..<s}.
@@ -44,8 +42,8 @@ definition f0_sketch where
   "f0_sketch p r t h xs = least t ((\<lambda>x. float_of (truncate_down r (hash p x h))) ` (set xs))"
 
 lemma f0_alg_sketch:
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
-  assumes "\<delta> > 0 \<and> \<delta> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
+  assumes "\<delta> \<in> {0<..<1}"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
   defines "t \<equiv> nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -487,8 +485,8 @@ lemma of_bool_square: "(of_bool x)\<^sup>2 = ((of_bool x)::real)"
   by (cases x, simp, simp)
 
 theorem f0_alg_correct:
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
-  assumes "\<delta> > 0 \<and> \<delta> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
+  assumes "\<delta> \<in> {0<..<1}"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "M \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n) \<bind> f0_result"
   shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - f0_value xs\<bar> \<le> \<delta> * f0_value xs) \<ge> 1 - of_rat \<epsilon>"
@@ -514,19 +512,22 @@ proof -
     truncate_down r (hash p x \<omega>) > b)"
 
   have s_ge_0: "s > 0" 
-    by (simp add:s_def, meson ln_less_zero of_rat_less_1_iff zero_less_of_rat_iff assms(1))
+    using assms(1) by (simp add:s_def)
 
   have t_ge_0: "t > 0"
     using assms by (simp add:t_def)
 
+  have \<delta>_ge_0: "\<delta> > 0" using assms by simp
+  have \<delta>_le_1: "\<delta> < 1" using assms by simp
+
   have r_bound: "4 * log 2 (1 / real_of_rat \<delta>) + 24 \<le> r"
     apply (simp add:r_def)                              
     apply (subst of_nat_nat)
-    apply (rule add_nonneg_nonneg)
-    apply (rule mult_nonneg_nonneg, simp)
-      apply (subst zero_le_ceiling, subst log_divide, simp, simp, simp, simp add:assms, simp)
-      apply (subst log_less_one_cancel_iff, simp, simp add:assms)
-    by (rule order_less_le_trans[where y="1"], simp add:assms, simp+)
+     apply (rule add_nonneg_nonneg)
+      apply (rule mult_nonneg_nonneg, simp)
+      apply (subst zero_le_ceiling, subst log_divide, simp, simp, simp, simp add:\<delta>_ge_0, simp)
+      apply (subst log_less_one_cancel_iff, simp, simp add:\<delta>_ge_0)
+    by (rule order_less_le_trans[where y="1"], simp add:\<delta>_le_1, simp+)
 
   have "1 \<le> 0 + (24::real)" by simp
   also have "... \<le> 4 * log 2 (1 / real_of_rat \<delta>) + 24"
@@ -546,10 +547,10 @@ proof -
     using assms(2) by simp+
   also have "... = real_of_rat \<delta> / 16"
     apply (subst powr_diff)
-    apply (subst log_divide, simp, simp, simp, simp add:assms, simp)
-    by (subst powr_log_cancel, simp, simp, simp add:assms, simp)
+    apply (subst log_divide, simp, simp, simp, simp add:\<delta>_ge_0, simp)
+    by (subst powr_log_cancel, simp, simp, simp add:\<delta>_ge_0, simp)
   also have "... < real_of_rat \<delta> / 8"
-    by (subst pos_divide_less_eq, simp, simp add:assms)
+    by (subst pos_divide_less_eq, simp, simp add:\<delta>_ge_0)
   finally have r_le_\<delta>: "2 powr (-real r) < (real_of_rat \<delta>)/ 8"
     by simp
 
@@ -575,21 +576,21 @@ proof -
     apply (simp add:power2_eq_square power4_eq_xxxx)
     apply (rule arg_cong2[where f="(*)"])
      apply (rule arg_cong2[where f="(powr)"], simp)
-     apply (subst log_nat_power, simp add:assms)
-     apply (subst log_divide, simp, simp, simp, simp add:assms)
+     apply (subst log_nat_power, simp add:\<delta>_ge_0)
+     apply (subst log_divide, simp, simp, simp, simp add:\<delta>_ge_0) 
     by simp+
   also have "... = 18 * 96 * 81\<^sup>2 * 2 powr (-24)"
-    apply (subst powr_log_cancel, simp, simp, simp) using assms apply blast
-    apply (simp add:algebra_simps) using assms by blast
+    apply (subst powr_log_cancel, simp, simp, simp) using \<delta>_ge_0 apply blast
+    apply (simp add:algebra_simps) using \<delta>_ge_0 by blast
   also have "... \<le> 1"
     by simp
   finally have r_le_t2: "18 * 96 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 1"
     by simp
 
-  have \<delta>'_ge_0: "\<delta>' > 0"
-    by (simp add:\<delta>'_def assms)
+  have \<delta>'_ge_0: "\<delta>' > 0" using assms by (simp add:\<delta>'_def)
   have \<delta>'_le_1: "\<delta>' < 1"
-    by (rule order_less_le_trans[where y="3/4"], simp add:\<delta>'_def assms, simp)
+    apply (rule order_less_le_trans[where y="3/4"])
+    using assms by (simp add:\<delta>'_def)+
  
   have "t \<le> 80 / (real_of_rat \<delta>)\<^sup>2 + 1"
     using t_def t_ge_0 by linarith
@@ -638,7 +639,6 @@ proof -
 
   have m_eq_f0_value: "real m = of_rat (f0_value xs)"
     by (simp add:m_def f0_value_def)
-
 
   have fin_omega_1: "finite (set_pmf \<Omega>\<^sub>1)"
     apply (simp add:\<Omega>\<^sub>1_def)
@@ -1287,16 +1287,15 @@ proof -
  
   have "1-real_of_rat \<epsilon> \<le> \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.
       \<bar>median (\<lambda>i. g' (h (\<omega> i))) s - real_of_rat (f0_value xs)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (f0_value xs))"
-    apply (rule prob_space.median_bound_2, simp add:prob_space_measure_pmf, simp add:assms, simp add:assms)
-    apply (subst \<Omega>\<^sub>0_def)
-      apply (rule indep_vars_restrict_intro [where f="\<lambda>j. {j}"], simp, 
-          simp add:disjoint_family_on_def, simp add: s_ge_0, simp, simp, simp)
-    apply (simp add:s_def) 
-    using of_nat_ceiling apply blast
+    apply (rule prob_space.median_bound_2, simp add:prob_space_measure_pmf)
+       using assms apply simp 
+      apply (subst \<Omega>\<^sub>0_def)
+      apply (rule indep_vars_restrict_intro [where f="\<lambda>j. {j}"], simp, simp add:disjoint_family_on_def, simp add: s_ge_0, simp, simp, simp)
+     apply (simp add:s_def) using of_nat_ceiling apply blast
     apply simp
     apply (subst \<Omega>\<^sub>0_def)
     apply (subst prob_prod_pmf_slice, simp, simp)
-    using b by (simp add:\<Omega>\<^sub>1_def)
+    using b by (simp add:\<Omega>\<^sub>1_def) 
   also have "... = \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. 
       \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar> \<le>  \<delta> * f0_value xs)"
     apply (rule arg_cong2[where f="measure"], simp)
@@ -1338,8 +1337,8 @@ lemma f_subset:
   using assms by auto
 
 theorem f0_space_usage:
-  assumes "\<epsilon> > 0 \<and> \<epsilon> < 1"
-  assumes "\<delta> > 0 \<and> \<delta> < 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
+  assumes "\<delta> \<in> {0<..<1}"
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
   defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
   shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
