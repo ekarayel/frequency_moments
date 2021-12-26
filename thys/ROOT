@@ -8,6 +8,7 @@ session StreamingAlgorithms = HOL +
     Encoding
     Field
     Float_Ext
+    Frequency_Moments
     Frequency_Moment_0
     Frequency_Moment_2
     Frequency_Moment_k

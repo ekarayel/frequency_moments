@@ -139,7 +139,7 @@ lemma list_encoding_dom:
   using assms apply (induction l, simp add:dom_def, simp) by fastforce
 
 lemma list_bit_count:
-  "bit_count (list\<^sub>S f xs) = sum_list (map (\<lambda>x. bit_count (f x) + 1) xs) + 1"
+  "bit_count (list\<^sub>S f xs) = (\<Sum>x \<leftarrow> xs. bit_count (f x) + 1) + 1"
   apply (induction xs, simp, simp add:bit_count_append) 
   by (metis add.commute add.left_commute one_ereal_def)
 
@@ -249,7 +249,7 @@ lemma int_encoding: "is_encoding I\<^sub>S"
   by (simp add:nat_encoding_aux)
 
 lemma int_bit_count:
-  "bit_count (I\<^sub>S x) \<le> 2 * log 2 (abs x+1) + 2"
+  "bit_count (I\<^sub>S x) \<le> 2 * log 2 (\<bar>x\<bar>+1) + 2"
 proof -
   have a:"\<not>(0 \<le> x) \<Longrightarrow> 1 + 2 * log 2 (- real_of_int x) \<le> 1 + 2 * log 2 (1 - real_of_int x)"
     by simp
@@ -306,6 +306,10 @@ proof  (rule encoding_by_witness[where g="decode_prod e1 e2"])
 qed
 
 lemma prod_bit_count:
+  "bit_count ((e\<^sub>1 \<times>\<^sub>S e\<^sub>2) (x\<^sub>1,x\<^sub>2)) = bit_count (e\<^sub>1 x\<^sub>1) + bit_count (e\<^sub>2 x\<^sub>2)"
+  by (simp add:bit_count_append)
+
+lemma prod_bit_count_2:
   "bit_count ((e1 \<times>\<^sub>S e2) x) = bit_count (e1 (fst x)) + bit_count (e2 (snd x))"
   by (simp add:bit_count_append)
 
@@ -341,7 +345,7 @@ proof -
 qed
 
 lemma dependent_bit_count:
-  "bit_count ((e1 \<times>\<^sub>D e2) x) = bit_count (e1 (fst x)) + bit_count (e2 (fst x) (snd x))"
+  "bit_count ((e\<^sub>1 \<times>\<^sub>D e\<^sub>2) (x\<^sub>1,x\<^sub>2)) = bit_count (e\<^sub>1 x\<^sub>1) + bit_count (e\<^sub>2 x\<^sub>1 x\<^sub>2)"
   by (simp add:bit_count_append)
 
 subsection \<open>Composition\<close>

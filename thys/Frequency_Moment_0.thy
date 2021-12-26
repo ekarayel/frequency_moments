@@ -3,6 +3,7 @@ section \<open>Frequency Moment $0$\<close>
 theory Frequency_Moment_0
   imports Main  "HOL-Probability.Probability_Mass_Function"
   Primes_Ext Float_Ext Median Least UniversalHashFamilyOfPrime Encoding "HOL-Library.Landau_Symbols"
+  "Frequency_Moments"
 begin
 
 type_synonym f0_space = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<Rightarrow> (int set list)) \<times> (nat \<Rightarrow> float set)"
@@ -74,9 +75,8 @@ next
     by (subst least_insert, simp, simp)
 qed
 
-(* TODO Generalize *)
-definition f0_value where
-  "f0_value xs = rat_of_nat (card (set xs))"
+lemma F_0_value: "F 0 as = rat_of_nat (card (set as))"
+  by (simp add:F_def)
 
 lemma (in prob_space) prob_sub_additive:
   assumes "Collect P \<in> sets M"
@@ -487,9 +487,9 @@ lemma of_bool_square: "(of_bool x)\<^sup>2 = ((of_bool x)::real)"
 theorem f0_alg_correct:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
-  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  defines "M \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n) \<bind> f0_result"
-  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - f0_value xs\<bar> \<le> \<delta> * f0_value xs) \<ge> 1 - of_rat \<epsilon>"
+  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  defines "M \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n) \<bind> f0_result"
+  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1 - of_rat \<epsilon>"
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -497,17 +497,17 @@ proof -
   define r where "r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
   define g where "g = (\<lambda>S. if card S < t then rat_of_nat (card S) else of_nat t * rat_of_nat p / rat_of_float (Max S))"
   define g' where "g' = (\<lambda>S. if card S < t then real (card S) else real t * real p / Max S)"
-  define h where "h = (\<lambda>\<omega>. least t ((\<lambda>x. truncate_down r (hash p x \<omega>)) ` set xs))"
+  define h where "h = (\<lambda>\<omega>. least t ((\<lambda>x. truncate_down r (hash p x \<omega>)) ` set as))"
   define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = prod_pmf {0..<s} (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2))"
   define \<Omega>\<^sub>1 where "\<Omega>\<^sub>1 = pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2)"
-  define m where "m = card (set xs)"
+  define m where "m = card (set as)"
 
-  define f where "f = (\<lambda>r \<omega>. card {x \<in> set xs. int (hash p x \<omega>) \<le> r})"
+  define f where "f = (\<lambda>r \<omega>. card {x \<in> set as. int (hash p x \<omega>) \<le> r})"
   define \<delta>' where "\<delta>' = 3* real_of_rat \<delta> /4"
   define a where "a = \<lfloor>real t * p / (m * (1+\<delta>'))\<rfloor>"
   define b where "b = \<lceil>real t * p / (m * (1-\<delta>'))-1\<rceil>"
 
-  define has_no_collision where "has_no_collision = (\<lambda>\<omega>. \<forall>x\<in> set xs. \<forall>y \<in> set xs.
+  define has_no_collision where "has_no_collision = (\<lambda>\<omega>. \<forall>x\<in> set as. \<forall>y \<in> set as.
     (truncate_down r (hash p x \<omega>) = truncate_down r (hash p y \<omega>) \<longrightarrow> x = y) \<or> 
     truncate_down r (hash p x \<omega>) > b)"
 
@@ -632,13 +632,13 @@ proof -
     by (metis p_def find_prime_above_lower_bound card_atLeastLessThan diff_zero max_def order_trans)
   finally have m_le_p: "m \<le> p" by simp
 
-  have xs_le_p: "\<And>x. x \<in> set xs \<Longrightarrow> x < p" 
+  have xs_le_p: "\<And>x. x \<in> set as \<Longrightarrow> x < p" 
     apply (rule order_less_le_trans[where y="n"])
     using assms(3) apply simp
     by (metis p_def find_prime_above_lower_bound max_def order_trans)
 
-  have m_eq_f0_value: "real m = of_rat (f0_value xs)"
-    by (simp add:m_def f0_value_def)
+  have m_eq_F_0: "real m = of_rat (F 0 as)"
+    by (simp add:m_def F_def)
 
   have fin_omega_1: "finite (set_pmf \<Omega>\<^sub>1)"
     apply (simp add:\<Omega>\<^sub>1_def)
@@ -651,15 +651,15 @@ proof -
     fix a :: int
     assume a_ge_m1: "a \<ge> -1"
     assume a_le_p: "a < int p"
-    have xs_subs_p: "set xs \<subseteq> {0..<p}"
+    have xs_subs_p: "set as \<subseteq> {0..<p}"
       using xs_le_p  
       by (simp add: subset_iff)
 
-    have exp_single: "\<And>x. x \<in> set xs \<Longrightarrow> prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. of_bool (int (hash p x \<omega>) \<le> a)) = 
+    have exp_single: "\<And>x. x \<in> set as \<Longrightarrow> prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. of_bool (int (hash p x \<omega>) \<le> a)) = 
       (real_of_int a+1)/real p"
     proof -
       fix x
-      assume "x \<in> set xs"
+      assume "x \<in> set as"
       hence x_le_p: "x < p" using xs_le_p by simp
       have "prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. of_bool (int (hash p x \<omega>) \<le> a)) = 
         measure \<Omega>\<^sub>1 ({\<omega>. int (hash p x \<omega>) \<le> a} \<inter> space \<Omega>\<^sub>1)"
@@ -685,12 +685,12 @@ proof -
         by simp
     qed
     have "prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. real (f a \<omega>)) = 
-      prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. (\<Sum>x \<in> set xs. of_bool (int (hash p x \<omega>) \<le> a)))"
+      prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. (\<Sum>x \<in> set as. of_bool (int (hash p x \<omega>) \<le> a)))"
       by (simp add:f_def inters_compr)
-    also have "... =  (\<Sum>x \<in> set xs. prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. of_bool (int (hash p x \<omega>) \<le> a)))"
+    also have "... =  (\<Sum>x \<in> set as. prob_space.expectation \<Omega>\<^sub>1 (\<lambda>\<omega>. of_bool (int (hash p x \<omega>) \<le> a)))"
       apply (rule Bochner_Integration.integral_sum)
       by (rule integrable_measure_pmf_finite[OF fin_omega_1])
-    also have "... = (\<Sum> x \<in> set xs. (a+1)/real p)"
+    also have "... = (\<Sum> x \<in> set as. (a+1)/real p)"
       by (rule sum.cong, simp, subst exp_single, simp, simp)
     also have "... = real m * (real_of_int a + 1) /real p"
       by (simp add:m_def)
@@ -698,9 +698,9 @@ proof -
       by simp
 
     have "prob_space.variance \<Omega>\<^sub>1 (\<lambda>\<omega>. real (f a \<omega>)) = 
-      prob_space.variance \<Omega>\<^sub>1 (\<lambda>\<omega>. (\<Sum>x \<in> set xs. of_bool (int (hash p x \<omega>) \<le> a)))"
+      prob_space.variance \<Omega>\<^sub>1 (\<lambda>\<omega>. (\<Sum>x \<in> set as. of_bool (int (hash p x \<omega>) \<le> a)))"
       by (simp add:f_def inters_compr)
-    also have "... = (\<Sum>x \<in> set xs. prob_space.variance \<Omega>\<^sub>1 (\<lambda>\<omega>. of_bool (int (hash p x \<omega>) \<le> a)))"
+    also have "... = (\<Sum>x \<in> set as. prob_space.variance \<Omega>\<^sub>1 (\<lambda>\<omega>. of_bool (int (hash p x \<omega>) \<le> a)))"
       apply (rule prob_space.var_sum_pairwise_indep_2, simp add:prob_space_measure_pmf, simp, simp)
        apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
       apply (rule prob_space.indep_vars_compose2[where Y="\<lambda>i x. of_bool (int x \<le> a)" and M'="\<lambda>_. measure_pmf (pmf_of_set {0..<p})"])
@@ -709,7 +709,7 @@ proof -
        apply (simp add:measure_pmf.k_wise_indep_vars_def \<Omega>\<^sub>1_def) 
        apply (metis le_refl order_trans subset_eq_atLeast0_lessThan_finite) 
       by simp
-    also have "... \<le> (\<Sum> x \<in> set xs. (a+1)/real p)"
+    also have "... \<le> (\<Sum> x \<in> set as. (a+1)/real p)"
       apply (rule sum_mono)
       apply (subst prob_space.variance_eq[OF prob_space_measure_pmf])
        apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
@@ -734,10 +734,10 @@ proof -
     real m * (real_of_int a+1) / p" using exp_var_f by blast
 
   have b: "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. 
-    of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - of_rat (f0_value xs)\<bar>) \<le> 1/3"
-  proof (cases "card (set xs) \<ge> t")
+    of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - of_rat (F 0 as)\<bar>) \<le> 1/3"
+  proof (cases "card (set as) \<ge> t")
     case True
-    hence t_le_m: "t \<le> card (set xs)" by simp
+    hence t_le_m: "t \<le> card (set as)" by simp
     have m_ge_0: "real m > 0"
       using m_def True t_ge_0 by simp
   
@@ -862,11 +862,11 @@ proof -
         apply simp
        apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
        apply simp
-      using t_ge_0 a_ge_0 p_ge_0 m_ge_0 m_eq_f0_value by auto
+      using t_ge_0 a_ge_0 p_ge_0 m_ge_0 m_eq_F_0 by auto
     also have "... \<le> 1/9"
-      apply (subst pos_divide_le_eq) using a_ge_0 p_ge_0 m_ge_0 m_eq_f0_value apply force
+      apply (subst pos_divide_le_eq) using a_ge_0 p_ge_0 m_ge_0 m_eq_F_0 apply force
       apply simp
-      apply (subst real_sqrt_pow2) using a_ge_0 p_ge_0 m_ge_0 m_eq_f0_value apply force
+      apply (subst real_sqrt_pow2) using a_ge_0 p_ge_0 m_ge_0 m_eq_F_0 apply force
       apply (rule var_f) using a_ge_0 apply linarith
       using a_le_p by simp
     finally have case_1: "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. f a \<omega> \<ge> t) \<le> 1/9"
@@ -961,13 +961,13 @@ proof -
           apply simp
          apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
          apply simp
-        using t_ge_0 b_ge_0 p_ge_0 m_ge_0 m_eq_f0_value by auto
+        using t_ge_0 b_ge_0 p_ge_0 m_ge_0 m_eq_F_0 by auto
       also have "... \<le> 1/9"
         apply (subst pos_divide_le_eq) 
-        using b_ge_0 p_ge_0 m_ge_0 m_eq_f0_value apply force
+        using b_ge_0 p_ge_0 m_ge_0 m_eq_F_0 apply force
         apply simp
         apply (subst real_sqrt_pow2)
-        using b_ge_0 p_ge_0 m_ge_0 m_eq_f0_value apply force
+        using b_ge_0 p_ge_0 m_ge_0 m_eq_F_0 apply force
         apply (rule var_f) using b_ge_0 apply linarith
         using True by simp
       finally show ?thesis
@@ -982,7 +982,7 @@ proof -
         have a:"\<And>x. x < p \<Longrightarrow> hash p x \<omega> < p" 
           using hash_range[OF p_ge_0]  a_2
           by (simp add:\<Omega>\<^sub>1_def set_pmf_of_set[OF ne_bounded_degree_polynomials fin_bounded_degree_polynomials[OF p_ge_0]])
-        have "t \<le> card (set xs)"
+        have "t \<le> card (set as)"
           using True by simp
         also have "... \<le> f b \<omega>"
           apply (simp add:f_def)
@@ -999,13 +999,13 @@ proof -
     qed
 
     have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<not>has_no_collision \<omega>) \<le>
-      \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<exists>x \<in> set xs. \<exists>y \<in> set xs. x \<noteq> y \<and> 
+      \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> 
       truncate_down r (real (hash p x \<omega>)) \<le> real_of_int b \<and> 
       truncate_down r (real (hash p x \<omega>)) = truncate_down r (real (hash p y \<omega>)))" 
       apply (rule pmf_mono_1)
       apply (simp add:has_no_collision_def \<Omega>\<^sub>1_def) 
       by force
-    also have "... \<le> 6 * (real (card (set xs)))\<^sup>2 * (real_of_int b)\<^sup>2 
+    also have "... \<le> 6 * (real (card (set as)))\<^sup>2 * (real_of_int b)\<^sup>2 
        * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
       apply (simp only: \<Omega>\<^sub>1_def)
       apply (rule f0_collision_prob[where c="real_of_int b"])
@@ -1044,17 +1044,17 @@ proof -
       by simp
 
     have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1.
-        real_of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>) \<le> 
+        real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>) \<le> 
       \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. f a \<omega> \<ge> t \<or> f b \<omega> < t \<or> \<not>(has_no_collision \<omega>))"
     proof (rule prob_space.prob_mono[OF prob_space_measure_pmf in_events_pmf], rule ccontr)
       fix \<omega>
       assume "\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1)"
-      assume est: "real_of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>"
+      assume est: "real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>"
       assume "\<not>( t \<le> f a \<omega> \<or> f b \<omega> < t \<or> \<not> has_no_collision \<omega>)"
       hence lb: "f a \<omega> < t" and ub: "f b \<omega> \<ge> t" and no_col: "has_no_collision \<omega>" by simp+
 
-      define y where "y =  nth_mset (t-1) {#int (hash p x \<omega>). x \<in># mset_set (set xs)#}"
-      define y' where "y' =  nth_mset (t-1) {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set xs)#}"
+      define y where "y =  nth_mset (t-1) {#int (hash p x \<omega>). x \<in># mset_set (set as)#}"
+      define y' where "y' =  nth_mset (t-1) {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set as)#}"
 
       have "a < y" 
         apply (subst y_def, rule nth_mset_bound_left_excl)
@@ -1104,7 +1104,7 @@ proof -
         using r_ge_0 by auto
       hence y'_pos: "y' > 0" using rank_t_lb' by linarith
 
-      have no_col': "\<And>x. x \<le> y' \<Longrightarrow> count {#truncate_down r (real (hash p x \<omega>)). x \<in># mset_set (set xs)#} x \<le> 1"
+      have no_col': "\<And>x. x \<le> y' \<Longrightarrow> count {#truncate_down r (real (hash p x \<omega>)). x \<in># mset_set (set as)#} x \<le> 1"
         apply (subst count_image_mset, simp add:vimage_def card_le_Suc0_iff_eq)
         using  rank_t_ub' no_col apply (subst (asm) has_no_collision_def)
         by force
@@ -1117,7 +1117,7 @@ proof -
         using t_ge_0
         by simp
 
-      have "card (h \<omega>) = card (least ((t-1)+1) (set_mset {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set xs)#}))"
+      have "card (h \<omega>) = card (least ((t-1)+1) (set_mset {#truncate_down r (hash p x \<omega>). x \<in># mset_set (set as)#}))"
         using t_ge_0
         by (simp add:h_def)
       also have "... = (t-1) +1"
@@ -1165,7 +1165,7 @@ proof -
         apply (rule mult_strict_right_mono)
          apply (simp add: \<delta>'_def algebra_simps)
         using assms apply simp
-        using r_le_\<delta> m_eq_f0_value m_ge_0 b_ge_0 by simp
+        using r_le_\<delta> m_eq_F_0 m_ge_0 b_ge_0 by simp
       also have "... \<le> (1-\<delta>') * (real m * (real t * real p / (real m * (1-\<delta>'))))"
         apply (rule mult_left_mono)
         apply (rule mult_left_mono)
@@ -1179,9 +1179,9 @@ proof -
       hence f_2: "g' (h \<omega>) > (1 - real_of_rat \<delta>) * m"
         apply (simp add: h_3)
         by (subst pos_less_divide_eq, metis y'_pos, simp)
-      have "abs (g' (h \<omega>) - real_of_rat (f0_value xs)) < real_of_rat \<delta> * (real_of_rat (f0_value xs))"
+      have "abs (g' (h \<omega>) - real_of_rat (F 0 as)) < real_of_rat \<delta> * (real_of_rat (F 0 as))"
         apply (subst abs_less_iff) using f_1 f_2
-        by (simp add:algebra_simps m_eq_f0_value)
+        by (simp add:algebra_simps m_eq_F_0)
       thus "False"
         using est by linarith
     qed
@@ -1194,17 +1194,17 @@ proof -
     finally show ?thesis by simp
   next
     case False
-    have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. real_of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>) \<le>
-      \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<exists>x \<in> set xs. \<exists>y \<in> set xs. x \<noteq> y \<and> 
+    have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>) \<le>
+      \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> 
       truncate_down r (real (hash p x \<omega>)) \<le> real p \<and> 
       truncate_down r (real (hash p x \<omega>)) = truncate_down r (real (hash p y \<omega>)))" 
     proof (rule pmf_mono_1)
       fix \<omega>
       assume a:"\<omega> \<in> {\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1).
-              real_of_rat \<delta> * real_of_rat (f0_value xs) < \<bar>g' (h \<omega>) - real_of_rat (f0_value xs)\<bar>}"
+              real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>}"
       assume b:"\<omega> \<in> set_pmf \<Omega>\<^sub>1" 
-      have a_1: "card (set xs) < t" using False by auto
-      have a_2:"card (h \<omega>) = card ((\<lambda>x. truncate_down r (real (hash p x \<omega>))) ` (set xs))"
+      have a_1: "card (set as) < t" using False by auto
+      have a_2:"card (h \<omega>) = card ((\<lambda>x. truncate_down r (real (hash p x \<omega>))) ` (set as))"
         apply (simp add:h_def)
         apply (subst card_least, simp)
         apply (rule min.absorb4)
@@ -1212,36 +1212,36 @@ proof -
       have "card (h \<omega>) < t"
         by (metis List.finite_set  a_1 a_2 card_image_le  order_le_less_trans)
       hence "g' (h \<omega>) = card (h \<omega>)" by (simp add:g'_def)
-      hence "card (h \<omega>) \<noteq> real_of_rat (f0_value xs)"
+      hence "card (h \<omega>) \<noteq> real_of_rat (F 0 as)"
         using a assms(2) apply simp 
         by (metis abs_zero cancel_comm_monoid_add_class.diff_cancel of_nat_less_0_iff pos_prod_lt zero_less_of_rat_iff)
-      hence "card (h \<omega>) \<noteq> card (set xs)"
-        using m_def m_eq_f0_value by linarith
-      hence "\<not>inj_on (\<lambda>x. truncate_down r (real (hash p x \<omega>))) (set xs)"
+      hence "card (h \<omega>) \<noteq> card (set as)"
+        using m_def m_eq_F_0 by linarith
+      hence "\<not>inj_on (\<lambda>x. truncate_down r (real (hash p x \<omega>))) (set as)"
         apply (simp add:a_2) 
         using card_image by blast
-      moreover have "\<And>x. x \<in> set xs \<Longrightarrow> truncate_down r (real (hash p x \<omega>)) \<le> real p"
+      moreover have "\<And>x. x \<in> set as \<Longrightarrow> truncate_down r (real (hash p x \<omega>)) \<le> real p"
       proof -
         fix x
-        assume a:"x \<in> set xs"
+        assume a:"x \<in> set as"
         show "truncate_down r (real (hash p x \<omega>)) \<le> real p"
           apply (rule truncate_down_le)
           using hash_range[OF p_ge_0 _ xs_le_p[OF a]]  b
           apply (simp add:\<Omega>\<^sub>1_def set_pmf_of_set[OF ne_bounded_degree_polynomials fin_bounded_degree_polynomials[OF p_ge_0]])
           using le_eq_less_or_eq by blast
       qed
-     ultimately show "\<omega> \<in> {\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1). \<exists>x \<in> set xs. \<exists>y \<in> set xs. x \<noteq> y \<and>
+     ultimately show "\<omega> \<in> {\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1). \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and>
         truncate_down r (real (hash p x \<omega>)) \<le> real p \<and> 
         truncate_down r (real (hash p x \<omega>)) = truncate_down r (real (hash p y \<omega>))}"
        apply (simp add:inj_on_def) by blast
     qed
-    also have "... \<le> 6 * (real (card (set xs)))\<^sup>2 * (real p)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
+    also have "... \<le> 6 * (real (card (set as)))\<^sup>2 * (real p)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
       apply (simp only:\<Omega>\<^sub>1_def)
       apply (rule f0_collision_prob)
         apply (metis p_prime)
        apply (rule subsetI, simp add:xs_le_p)
       using p_ge_0 r_ge_0 by simp+
-    also have "... = 6 * (real (card (set xs)))\<^sup>2 * 2 powr (- real r) + 1 / real p"
+    also have "... = 6 * (real (card (set as)))\<^sup>2 * 2 powr (- real r) + 1 / real p"
       apply (simp add:ac_simps power2_eq_square)
       using p_ge_0 by blast
     also have "... \<le> 6 * (real t)\<^sup>2 * 2 powr (-real r) + 1 / real p"
@@ -1259,24 +1259,24 @@ proof -
     finally show ?thesis by simp
   qed
 
-  have f0_result_elim: "\<And>x. f0_result (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs) =
-    return_pmf (median (\<lambda>i. g (f0_sketch p r t (x i) xs)) s)"
+  have f0_result_elim: "\<And>x. f0_result (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as) =
+    return_pmf (median (\<lambda>i. g (f0_sketch p r t (x i) as)) s)"
     apply (simp add:g_def)
     apply (rule median_cong)
     by simp
 
-  have real_g_2:"\<And>\<omega>. real_of_float ` f0_sketch p r t \<omega> xs = h \<omega>" 
+  have real_g_2:"\<And>\<omega>. real_of_float ` f0_sketch p r t \<omega> as = h \<omega>" 
     apply (simp add:g_def g'_def h_def f0_sketch_def)
     apply (subst least_mono_commute, simp)
      apply (meson less_float.rep_eq strict_mono_onI)
     by (simp add:image_comp float_of_inverse[OF truncate_down_float])
 
-  have card_eq: "\<And>\<omega>. card (f0_sketch p r t \<omega> xs) = card (h \<omega>)" 
+  have card_eq: "\<And>\<omega>. card (f0_sketch p r t \<omega> as) = card (h \<omega>)" 
     apply (subst real_g_2[symmetric]) 
     apply (rule card_image[symmetric]) 
     using inj_on_def real_of_float_inject by blast
 
-  have real_g: "\<And>\<omega>. real_of_rat (g (f0_sketch p r t \<omega> xs)) = g' (h \<omega>)"
+  have real_g: "\<And>\<omega>. real_of_rat (g (f0_sketch p r t \<omega> as)) = g' (h \<omega>)"
     apply (simp add:g_def g'_def card_eq of_rat_divide of_rat_mult of_rat_add real_of_rat_of_float)
     apply (rule impI)
     apply (subst mono_Max_commute[where f="real_of_float"])
@@ -1286,7 +1286,7 @@ proof -
     by (simp add:real_g_2)
  
   have "1-real_of_rat \<epsilon> \<le> \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.
-      \<bar>median (\<lambda>i. g' (h (\<omega> i))) s - real_of_rat (f0_value xs)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (f0_value xs))"
+      \<bar>median (\<lambda>i. g' (h (\<omega> i))) s - real_of_rat (F 0 as)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (F 0 as))"
     apply (rule prob_space.median_bound_2, simp add:prob_space_measure_pmf)
        using assms apply simp 
       apply (subst \<Omega>\<^sub>0_def)
@@ -1297,14 +1297,14 @@ proof -
     apply (subst prob_prod_pmf_slice, simp, simp)
     using b by (simp add:\<Omega>\<^sub>1_def) 
   also have "... = \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. 
-      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar> \<le>  \<delta> * f0_value xs)"
+      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) as)) s - F 0 as\<bar> \<le>  \<delta> * F 0 as)"
     apply (rule arg_cong2[where f="measure"], simp)
     apply (rule Collect_cong, simp, subst real_g[symmetric])
     apply (subst of_rat_mult[symmetric], subst median_rat[OF s_ge_0, symmetric])
     apply (subst of_rat_diff[symmetric], simp)
     using of_rat_less_eq by blast
   finally have a:"\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.  
-      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) xs)) s - f0_value xs\<bar> \<le> \<delta> * f0_value xs) \<ge> 1-real_of_rat \<epsilon>"
+      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) as)) s - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1-real_of_rat \<epsilon>"
     by blast
 
   show ?thesis
@@ -1339,8 +1339,8 @@ lemma f_subset:
 theorem f0_space_usage:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
-  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
+  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
   shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
@@ -1417,22 +1417,22 @@ proof -
 
   have b: 
     "\<And>x. x \<in> ({0..<s} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 2) \<Longrightarrow>
-        bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs)) \<le> 
+        bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) \<le> 
         f0_space_usage (n, \<epsilon>, \<delta>)"
   proof -
     fix x
     assume b_1:"x \<in> {0..<s} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 2"
     have b_2: "x \<in> extensional {0..<s}" using b_1 by (simp add:PiE_def) 
 
-    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> card (f0_sketch p r t (x y) xs) \<le> t "
+    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> card (f0_sketch p r t (x y) as) \<le> t "
       apply (simp add:f0_sketch_def)
       apply (subst card_least, simp)
       by simp
 
-    hence b_3: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) xs) ` {0..<s} \<Longrightarrow> card y \<le> t"
+    hence b_3: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) as) ` {0..<s} \<Longrightarrow> card y \<le> t"
       by force
 
-    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> f0_sketch p r t (x y) xs \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {0..<p} "
+    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> f0_sketch p r t (x y) as \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {0..<p} "
       apply (simp add:f0_sketch_def)
       apply (rule order_trans[OF least_subset])
       apply (rule f_subset[where f="\<lambda>x. float_of (truncate_down r (real x))"])
@@ -1440,23 +1440,23 @@ proof -
       apply (rule hash_range[OF p_ge_0, where n="2"])
        using b_1 apply (simp add: PiE_iff)
       using assms(3) n_le_p order_less_le_trans by blast
-    hence b_4: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) xs) ` {0..<s} \<Longrightarrow> 
+    hence b_4: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) as) ` {0..<s} \<Longrightarrow> 
       y \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {0..<p}"
       by force
 
-    have b_4_1: "\<And>y z . y \<in> (\<lambda>z. f0_sketch p r t (x z) xs) ` {0..<s} \<Longrightarrow> z \<in> y \<Longrightarrow> 
+    have b_4_1: "\<And>y z . y \<in> (\<lambda>z. f0_sketch p r t (x z) as) ` {0..<s} \<Longrightarrow> z \<in> y \<Longrightarrow> 
       bit_count (F\<^sub>S z) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+9)))"
       using b_4_22 b_4 by blast
 
-    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> finite (f0_sketch p r t (x y) xs)"
+    have "\<And>y. y \<in> {0..<s} \<Longrightarrow> finite (f0_sketch p r t (x y) as)"
       apply (simp add:f0_sketch_def)
       by (rule finite_subset[OF least_subset], simp)
-    hence b_5: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) xs) ` {0..<s} \<Longrightarrow> finite y" by force
+    hence b_5: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) as) ` {0..<s} \<Longrightarrow> finite y" by force
 
-    have "bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs)) =
+    have "bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) =
       bit_count (N\<^sub>S s) + bit_count (N\<^sub>S t) +  bit_count (N\<^sub>S p) + bit_count (N\<^sub>S r) +
       bit_count (list\<^sub>S (list\<^sub>S (zfact\<^sub>S p)) (map x [0..<s])) +
-      bit_count (list\<^sub>S (set\<^sub>S F\<^sub>S) (map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs) [0..<s]))"
+      bit_count (list\<^sub>S (set\<^sub>S F\<^sub>S) (map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as) [0..<s]))"
       apply (simp add:b_2 encode_state_def dependent_bit_count prod_bit_count
         s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] 
         del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
@@ -1473,7 +1473,7 @@ proof -
         apply (metis nat_bit_count)
        apply (rule list_bit_count_est[where xs="map x [0..<s]", simplified])
        apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0]) using b_1 apply blast
-      apply (rule list_bit_count_est[where xs="map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs) [0..<s]", simplified])
+      apply (rule list_bit_count_est[where xs="map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as) [0..<s]", simplified])
       apply (rule set_bit_count_est, metis b_5, metis b_3)
        apply simp
       by (metis b_4_1)
@@ -1495,11 +1495,11 @@ proof -
       apply (subst log_mult, simp, simp, simp)
       apply (simp add:s_def[symmetric] r_def[symmetric] t_def[symmetric])
       by (simp add:algebra_simps)
-    finally show "bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs)) \<le> 
+    finally show "bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) \<le> 
         f0_space_usage (n, \<epsilon>, \<delta>)" by simp
   qed
   
-  have a:"\<And>y. y \<in> (\<lambda>x. (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) xs)) `
+  have a:"\<And>y. y \<in> (\<lambda>x. (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) `
              ({0..<s} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 2) \<Longrightarrow>
          bit_count (encode_state y) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
     using b apply (simp add:image_def del:f0_space_usage.simps) by blast
