@@ -175,7 +175,7 @@ lemma float_bit_count:
   fixes m :: int
   fixes e :: int
   defines "f \<equiv> float_of (m * 2 powr e)"
-  shows "bit_count (F\<^sub>S f) \<le> 4 + 2 * (log 2 (abs m + 2) + log 2 (abs e + 1))"
+  shows "bit_count (F\<^sub>S f) \<le> 4 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
 proof (cases "m \<noteq> 0")
   case True
   have "f = Float m e" 

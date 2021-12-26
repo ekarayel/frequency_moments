@@ -7,9 +7,9 @@ begin
 
 definition if_then_else where "if_then_else p q r = (if p then q else r)"
 
-type_synonym fk_space = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> (nat \<times> nat))"
+type_synonym fk_state = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> (nat \<times> nat))"
 
-fun fk_init :: "nat \<Rightarrow> rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> fk_space pmf" where
+fun fk_init :: "nat \<Rightarrow> rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> fk_state pmf" where
   "fk_init k \<delta> \<epsilon> n =
     do {
       let s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>;
@@ -17,7 +17,7 @@ fun fk_init :: "nat \<Rightarrow> rat \<Rightarrow> rat \<Rightarrow> nat \<Righ
       return_pmf (s\<^sub>1, s\<^sub>2, k, 0, (\<lambda>_. undefined))
     }"
 
-fun fk_update :: "nat \<Rightarrow> fk_space \<Rightarrow> fk_space pmf" where
+fun fk_update :: "nat \<Rightarrow> fk_state \<Rightarrow> fk_state pmf" where
   "fk_update a (s\<^sub>1, s\<^sub>2, k, m, r) = 
     do {
       coins \<leftarrow> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. bernoulli_pmf (1/(real m+1)));
@@ -30,23 +30,7 @@ fun fk_update :: "nat \<Rightarrow> fk_space \<Rightarrow> fk_space pmf" where
       )
     }"
 
-definition encode_state where
-  "encode_state = 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
-    N\<^sub>S \<times>\<^sub>S  
-    N\<^sub>S \<times>\<^sub>S  
-    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) (N\<^sub>S \<times>\<^sub>S N\<^sub>S)))"
-
-lemma "is_encoding encode_state"
-  apply (simp add:encode_state_def)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis nat_encoding)
-  by (metis encode_extensional prod_encoding nat_encoding)
-
-fun fk_result :: "fk_space \<Rightarrow> rat pmf" where
+fun fk_result :: "fk_state \<Rightarrow> rat pmf" where
   "fk_result (s\<^sub>1, s\<^sub>2, k, m, r) = 
     return_pmf (median (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}.
       (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . rat_of_nat (let t = snd (r (i\<^sub>1, i\<^sub>2)) + 1 in m * (t^k - (t - 1)^k))) / (rat_of_nat s\<^sub>1)) s\<^sub>2
@@ -879,6 +863,23 @@ fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat)
     2 * log 2 (1 + real k) +
     2 * log 2 (1 + real m) +
     s\<^sub>1 * s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m)))"
+
+definition encode_state where
+  "encode_state = 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
+    N\<^sub>S \<times>\<^sub>S  
+    N\<^sub>S \<times>\<^sub>S  
+    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) (N\<^sub>S \<times>\<^sub>S N\<^sub>S)))"
+
+lemma "inj_on encode_state (dom encode_state)"
+  apply (rule encoding_imp_inj)
+  apply (simp add:encode_state_def)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis nat_encoding)
+  by (metis encode_extensional prod_encoding nat_encoding)
 
 theorem fk_space_usage:
   assumes "k \<ge> 1"

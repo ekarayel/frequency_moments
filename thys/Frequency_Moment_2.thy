@@ -15,25 +15,9 @@ fun f2_hash where
       - int p - 1
   )"
 
-type_synonym f2_space = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
+type_synonym f2_state = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
 
-definition encode_state where
-  "encode_state = 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
-    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
-    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) I\<^sub>S)))"
-
-lemma "is_encoding encode_state"
-  apply (simp add:encode_state_def)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis encode_extensional list_encoding zfact_encoding)
-  by (metis encode_extensional int_encoding)
-
-fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space pmf" where
+fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_state pmf" where
   "f2_init \<delta> \<epsilon> n =
     do {
       let s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>;
@@ -43,11 +27,11 @@ fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_space p
       return_pmf (s\<^sub>1, s\<^sub>2, p, h, (\<lambda>_ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0 :: int)))
     }"
 
-fun f2_update :: "nat \<Rightarrow> f2_space \<Rightarrow> f2_space pmf" where
+fun f2_update :: "nat \<Rightarrow> f2_state \<Rightarrow> f2_state pmf" where
   "f2_update x (s\<^sub>1, s\<^sub>2, p, h, sketch) = 
     return_pmf (s\<^sub>1, s\<^sub>2, p, h, \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. f2_hash p (h i) x + sketch i)"
 
-fun f2_result :: "f2_space \<Rightarrow> rat pmf" where
+fun f2_result :: "f2_state \<Rightarrow> rat pmf" where
   "f2_result (s\<^sub>1, s\<^sub>2, p, h, sketch) = 
     return_pmf (median (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. 
       (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . rat_of_int (sketch (i\<^sub>1, i\<^sub>2))^2) / ((rat_of_nat p^2-1) * rat_of_nat s\<^sub>1)) s\<^sub>2
@@ -355,11 +339,11 @@ proof -
   define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = 
     prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))"
 
-  define s\<^sub>1_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>1_from = fst"
-  define s\<^sub>2_from :: "f2_space \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
-  define p_from :: "f2_space \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
-  define h_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
-  define sketch_from :: "f2_space \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
+  define s\<^sub>1_from :: "f2_state \<Rightarrow> nat" where "s\<^sub>1_from = fst"
+  define s\<^sub>2_from :: "f2_state \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
+  define p_from :: "f2_state \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
+  define h_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
+  define sketch_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
 
   have p_prime: "Factorial_Ring.prime p" 
     apply (simp add:p_def) 
@@ -579,6 +563,23 @@ fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow
     2 * log 2 (1 + s\<^sub>2) +
     2 * log 2 (4 + 2 * real n) +
     s\<^sub>1 * s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1 )))"
+
+definition encode_state where
+  "encode_state = 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
+    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
+    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) I\<^sub>S)))"
+
+lemma "inj_on encode_state (dom encode_state)"
+  apply (rule encoding_imp_inj)
+  apply (simp add:encode_state_def)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis encode_extensional list_encoding zfact_encoding)
+  by (metis encode_extensional int_encoding)
 
 theorem f2_space_usage:
   assumes "\<epsilon> \<in> {0<..<1}"

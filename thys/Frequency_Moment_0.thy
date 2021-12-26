@@ -6,9 +6,9 @@ theory Frequency_Moment_0
   "Frequency_Moments"
 begin
 
-type_synonym f0_space = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<Rightarrow> (int set list)) \<times> (nat \<Rightarrow> float set)"
+type_synonym f0_state = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<Rightarrow> (int set list)) \<times> (nat \<Rightarrow> float set)"
 
-fun f0_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f0_space pmf" where
+fun f0_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f0_state pmf" where
   "f0_init \<delta> \<epsilon> n =
     do {
       let s = nat \<lceil>-18 * ln (real_of_rat \<epsilon>)\<rceil>;
@@ -19,25 +19,16 @@ fun f0_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f0_space p
       return_pmf (s, t, p, r, h, (\<lambda>_ \<in> {0..<s}. {}))
     }"
 
-fun f0_update :: "nat \<Rightarrow> f0_space \<Rightarrow> f0_space pmf" where
+fun f0_update :: "nat \<Rightarrow> f0_state \<Rightarrow> f0_state pmf" where
   "f0_update x (s, t, p, r, h, sketch) = 
     return_pmf (s, t, p, r, h, \<lambda>i \<in> {0..<s}.
       least t (insert (float_of (truncate_down r (hash p x (h i)))) (sketch i)))"
 
-fun f0_result :: "f0_space \<Rightarrow> rat pmf" where
+fun f0_result :: "f0_state \<Rightarrow> rat pmf" where
   "f0_result (s, t, p, r, h, sketch) = return_pmf (median (\<lambda>i \<in> {0..<s}.
       (if card (sketch i) < t then of_nat (card (sketch i)) else
         rat_of_nat t* rat_of_nat p / rat_of_float  (Max (sketch i)))
     ) s)"
-
-definition encode_state where
-  "encode_state = 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s. 
-    N\<^sub>S \<times>\<^sub>S (
-    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
-    N\<^sub>S \<times>\<^sub>S ( 
-    encode_extensional [0..<s] (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
-    encode_extensional [0..<s] (set\<^sub>S F\<^sub>S)))))"
 
 definition f0_sketch where 
   "f0_sketch p r t h xs = least t ((\<lambda>x. float_of (truncate_down r (hash p x h))) ` (set xs))"
@@ -74,9 +65,6 @@ next
     apply (simp add:f0_sketch_def)
     by (subst least_insert, simp, simp)
 qed
-
-lemma F_0_value: "F 0 as = rat_of_nat (card (set as))"
-  by (simp add:F_def)
 
 lemma (in prob_space) prob_sub_additive:
   assumes "Collect P \<in> sets M"
@@ -1330,6 +1318,25 @@ fun f0_space_usage :: "(nat \<times> rat \<times> rat) \<Rightarrow> real" where
     2 * log 2 (1 + real r) +
     real s * (12 + 4 * log 2 (10 + real n) +
     real t * (11 + 4 * r + 2 * log 2 (log 2 (real n + 9)))))"
+
+definition encode_state where
+  "encode_state = 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s. 
+    N\<^sub>S \<times>\<^sub>S (
+    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
+    N\<^sub>S \<times>\<^sub>S ( 
+    encode_extensional [0..<s] (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
+    encode_extensional [0..<s] (set\<^sub>S F\<^sub>S)))))"
+
+lemma "inj_on encode_state (dom encode_state)"
+  apply (rule encoding_imp_inj)
+  apply (simp add: encode_state_def)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis nat_encoding)
+  apply (rule prod_encoding, metis encode_extensional list_encoding zfact_encoding)
+  by (rule encode_extensional, rule encode_set, rule encode_float)
 
 lemma f_subset:
   assumes "g ` A \<subseteq> h ` B"
