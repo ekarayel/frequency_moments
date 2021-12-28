@@ -1,19 +1,13 @@
 section \<open>Frequency Moment $2$\<close>
 
 theory Frequency_Moment_2
-  imports Main "HOL-Probability.Probability_Mass_Function" UniversalHashFamily Field 
-    Median Probability_Ext "HOL-Library.Multiset" Partitions Primes_Ext "HOL-Library.Extended_Nat"
-    Encoding List_Ext Prod_PMF  "HOL-Library.Landau_Symbols" UniversalHashFamilyOfPrime
-  "Frequency_Moments"
+  imports Main "HOL-Library.Landau_Symbols"
+    Median Probability_Ext Partitions Primes_Ext Encoding List_Ext Prod_PMF
+    UniversalHashFamilyOfPrime Frequency_Moments
 begin
 
 fun f2_hash where
-  "f2_hash p h k = (
-    if hash p k h \<in> {k. 2*k < p} then
-      int p - 1
-    else
-      - int p - 1
-  )"
+  "f2_hash p h k = (if hash p k h \<in> {k. 2*k < p} then int p - 1 else - int p - 1)"
 
 type_synonym f2_state = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
 
@@ -34,7 +28,7 @@ fun f2_update :: "nat \<Rightarrow> f2_state \<Rightarrow> f2_state pmf" where
 fun f2_result :: "f2_state \<Rightarrow> rat pmf" where
   "f2_result (s\<^sub>1, s\<^sub>2, p, h, sketch) = 
     return_pmf (median (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. 
-      (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . rat_of_int (sketch (i\<^sub>1, i\<^sub>2))^2) / ((rat_of_nat p^2-1) * rat_of_nat s\<^sub>1)) s\<^sub>2
+      (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . (rat_of_int (sketch (i\<^sub>1, i\<^sub>2)))\<^sup>2) / (((rat_of_nat p)\<^sup>2-1) * rat_of_nat s\<^sub>1)) s\<^sub>2
     )"
 
 lemma f2_hash_exp:
@@ -559,8 +553,8 @@ fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow
     let s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2 \<rceil> in
     let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil> in 
     5 +
-    2 * log 2 (1 + s\<^sub>1) +
-    2 * log 2 (1 + s\<^sub>2) +
+    2 * log 2 (s\<^sub>1 + 1) +
+    2 * log 2 (s\<^sub>2 + 1) +
     2 * log 2 (4 + 2 * real n) +
     s\<^sub>1 * s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1 )))"
 
@@ -657,8 +651,8 @@ proof -
     
     have "bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}.
       sum_list (map (f2_hash p (y i)) as)))
-       \<le> ereal (2 * (log 2 (1 + real s\<^sub>1)) + 1) 
-       + (ereal (2 * (log 2 (1 + real s\<^sub>2)) + 1)
+       \<le> ereal (2 * (log 2 (real s\<^sub>1 + 1)) + 1) 
+       + (ereal (2 * (log 2 (real s\<^sub>2 + 1)) + 1)
        + (ereal (2 * (log 2 (1 + real (2*n+3))) + 1) 
        + ((ereal (real s\<^sub>1 * real s\<^sub>2) * (10 + 8 * log 2 (4 + 2 * real n)) + 1) 
        + (ereal (real s\<^sub>1 * real s\<^sub>2) * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1) ) + 1))))"
@@ -821,7 +815,7 @@ proof -
       using n_ge_1 m_ge_1 by (simp add: add_pos_pos)+
 
     have
-      "5 + 2 * log 2 (1 + real s\<^sub>1) + 2 * log 2 (1 + real s\<^sub>2) + 2 * log 2 (4 + 2 * real n) +
+      "5 + 2 * log 2 (real s\<^sub>1 + 1) + 2 * log 2 (real s\<^sub>2 + 1) + 2 * log 2 (4 + 2 * real n) +
       real s\<^sub>1 * real s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1))
     \<le> 5 * real s\<^sub>1 * real s\<^sub>2 + 2 * real s\<^sub>1 * real s\<^sub>2 + 2 * real s\<^sub>1 * real s\<^sub>2 + 
       real s\<^sub>1 * real s\<^sub>2 * 2 * log 2 (4 + 2 * real n) +
@@ -859,10 +853,10 @@ proof -
        apply (subst (2) mult.commute)
        apply simp
       using delta_bound zero_compare_simps(12) by blast
-    finally have b_1: "5 + 2 * log 2 (1 + real s\<^sub>1) + 2 * log 2 (1 + real s\<^sub>2) + 2 * log 2 (4 + 2 * real n) +
+    finally have b_1: "5 + 2 * log 2 (real s\<^sub>1 + 1) + 2 * log 2 (real s\<^sub>2 + 1) + 2 * log 2 (4 + 2 * real n) +
       real s\<^sub>1 * real s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1))
       \<le> c * (ln (1 / real_of_rat \<epsilon>) * (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
-      by blast
+      sorry
 
     show "abs (f2_space_usage  (n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (n, m, \<epsilon>, \<delta>))"
       apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
@@ -870,7 +864,7 @@ proof -
        using b_8 n_ge_1 m_ge_1 apply (auto intro!: add_nonneg_nonneg zero_le_log_cancel_iff mult_nonneg_nonneg)[1]
       apply (subst abs_of_nonneg)
        using n_ge_1 m_ge_1 \<epsilon>_inv_ge_1 apply (auto intro!: add_nonneg_nonneg mult_nonneg_nonneg)[1]
-      by (metis b_1)
+       by (metis b_1)
   qed
 
   have a:"eventually 

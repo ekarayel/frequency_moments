@@ -9,7 +9,7 @@ fun is_prefix where
   "is_prefix (Some x) (Some y) = prefix x y" |
   "is_prefix _ _ = False"
 
-type_synonym 'a encoding = "('a \<Rightarrow> bool list option)"
+type_synonym 'a encoding = "'a \<rightharpoonup> bool list"
 
 definition is_encoding :: "'a encoding \<Rightarrow> bool"
   where "is_encoding f = (\<forall>x y. is_prefix (f x) (f y) \<longrightarrow> x = y)"
@@ -209,7 +209,7 @@ lemma nat_encoding:
   by (rule encoding_by_witness[where g="decode_nat"], simp add:nat_encoding_aux)
 
 lemma nat_bit_count:
-  "bit_count (N\<^sub>S n) \<le> 2 * log 2 (1 + real n) + 1"
+  "bit_count (N\<^sub>S n) \<le> 2 * log 2 (real n+1) + 1"
 proof (induction n rule:nat_encoding_aux.induct)
   case 1
   then show ?case by simp
@@ -220,7 +220,7 @@ next
     by (subst log_le_cancel_iff, simp+)
   hence "1 + 2 * log 2 (1 + real (n div 2)) + 1 \<le> 2 * log 2 (2 + real n)"
     by simp
-  thus ?case using 2 by simp 
+  thus ?case using 2 by (simp add:add.commute) 
 qed
 
 lemma nat_bit_count_est:
@@ -229,7 +229,8 @@ lemma nat_bit_count_est:
 proof -
   have "2 * log 2 (1 + real n) + 1 \<le> 2 * log 2 (1+real m) + 1" 
     using assms by simp
-  thus ?thesis using nat_bit_count assms le_ereal_le by blast
+  thus ?thesis
+    by (metis nat_bit_count le_ereal_le  add.commute)
 qed
 
 subsection \<open>Integers\<close>
@@ -313,7 +314,7 @@ lemma prod_bit_count_2:
   "bit_count ((e1 \<times>\<^sub>S e2) x) = bit_count (e1 (fst x)) + bit_count (e2 (snd x))"
   by (simp add:bit_count_append)
 
-subsection \<open>Dependent Product>\<close>
+subsection \<open>Dependent Product\<close>
 
 fun encode_dependent_sum :: "'a encoding \<Rightarrow> ('a \<Rightarrow> 'b encoding) \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>D" 65)
   where 
@@ -361,7 +362,7 @@ lemma suc_n_le_2_pow_n:
   shows "n + 1 \<le> 2 ^ n"
   by (induction n, simp, simp)
 
-lemma log_est: "log 2 (1 + real n) \<le> n"
+lemma log_est: "log 2 (real n + 1) \<le> n"
 proof -
   have "1 + real n \<le> 2 powr (real n)"
     using suc_n_le_2_pow_n apply (simp add: powr_realpow)
@@ -427,6 +428,12 @@ lemma encode_set:
    apply (metis assms list_encoding)
   apply (rule inj_onI, simp)
   by (metis sorted_list_of_set.set_sorted_key_list_of_set)
+
+lemma set_bit_count:
+  assumes "finite S"
+  shows "bit_count (set\<^sub>S e S) = (\<Sum>x \<in> S. bit_count (e x)+1)+1"
+  using assms sorted_list_of_set
+  by (simp add:list_bit_count sum_list_distinct_conv_sum_set)
 
 lemma set_bit_count_est:
   assumes "finite S"

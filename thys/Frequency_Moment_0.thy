@@ -1312,10 +1312,10 @@ fun f0_space_usage :: "(nat \<times> rat \<times> rat) \<Rightarrow> real" where
     let r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24) in
     let t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
     8 +
-    2 * log 2 (1 + real s) +
-    2 * log 2 (1 + real t) +
-    2 * log 2 (10 + real n) +
-    2 * log 2 (1 + real r) +
+    2 * log 2 (real s + 1) +
+    2 * log 2 (real t + 1) +
+    2 * log 2 (real n + 10) +
+    2 * log 2 (real r + 1) +
     real s * (12 + 4 * log 2 (10 + real n) +
     real t * (11 + 4 * r + 2 * log 2 (log 2 (real n + 9)))))"
 
@@ -1352,7 +1352,7 @@ theorem f0_space_usage:
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  define p where "p =  find_prime_above (max n 19)"
+  define p where "p = find_prime_above (max n 19)"
   define r where "r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
 
   have n_le_p: "n \<le> p" 
@@ -1468,8 +1468,8 @@ proof -
         s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] 
         del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
       by (simp add:ac_simps del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
-    also have "... \<le> ereal (2* log 2 (1 + real s) + 1) + ereal  (2* log 2 (1 + real t) + 1)
-      + ereal (2* log 2 (1 + real p) + 1) + ereal (2 * log 2 (1 + real r) + 1)
+    also have "... \<le> ereal (2* log 2 (real s + 1) + 1) + ereal  (2* log 2 (real t + 1) + 1)
+      + ereal (2* log 2 (real p + 1) + 1) + ereal (2 * log 2 (real r + 1) + 1)
       + (ereal (real s) * (ereal (real 2 * (2 * log 2 (real p) + 2) + 1) + 1) + 1) 
       + (ereal (real s) * ((ereal (real t) * (ereal (10 + 4 * real r + 2 * log 2 (log 2 (real (n + 9))))
            + 1) + 1) + 1) + 1)"
@@ -1482,15 +1482,15 @@ proof -
        apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0]) using b_1 apply blast
       apply (rule list_bit_count_est[where xs="map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as) [0..<s]", simplified])
       apply (rule set_bit_count_est, metis b_5, metis b_3)
-       apply simp
+      apply simp 
       by (metis b_4_1)
-    also have "... = ereal ( 6 + 2 * log 2 (1 + real s)  + 2 * log 2 (1 + real t) + 
-      2 * log 2 (1 + real p) + 2 * log 2 (1 + real r) + real s * (8 + 4 * log 2 (real p) + 
+    also have "... = ereal ( 6 + 2 * log 2 (real s + 1) + 2 * log 2 (real t + 1) + 
+      2 * log 2 (real p + 1) + 2 * log 2 (real r + 1) + real s * (8 + 4 * log 2 (real p) + 
       real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 9))))))"
       apply (simp)
       by (subst distrib_left[symmetric], simp) 
-    also have "... \<le> ereal ( 6 + 2 * log 2 (1 + real s)  + 2 * log 2 (1 + real t) + 
-      2 * log 2 (2 * (10 + real n)) + 2 * log 2 (1 + real r) + real s * (8 + 4 * log 2 (2 * (10 + real n)) + 
+    also have "... \<le> ereal ( 6 + 2 * log 2 (real s + 1)  + 2 * log 2 (real t + 1) + 
+      2 * log 2 (2 * (10 + real n)) + 2 * log 2 (real r + 1) + real s * (8 + 4 * log 2 (2 * (10 + real n)) + 
       real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 9))))))"
       apply (simp, rule add_mono, simp) using p_le_n apply simp
       apply (rule mult_left_mono, simp)
@@ -1665,13 +1665,13 @@ proof -
     finally have s_le_\<epsilon>: "real s \<le> 19 * ln (1 / of_rat \<epsilon>)" by simp
 
     have "abs (f0_space_usage  (n, \<epsilon>, \<delta>)) \<le> 
-      1 * 8 + 2 * real s + 1 * (2 * real t) + 1 * (2 * log 2 (10 + real n)) + 1 * 1 * (2 * real r) +
+      1 * 8 + 2 * real s + 1 * (2 * real t) + 1 * (2 * log 2 (real n + 10)) + 1 * 1 * (2 * real r) +
       real s * (12 + 4 * log 2 (10 + real n) + real t * (11 + 4 * real r + 2 * log 2 (log 2 (real n + 9))))"
       apply (simp add:s_def[symmetric] t_def[symmetric] r_def[symmetric])
       apply (rule add_mono, rule mult_left_mono, metis log_est, simp)
       apply (rule add_mono, simp add: log_est)
       by (simp add: log_est)
-    also have "... \<le> real s * 8 + 2 * real s + real s * (2 * real t) + real s * (2 * log 2 (10 + real n))
+    also have "... \<le> real s * 8 + 2 * real s + real s * (2 * real t) + real s * (2 * log 2 (real n + 10))
       +  real s * real t * (2 * real r) + 
       real s * (12 + 4 * log 2 (10 + real n) + real t * (11 + 4 * real r + 2 * log 2 (log 2 (real n + 9))))"
       apply (rule add_mono)

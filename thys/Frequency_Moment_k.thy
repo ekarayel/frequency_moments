@@ -1,8 +1,8 @@
 section \<open>Frequency Moment $k$\<close>
 
 theory Frequency_Moment_k
-  imports Main "HOL-Probability.Probability_Mass_Function" Median "HOL-Probability.Stream_Space" Prod_PMF "Lp.Lp"
-  List_Ext Encoding "HOL-Library.Landau_Symbols" "Frequency_Moments"
+  imports Main Median "HOL-Probability.Stream_Space" Prod_PMF Lp.Lp
+  List_Ext Encoding "HOL-Library.Landau_Symbols" Frequency_Moments
 begin
 
 definition if_then_else where "if_then_else p q r = (if p then q else r)"
@@ -858,10 +858,10 @@ fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat)
     let s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k) / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
     let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil> in 
     5 +
-    2 * log 2 (1 + s\<^sub>1) +
-    2 * log 2 (1 + s\<^sub>2) +
-    2 * log 2 (1 + real k) +
-    2 * log 2 (1 + real m) +
+    2 * log 2 (s\<^sub>1 + 1) +
+    2 * log 2 (s\<^sub>2 + 1) +
+    2 * log 2 (real k + 1) +
+    2 * log 2 (real m + 1) +
     s\<^sub>1 * s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m)))"
 
 definition encode_state where
@@ -918,10 +918,10 @@ proof -
       using dual_order.strict_trans1 by fastforce
     have b3: "y \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})" using b0 PiE_iff by blast
     hence "bit_count (encode_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> 
-      ereal (2 * log 2 (s\<^sub>1 + 1) + 1) + (
-      ereal (2 * log 2 (s\<^sub>2 + 1) + 1) + ( 
-      ereal (2 * log 2 (k + 1) + 1) + (
-      ereal (2 * log 2 (length as + 1) + 1) + (
+      ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + (
+      ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ( 
+      ereal (2 * log 2 (real k + 1) + 1) + (
+      ereal (2 * log 2 (real (length as) + 1) + 1) + (
        (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 ((n-1)+1) + 1) + ereal (2 * log 2 ((length as-1)+1) + 1)) + 1))+ 1))))"
       apply (simp add:encode_state_def dependent_bit_count prod_bit_count PiE_iff comp_def
           del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps plus_ereal.simps sum_list_ereal times_ereal.simps)
@@ -1072,8 +1072,8 @@ proof -
     finally have s2_le_s2':"s\<^sub>2 \<le> s\<^sub>2'"
       by blast
 
-    have "5 + 2 * log 2 (1 + real s\<^sub>1) + 2 * log 2 (1 + real s\<^sub>2) + 2 * log 2 (1 + real k) + 
-      2 * log 2 (1 + real m) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))
+    have "5 + 2 * log 2 (real s\<^sub>1+1) + 2 * log 2 (real s\<^sub>2+1) + 2 * log 2 (real k + 1) + 
+      2 * log 2 (real m + 1) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))
       \<le> 5 + (2 * real s\<^sub>1) + (2 * real s\<^sub>2) + 2 * real s\<^sub>1 + 
       2 * (1+log 2 (real m)) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))"
       apply (rule add_mono)
@@ -1133,8 +1133,8 @@ proof -
       (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
       by (simp add:s\<^sub>1'_def s\<^sub>2'_def c_def algebra_simps)
 
-    finally have b_1: "5 + 2 * log 2 (1 + real s\<^sub>1) + 2 * log 2 (1 + real s\<^sub>2) + 2 * log 2 (1 + real k) + 
-      2 * log 2 (1 + real m) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))
+    finally have b_1: "5 + 2 * log 2 (real s\<^sub>1 + 1) + 2 * log 2 (real s\<^sub>2 + 1) + 2 * log 2 (real k + 1) + 
+      2 * log 2 (real m + 1) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))
       \<le> c * (real k * real n powr (1 - 1 / real k) * ln (1 / real_of_rat \<epsilon>) * 
       (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
       by blast
