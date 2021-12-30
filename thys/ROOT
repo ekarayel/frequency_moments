@@ -12,6 +12,7 @@ session StreamingAlgorithms = HOL +
     Frequency_Moment_0
     Frequency_Moment_2
     Frequency_Moment_k
+    Landau_Ext
     Least
     List_Ext
     Median

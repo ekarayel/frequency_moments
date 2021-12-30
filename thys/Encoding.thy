@@ -451,16 +451,6 @@ proof -
   finally show ?thesis by simp
 qed
 
-instantiation rat :: linorder_topology
-begin
-
-definition open_rat :: "rat set \<Rightarrow> bool"
-  where "open_rat = generate_topology (range (\<lambda>a. {..< a}) \<union> range (\<lambda>a. {a <..}))"
-
-instance
-  by standard (rule open_rat_def)
-end
-
 lemma eventually_prod_I2:
   assumes "eventually Q F1"
   assumes "eventually (\<lambda>y. \<forall>x. \<not>(Q x) \<or> (P (x, y))) F2"

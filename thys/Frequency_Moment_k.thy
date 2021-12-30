@@ -2,7 +2,7 @@ section \<open>Frequency Moment $k$\<close>
 
 theory Frequency_Moment_k
   imports Main Median "HOL-Probability.Stream_Space" Prod_PMF Lp.Lp
-  List_Ext Encoding "HOL-Library.Landau_Symbols" Frequency_Moments
+  List_Ext Encoding "HOL-Library.Landau_Symbols" Frequency_Moments Landau_Ext
 begin
 
 definition if_then_else where "if_then_else p q r = (if p then q else r)"
@@ -949,218 +949,202 @@ proof -
     by (metis b)
 qed
 
-
 lemma fk_asympotic_space_complexity:
   "fk_space_usage \<in> 
   O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right (0::rat) \<times>\<^sub>F at_right (0::rat)](\<lambda> (k, n, m, \<epsilon>, \<delta>).
   real k*(real n) powr (1-1/ real k) / (of_rat \<delta>)\<^sup>2 * (ln (1 / of_rat \<epsilon>)) * (ln (real n) + ln (real m)))"
-  (is "?lhs \<in> O[?evt](?rhs)")
+  (is "_ \<in> O[?F](?rhs)")
 proof -
-  define c where "c=(456::real)"
+  define k_of :: "nat \<times> nat \<times> nat \<times> rat \<times> rat \<Rightarrow> nat" where "k_of = (\<lambda>(k, n, m, \<epsilon>, \<delta>). k)"
+  define n_of :: "nat \<times> nat \<times> nat \<times> rat \<times> rat \<Rightarrow> nat" where "n_of = (\<lambda>(k, n, m, \<epsilon>, \<delta>). n)"
+  define m_of :: "nat \<times> nat \<times> nat \<times> rat \<times> rat \<Rightarrow> nat" where "m_of = (\<lambda>(k, n, m, \<epsilon>, \<delta>). m)"
+  define \<epsilon>_of :: "nat \<times> nat \<times> nat \<times> rat \<times> rat \<Rightarrow> rat" where "\<epsilon>_of = (\<lambda>(k, n, m, \<epsilon>, \<delta>). \<epsilon>)"
+  define \<delta>_of :: "nat \<times> nat \<times> nat \<times> rat \<times> rat \<Rightarrow> rat" where "\<delta>_of = (\<lambda>(k, n, m, \<epsilon>, \<delta>). \<delta>)"
 
-  have b:"\<And>k n m \<epsilon> \<delta>. k \<ge> 1 \<Longrightarrow> n \<ge> 729  \<Longrightarrow> m \<ge> 1 \<Longrightarrow> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<Longrightarrow> (0 < \<delta> \<and> \<delta> < 1) \<Longrightarrow>
-     abs (fk_space_usage  (k, n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (k, n, m, \<epsilon>, \<delta>))"
-  proof -
-    fix k n m \<epsilon> \<delta>
-    assume k_ge_1: "k \<ge> (1::nat)"
-    assume n_ge_729: "n \<ge> (729::nat)"
-    assume m_ge_1: "m \<ge> (1::nat)"
-    assume eps_bound: "(0::rat) < \<epsilon> \<and> \<epsilon> < 1/3"
-    assume delta_bound: "(0::rat) < \<delta> \<and> \<delta> < 1"
-    define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-    define s\<^sub>1' where "s\<^sub>1' = 4*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2"
-    define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
-    define s\<^sub>2' where "s\<^sub>2' = 19 * ln (1 / real_of_rat \<epsilon>)"
+  define g1 where "g1 = (\<lambda>x. real (k_of x)*(real (n_of x)) powr (1-1/ real (k_of x)) / 
+    (of_rat (\<delta>_of x))\<^sup>2)"
 
-    have "exp(16/3) \<le> exp (6::real)" 
-      by (subst exp_le_cancel_iff, simp)
-    also have "... = exp(1) ^ 6"
-      using exp_of_nat_mult[where n="6" and x="1"] by simp
-    also have "... \<le> 3^6"
-      apply (rule power_mono)
-      using exp_le apply blast
-      by simp
-    also have "... = 729"
-      by simp
-    finally have n_ge_201: "exp (16/3) \<le> n"
-      using n_ge_729 by linarith
+  define g where "g = (\<lambda>x. g1 x * (ln (1 / of_rat (\<epsilon>_of x))) * (ln (real (n_of x)) + ln (real (m_of x))))"
 
-    have n_ge_1: "n \<ge> 1" using n_ge_729 by simp
-    have k_ge_0: "k \<ge> 0" using k_ge_1 by blast
-    have \<epsilon>_inv_ge_1: "1/ real_of_rat \<epsilon> \<ge> 1" using eps_bound by simp
+  have k_inf: "\<And>c. eventually (\<lambda>x. c \<le> (real (k_of x))) ?F"
+    apply (simp add:k_of_def case_prod_beta')
+    apply (subst eventually_prod1', simp add:prod_filter_eq_bot)
+    by (meson eventually_at_top_linorder nat_ceiling_le_eq)
 
-    have "s\<^sub>1 > 0"
-      apply (simp add:s\<^sub>1_def)
-      apply (rule divide_pos_pos)
-      apply (rule mult_pos_pos)
-      using k_ge_1 apply linarith
-      using n_ge_1 apply (simp)
-      by (meson delta_bound zero_less_of_rat_iff zero_less_power)
-    hence s1_ge_1: "s\<^sub>1 \<ge> 1" by simp
+  have n_inf: "\<And>c. eventually (\<lambda>x. c \<le> (real (n_of x))) ?F" 
+    apply (simp add:n_of_def case_prod_beta')
+    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
+    apply (subst eventually_prod1', simp add:prod_filter_eq_bot)
+    by (meson eventually_at_top_linorder nat_ceiling_le_eq)
 
-    have "s\<^sub>2 > 0" using eps_bound by (simp add:s\<^sub>2_def)
-    hence s2_ge_1: "s\<^sub>2 \<ge> 1" by simp
+  have m_inf: "\<And>c. eventually (\<lambda>x. c \<le> (real (m_of x))) ?F" 
+    apply (simp add:m_of_def case_prod_beta')
+    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
+    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
+    apply (subst eventually_prod1', simp add:prod_filter_eq_bot)
+    by (meson eventually_at_top_linorder nat_ceiling_le_eq)
 
-    have "real_of_rat \<epsilon> * exp 1 \<le> (1/3) * 3"
-      apply (rule mult_mono)
-         apply (metis (mono_tags, opaque_lifting) eps_bound less_eq_rat_def of_rat_divide of_rat_less_eq of_rat_numeral_eq one_eq_of_rat_iff)
-      using exp_le by simp+
-    also have "... = 1"
-      by simp
-    finally have \<epsilon>_le_1_over_e: "real_of_rat \<epsilon> * exp 1 \<le> 1"
-      by blast
+  have eps_inf: "\<And>c. eventually (\<lambda>x. c \<le> 1 / (real_of_rat (\<epsilon>_of x))) ?F"
+    apply (simp add:\<epsilon>_of_def case_prod_beta')
+    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod1', simp)
+    by (rule inv_at_right_0_inf)
 
-    have "s\<^sub>1 \<le> 3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2 + 1"
-      apply (simp add:s\<^sub>1_def s\<^sub>1'_def, subst of_nat_nat, simp)
-       apply (rule order_less_le_trans[where y="0"], simp)
-       apply (rule divide_nonneg_nonneg)
-        apply (rule mult_nonneg_nonneg)
-         apply (rule mult_nonneg_nonneg)
-      by (simp add:k_ge_0)+
-    also have "... \<le> (3+1)*(real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2)"
-      apply (subst distrib_right)
-      apply (rule add_mono, simp, simp)
-      apply (subst pos_le_divide_eq) using delta_bound apply simp
-      apply (rule order_trans[where  y="1*1"])
-       apply (simp, metis delta_bound less_eq_rat_def of_rat_le_1_iff of_rat_power one_power2 pos2 power_strict_mono)
-      apply (rule mult_mono)
-      using k_ge_1 n_ge_1 apply simp 
-      using n_ge_1 apply simp 
-      using ge_one_powr_ge_zero k_ge_1 apply force
-      using k_ge_0 apply simp
-      by simp
-    also have "... = s\<^sub>1'"
-      by (simp add:s\<^sub>1'_def)
-    finally have s1_le_s1': "s\<^sub>1 \<le> s\<^sub>1'"
-      by blast
+  have delta_inf: "\<And>c. eventually (\<lambda>x. c \<le> 1 / (real_of_rat (\<delta>_of x))) ?F"
+    apply (simp add:\<delta>_of_def case_prod_beta')
+    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)
+    by (rule inv_at_right_0_inf)
 
-    have "real k \<le> 3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2"
-      apply (subst pos_le_divide_eq)
-      using delta_bound apply simp
-      apply (rule mult_mono, simp)
-       apply (rule order_trans[where y="1"])
-        using delta_bound apply (simp add: power_le_one)
-        using n_ge_1 k_ge_1 ge_one_powr_ge_zero apply fastforce
-        by simp+    
-    also have "... \<le> real s\<^sub>1"
-      apply (simp add:s\<^sub>1_def) 
-      using of_nat_ceiling by blast
-    finally have k_le_s1: "real k \<le> real s\<^sub>1" by blast
+  have zero_less_eps: "eventually (\<lambda>x. 0 < (real_of_rat (\<epsilon>_of x))) ?F"
+    apply (simp add:\<epsilon>_of_def case_prod_beta')
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod1', simp)
+    by (rule eventually_at_rightI[where b="1"], simp, simp)
 
-    have "s\<^sub>2 = real_of_int \<lceil>(18 * ln (1 / real_of_rat \<epsilon>))\<rceil> "
-      apply (simp add:s\<^sub>2_def, subst of_nat_nat, simp)
-       apply (rule order_less_le_trans[where y="0"], simp)
-      using  eps_bound apply simp
-       apply simp
-      apply simp
-      apply (rule arg_cong[where f="\<lambda>x. \<lceil>x\<rceil>"])
-      using eps_bound by (simp add: ln_div)
-    also have "... \<le>  (18 * ln (1 / real_of_rat  \<epsilon>)) + 1"
-      by (simp add:s\<^sub>2'_def)
-    also have  "... \<le> (18+1) * ln (1 / real_of_rat \<epsilon>)"
-      apply (subst distrib_right)
-      apply (rule add_mono)
-      using eps_bound apply simp
-      apply simp
-      apply (subst ln_ge_iff)
-      using \<epsilon>_inv_ge_1 apply linarith
-      apply (subst pos_le_divide_eq)
-      using eps_bound apply simp
-      using \<epsilon>_le_1_over_e by (simp add:mult.commute)
-    also have "... = s\<^sub>2'"
-      by (simp add:s\<^sub>2'_def)
-    finally have s2_le_s2':"s\<^sub>2 \<le> s\<^sub>2'"
-      by blast
+  have zero_less_delta: "eventually (\<lambda>x. 0 < (real_of_rat (\<delta>_of x))) ?F"
+    apply (simp add:\<delta>_of_def case_prod_beta')
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)
+    by (rule eventually_at_rightI[where b="1"], simp, simp)
 
-    have "5 + 2 * log 2 (real s\<^sub>1+1) + 2 * log 2 (real s\<^sub>2+1) + 2 * log 2 (real k + 1) + 
-      2 * log 2 (real m + 1) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))
-      \<le> 5 + (2 * real s\<^sub>1) + (2 * real s\<^sub>2) + 2 * real s\<^sub>1 + 
-      2 * (1+log 2 (real m)) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))"
-      apply (rule add_mono)
-       apply (rule add_mono)
-        apply (rule add_mono)
-         apply (rule add_mono)
-          apply (rule add_mono, simp)
-          apply (rule mult_left_mono, rule log_est, simp)
-         apply (rule mult_left_mono, rule log_est, simp)
-        apply (rule mult_left_mono, rule order_trans[where y="real k"], rule log_est, rule k_le_s1, simp)
-       apply (rule mult_left_mono, subst (2) log_eq_one[symmetric,where a="2"], simp, simp)
-        apply (subst log_mult[symmetric], simp, simp)
-      using m_ge_1 by simp+
-    also have "... \<le> 5 + (real s\<^sub>1 * real s\<^sub>2 * 2) +  (real s\<^sub>1 * real s\<^sub>2 * 2) + (real s\<^sub>1 * real s\<^sub>2 * 2) 
-        + (2 + real s\<^sub>1 * real s\<^sub>2 * (2 * log 2 m)) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))"
-      apply (rule add_mono)
-       apply (rule add_mono)
-        apply (rule add_mono)
-         apply (rule add_mono)
-          apply (rule add_mono, simp)
-          using s1_ge_1 s2_ge_1 apply simp
-         using s1_ge_1 s2_ge_1 apply simp
-        using s1_ge_1 s2_ge_1 apply simp
-       using m_ge_1 apply (simp, subst mult.assoc[symmetric], simp add:mult_le_cancel_right1) 
-       apply (metis (no_types, opaque_lifting) mult_cancel_left2 mult_left_mono of_nat_0_le_iff of_nat_eq_1_iff of_nat_mono order_trans s1_ge_1 s2_ge_1)
-      by simp
-    also have "... \<le> 7+ real s\<^sub>1 * real s\<^sub>2 * (9 + 2 * log 2 (real n) + 4 * log 2 (real m))"
-      by (simp add:algebra_simps)
-    also have "... \<le> real s\<^sub>1 * real s\<^sub>2 * (7 + (9 + 2 * log 2 (real n) + 4 * log 2 (real m)))"
-      apply (subst distrib_left[where b="7"])
-      apply (rule add_mono, simp)
-      apply (metis s1_ge_1 s2_ge_1 One_nat_def less_eq_Suc_le nat_0_less_mult_iff of_nat_mult real_of_nat_ge_one_iff)
-      by (simp)
-    also have "... \<le> s\<^sub>1' * s\<^sub>2' * (16 + 3 * ln (real n) + 6 * ln (real m))"
-      apply (rule mult_mono)
-         apply (rule mult_mono, metis s1_le_s1', metis s2_le_s2')
-          apply (simp add:s\<^sub>1'_def, simp, simp)
-        apply (rule add_mono) using log_2_ln n_ge_1 apply simp
-        using log_2_ln m_ge_1 apply simp
-       apply (rule mult_nonneg_nonneg, simp add:s\<^sub>1'_def, simp add:s\<^sub>2'_def)
-      using s2_le_s2' s\<^sub>2'_def apply linarith
-      using m_ge_1 n_ge_1 by auto
-    also have "... \<le> s\<^sub>1' * s\<^sub>2' * ((3 + 3) * ln (real n) + 6 * ln (real m))"
-      apply (rule mult_left_mono)
-       apply (rule add_mono)
-      apply (subst distrib_right)
-        apply (rule add_mono)
-      apply (subst mult.commute)
-         apply (subst pos_divide_le_eq[symmetric], simp)
-      apply (subst ln_ge_iff)
-      using n_ge_1 apply simp
-      using n_ge_201 apply simp
-        apply simp
-       apply simp
-      using s1_le_s1' s2_le_s2' by force
-    also have "... \<le>  c * (real k * real n powr (1 - 1 / real k) * ln (1 / real_of_rat \<epsilon>) * 
-      (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
-      by (simp add:s\<^sub>1'_def s\<^sub>2'_def c_def algebra_simps)
+  have unit_9: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x) powr (1 - 1 / real (k_of x)))"
+    apply (rule landau_o.big_mono, simp)
+    apply (rule eventually_mono[OF eventually_conj[OF n_inf[where c="1"] k_inf[where c="1"]]])
+    by (simp add: ge_one_powr_ge_zero)
 
-    finally have b_1: "5 + 2 * log 2 (real s\<^sub>1 + 1) + 2 * log 2 (real s\<^sub>2 + 1) + 2 * log 2 (real k + 1) + 
-      2 * log 2 (real m + 1) + real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real n) + 2 * log 2 (real m))
-      \<le> c * (real k * real n powr (1 - 1 / real k) * ln (1 / real_of_rat \<epsilon>) * 
-      (ln (real n) + ln (real m))) / (real_of_rat \<delta>)\<^sup>2"
-      by blast
+  have unit_8: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (k_of x))"
+    by (rule landau_o.big_mono, simp, rule k_inf)
+  have unit_6: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (m_of x))" 
+    by (rule landau_o.big_mono, simp, rule m_inf)
 
-    show "abs (fk_space_usage  (k, n, m, \<epsilon>, \<delta>)) \<le> c * abs (?rhs  (k, n, m, \<epsilon>, \<delta>))"
-      apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
-      apply (subst abs_of_nonneg)
-       using n_ge_1 m_ge_1 apply (auto intro!: add_nonneg_nonneg mult_nonneg_nonneg)[1]
-      apply (subst abs_of_nonneg)
-       using n_ge_1 m_ge_1 \<epsilon>_inv_ge_1 apply (auto intro!: add_nonneg_nonneg mult_nonneg_nonneg)[1]
-      by (metis b_1)
-  qed
+  have unit_2: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
+    apply (rule landau_o.big_mono, simp)
+    apply (rule eventually_mono[OF eventually_conj[OF zero_less_eps eps_inf[where c="exp 1"]]])
+    by (meson abs_ge_self dual_order.trans exp_gt_zero ln_ge_iff order_trans_rules(22))
 
-  have a:"eventually 
-    (\<lambda>x. abs (fk_space_usage x) \<le> c * abs (?rhs x)) ?evt"
-    apply (rule eventually_mono[where P="\<lambda>(k, n, m, \<epsilon>, \<delta>).  k \<ge> 1 \<and> n \<ge> 729  \<and> m \<ge> 1 \<and> (0 < \<epsilon> \<and> \<epsilon> < 1/3) \<and> (0 < \<delta> \<and> \<delta> < 1)"])
-    apply (rule eventually_prod_I2[where Q="\<lambda>k. k \<ge> 1"], simp)
-    apply (rule eventually_prod_I2[where Q="\<lambda>n. n \<ge> 729"], simp)
-    apply (rule eventually_prod_I2[where Q="\<lambda>m. m \<ge> 1"], simp)
-    apply (rule eventually_prod_I2[where Q="\<lambda>\<epsilon>. 0 < \<epsilon> \<and> \<epsilon> < 1/3"])
-    apply (rule eventually_at_rightI[where b="1/3"], simp, simp)
-    apply (rule eventually_at_rightI[where b="1"], simp, simp)
-    using b by blast
-  show ?thesis
-    apply (rule landau_o.bigI[where c="c"], simp add:c_def, simp)
-    using a by simp
+  have unit_10: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)))"
+    apply (rule landau_o.big_mono, simp)
+    apply (rule eventually_mono [OF n_inf[where c="exp 1"]]) 
+    by (metis abs_ge_self linorder_not_le ln_ge_iff not_exp_le_zero order.trans)
+
+  have unit_3: "(\<lambda>x. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))" 
+    apply (rule landau_sum_1)
+      apply (rule eventually_ln_ge_iff[OF n_inf])
+     apply (rule eventually_ln_ge_iff[OF m_inf])
+    by (rule unit_10)
+
+  have unit_7: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
+    apply (rule landau_o.big_mono, simp)
+    apply (rule eventually_mono[OF eventually_conj[OF zero_less_delta delta_inf[where c="1"]]])
+    by (metis one_le_power power_one_over)
+
+  have unit_4: "(\<lambda>_. 1) \<in> O[?F](g1)"
+    apply (simp add:g1_def)
+    apply (subst (2) div_commute)
+    apply (rule landau_o.big_mult_1[OF unit_7])
+    by (rule landau_o.big_mult_1[OF unit_8 unit_9])
+
+  have unit_5: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. g1 x * ln (1 / real_of_rat (\<epsilon>_of x)))"
+    by (rule landau_o.big_mult_1[OF unit_4 unit_2])
+
+  have unit_1: "(\<lambda>_. 1) \<in> O[?F](g)"
+    apply (simp add:g_def)
+    by (rule landau_o.big_mult_1[OF unit_5 unit_3])
+
+  have l6: "(\<lambda>x. real (nat \<lceil>3 * real (k_of x) * real (n_of x) powr (1 - 1 / real (k_of x)) / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>))
+    \<in> O[?F](g1)" 
+    apply (rule landau_nat_ceil[OF unit_4])
+    apply (simp add:g1_def)
+    apply (subst (2) div_commute, subst (4) div_commute)
+    apply (rule landau_o.mult, simp)
+    by simp
+
+  have l9: "(\<lambda>x. real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>))
+    \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))" 
+     apply (rule landau_nat_ceil[OF unit_2])
+    apply (subst minus_mult_right)
+      apply (subst cmult_in_bigo_iff, rule disjI2)
+      apply (subst landau_o.big.in_cong[where g="\<lambda>x. ln( 1 / (real_of_rat (\<epsilon>_of x)))"])
+       apply (rule eventually_mono[OF zero_less_eps])
+    by (subst ln_div, simp, simp, simp, simp)
+
+  have l1: "(\<lambda>x. real (nat \<lceil>3 * real (k_of x) * real (n_of x) powr (1 - 1 / real (k_of x)) / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>) *
+          real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) *
+          (3 + 2 * log 2 (real (n_of x)) + 2 * log 2 (real (m_of x)))) \<in> O[?F](g)"
+    apply (simp add:g_def)
+    apply (rule landau_o.mult)
+     apply (rule landau_o.mult, simp add:l6, simp add:l9)
+    apply (rule sum_in_bigo)
+     apply (rule sum_in_bigo, simp add:unit_3)
+     apply (simp add:log_def)
+    apply (rule landau_sum_1 [OF eventually_ln_ge_iff[OF n_inf] eventually_ln_ge_iff[OF m_inf]], simp)
+    apply (simp add:log_def)
+    by (rule landau_sum_2 [OF eventually_ln_ge_iff[OF n_inf] eventually_ln_ge_iff[OF m_inf]], simp)
+
+  have l2: "(\<lambda>x. ln (real (m_of x) + 1)) \<in> O[?F](g)"
+    apply (simp add:g_def)
+    apply (rule landau_o.big_mult_1'[OF unit_5])
+    apply (rule landau_sum_2 [OF eventually_ln_ge_iff[OF n_inf] eventually_ln_ge_iff[OF m_inf]])
+    apply (rule landau_ln_2[where a="2"], simp, simp, rule m_inf)
+    by (rule sum_in_bigo, simp, rule unit_6)
+
+  have l7: "(\<lambda>x. ln (real (k_of x) + 1)) \<in> O[?F](g1)"
+    apply (simp add:g1_def)
+    apply (subst (2) div_commute)
+    apply (rule landau_o.big_mult_1'[OF unit_7])
+    apply (rule landau_o.big_mult_1)
+     apply (rule landau_ln_3, simp)
+    by (rule sum_in_bigo, simp, simp add:unit_8, simp add: unit_9)
+
+  have l3: "(\<lambda>x. ln (real (k_of x) + 1)) \<in> O[?F](g)"
+    apply (simp add:g_def)
+    apply (rule landau_o.big_mult_1)
+    apply (rule landau_o.big_mult_1)
+      apply (simp add:l7)
+    by (rule unit_2, rule unit_3)
+
+  have l4: " (\<lambda>x. ln (real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) + 1)) \<in> O[?F](g)"
+    apply (simp add:g_def)
+    apply (rule landau_o.big_mult_1)
+     apply (rule landau_o.big_mult_1'[OF unit_4])
+     apply (rule landau_ln_3, simp)
+    by (rule sum_in_bigo, simp add:l9, rule unit_2, rule unit_3)
+
+  have l5: "(\<lambda>x. ln (real (nat \<lceil>3 * real (k_of x) * real (n_of x) powr (1 - 1 / real (k_of x)) / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>) + 1)) 
+    \<in> O[?F](g)"
+    apply (rule landau_ln_3, simp)
+    apply (rule sum_in_bigo)
+     apply (simp add:g_def)
+     apply (rule landau_o.big_mult_1)
+     apply (rule landau_o.big_mult_1)
+       apply (simp add:l6)
+    by (rule unit_2, rule unit_3, rule unit_1)
+
+  have "fk_space_usage = (\<lambda>x. fk_space_usage (k_of x, n_of x, m_of x, \<epsilon>_of x, \<delta>_of x))"
+    apply (rule ext)
+    by (simp add:case_prod_beta' k_of_def n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def)
+  also have "... \<in> O[?F](g)"
+    apply (simp add: Let_def)
+    apply (rule sum_in_bigo_r, simp add:l1)
+    apply (rule sum_in_bigo_r, simp add:l2 log_def)
+    apply (rule sum_in_bigo_r, simp add:l3 log_def)
+    apply (rule sum_in_bigo_r, simp add:l4 log_def)
+    apply (rule sum_in_bigo_r, simp add:l4 log_def)
+    by (simp add:l5, simp add:unit_1)
+  also have "... = O[?F](?rhs)"
+    apply (rule arg_cong2[where f="bigo"], simp)
+    apply (rule ext)
+    by (simp add:case_prod_beta' g1_def g_def n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def k_of_def)
+  finally show ?thesis by simp
 qed
 
 end
