@@ -393,5 +393,4 @@ lemma (in prob_space) var_sum_all_indep:
   apply (rule var_sum_pairwise_indep_2[OF assms(1) assms(2) assms(3)], simp, simp)
   using indep_vars_subset[OF assms(4)] by simp
 
-
 end

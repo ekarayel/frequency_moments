@@ -100,7 +100,6 @@ proof -
     by (simp add:M_def prod_mset_prod_list[symmetric])
 qed
 
-
 lemma sorted_sorted_list_of_multiset: "sorted (sorted_list_of_multiset M)"
   by (induction M, simp, simp add:sorted_insort) 
 

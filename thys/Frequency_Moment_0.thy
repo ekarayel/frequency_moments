@@ -1325,8 +1325,8 @@ definition encode_state where
     N\<^sub>S \<times>\<^sub>S (
     N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
     N\<^sub>S \<times>\<^sub>S ( 
-    encode_extensional [0..<s] (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
-    encode_extensional [0..<s] (set\<^sub>S F\<^sub>S)))))"
+    ([0..<s] \<rightarrow>\<^sub>S (list\<^sub>S (zfact\<^sub>S p))) \<times>\<^sub>S
+    ([0..<s] \<rightarrow>\<^sub>S (set\<^sub>S F\<^sub>S))))))"
 
 lemma "inj_on encode_state (dom encode_state)"
   apply (rule encoding_imp_inj)
@@ -1343,12 +1343,12 @@ lemma f_subset:
   shows "(\<lambda>x. f (g x)) ` A \<subseteq> (\<lambda>x. f (h x)) ` B"
   using assms by auto
 
-theorem f0_space_usage:
+theorem f0_exact_space_usage:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
   assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
-  defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
-  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
+  defines "M \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
+  shows "AE \<omega> in M. bit_count (encode_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -1465,7 +1465,7 @@ proof -
       bit_count (list\<^sub>S (list\<^sub>S (zfact\<^sub>S p)) (map x [0..<s])) +
       bit_count (list\<^sub>S (set\<^sub>S F\<^sub>S) (map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as) [0..<s]))"
       apply (simp add:b_2 encode_state_def dependent_bit_count prod_bit_count
-        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] 
+        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] encode_extensional_def
         del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
       by (simp add:ac_simps del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
     also have "... \<le> ereal (2* log 2 (real s + 1) + 1) + ereal  (2* log 2 (real t + 1) + 1)
@@ -1513,7 +1513,7 @@ proof -
 
   show ?thesis
     apply (subst AE_measure_pmf_iff, rule ballI)
-    apply (subst (asm) sketch_def)
+    apply (subst (asm) M_def)
     apply (subst (asm) f0_alg_sketch[OF assms(1) assms(2) assms(3)], simp)
     apply (simp add:s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric])
     apply (subst (asm) set_prod_pmf, simp)

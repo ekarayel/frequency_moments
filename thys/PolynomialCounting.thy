@@ -312,15 +312,14 @@ proof
 qed
 
 lemma
-  assumes "field F"
-  assumes "finite (carrier F)"
+  assumes "field F \<and> finite (carrier F)"
   shows 
     poly_count:"card (bounded_degree_polynomials F n) = card (carrier F)^n" (is ?A) and
     finite_poly_count: "finite (bounded_degree_polynomials F n)" (is ?B)
 proof -
   have a:"ring F" using assms(1) by (simp add: field.is_ring)
-  show ?A using a bounded_degree_polynomials_count assms(2) by blast
-  show ?B using a fin_degree_bounded assms(2) by blast
+  show ?A using a bounded_degree_polynomials_count assms by blast
+  show ?B using a fin_degree_bounded assms by blast
 qed
 
 lemma

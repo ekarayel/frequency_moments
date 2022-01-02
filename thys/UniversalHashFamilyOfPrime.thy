@@ -49,64 +49,30 @@ proof -
     by (simp add:hash.simps)
 qed
 
-(* TODO: We can show this for arbitrary fields and lift the result. *)
 lemma hash_inj_if_degree_1:
   assumes "prime p"
   assumes "\<omega> \<in> bounded_degree_polynomials (ZFact (int p)) n"
   assumes "degree \<omega> = 1"
   shows "inj_on (\<lambda>x. hash p x \<omega>) {0..<p}"
-proof (rule inj_onI)
-  interpret field "ZFact (int p)"
-    using zfact_prime_is_field[OF assms(1)] by blast
+proof -
   have p_ge_0: "p > 0" using assms(1)  
     by (simp add: prime_gt_0_nat)
 
-  fix x y
-  assume a1: "x \<in> {0..<p}"
-  assume a2: "y \<in> {0..<p}"
-  define x' where "x' = zfact_embed p x"
-  define y' where "y' = zfact_embed p y"
-  assume a3: "hash p x \<omega> = hash p y \<omega>"
+  have ring_p: "ring (ZFact (int p))"
+    by (metis ZFact_is_cring cring_def)
 
-  have x'_carr: "x' \<in> carrier (ZFact (int p))" 
-    using zfact_embed_ran[OF p_ge_0] a1 x'_def by blast
-  have y'_carr: "y' \<in> carrier (ZFact (int p))" 
-    using zfact_embed_ran[OF p_ge_0] a2 y'_def by blast
-  have \<omega>_carr: "set \<omega> \<subseteq> carrier (ZFact (int p))" 
-    using assms(2) apply (simp add:bounded_degree_polynomials_def) 
-    by (metis carrier_is_subring polynomial_in_carrier univ_poly_carrier)
+  have "inj_on (the_inv_into {0..<p} (zfact_embed p) \<circ> (\<lambda>x.  (UniversalHashFamily.hash (ZFact (int p)) x \<omega>)) \<circ> (zfact_embed p)) {0..<p}"
+    apply (rule comp_inj_on[OF zfact_embed_inj[OF p_ge_0]])
+    apply (subst zfact_embed_ran[OF p_ge_0])
+    apply (rule comp_inj_on)
+     apply (rule UniversalHashFamily.hash_inj_if_degree_1[OF _ assms(2) assms(3)])
+     apply (metis zfact_prime_is_field[OF assms(1)] zfact_finite[OF p_ge_0])
+    apply (rule inj_on_subset[OF _ UniversalHashFamily.hash_range_2[OF ring_p assms(2)]])
+    apply (subst zfact_embed_ran[OF p_ge_0, symmetric])
+    by (rule inj_on_the_inv_into[OF zfact_embed_inj[OF p_ge_0]])
 
-  have eval_eq: "ring.eval (ZFact (int p)) \<omega> x' = ring.eval (ZFact (int p)) \<omega> y'" 
-    using a3 inj_on_the_inv_into[OF zfact_embed_inj[OF p_ge_0]]
-      eval_in_carrier[OF \<omega>_carr]
-      zfact_embed_ran[OF p_ge_0] x'_carr y'_carr
-    apply (simp add:hash.simps UniversalHashFamily.hash_def x'_def[symmetric] y'_def[symmetric])
-    by (meson inj_on_eq_iff)
-
-
-  obtain u v where \<omega>_def: "\<omega> = [u,v]" using assms(3)
-    apply (cases \<omega>, simp)
-    by (cases "(tl \<omega>)", simp, simp)
-
-  have u_carr: "u \<in> carrier (ZFact (int p)) - {\<zero>\<^bsub>ZFact p\<^esub>}"
-    using \<omega>_def assms(2) apply (simp add:bounded_degree_polynomials_def)
-    using assms(3) by blast
-  have v_carr: "v \<in> carrier (ZFact (int p))" 
-    using \<omega>_def assms(2) apply (simp add:bounded_degree_polynomials_def)
-    using assms(3) by blast
-
-  have "\<And>x. x \<in> carrier (ZFact (int p)) \<Longrightarrow> ring.eval (ZFact (int p)) \<omega> x = u \<otimes>\<^bsub>ZFact p\<^esub> x  \<oplus>\<^bsub>ZFact p\<^esub> v"
-    using u_carr v_carr by (simp add:\<omega>_def) 
-
-  hence "u \<otimes>\<^bsub>ZFact p\<^esub> x'  \<oplus>\<^bsub>ZFact p\<^esub> v =  u \<otimes>\<^bsub>ZFact p\<^esub> y'  \<oplus>\<^bsub>ZFact p\<^esub> v"
-    using x'_carr y'_carr eval_eq by simp
-
-  hence "x' = y'"
-    using u_carr x'_carr y'_carr v_carr
-    by (simp add: local.field_Units)
-
-  thus "x = y" 
-    by (metis  zfact_embed_inj[OF p_ge_0] a1 a2  inj_onD x'_def y'_def)
+  thus ?thesis
+    by (simp add:hash.simps comp_def)
 qed
 
 lemma hash_prob:
@@ -170,8 +136,7 @@ proof -
     1 / real (card (carrier (ZFact (int p))))^(card (zfact_embed p ` K))"
     apply (simp only: \<Omega>_def)
     apply (rule UniversalHashFamily.hash_prob[where K="zfact_embed p ` K" and F="ZFact (int p)" and n="n" and y="y'"])
-        apply (rule zfact_prime_is_field[OF assms(1)])
-       apply (rule zfact_finite[OF p_ge_0])
+       apply (metis zfact_prime_is_field[OF assms(1)] zfact_finite[OF p_ge_0])
       apply (metis zfact_embed_ran[OF p_ge_0] assms(2) image_mono)
      apply (rule order_trans[OF card_image_le], rule finite_subset[OF assms(2)], simp, metis assms(4))
     using K_embed ran_y' by blast
@@ -256,8 +221,8 @@ proof -
      apply (rule inj_on_subset[OF zfact_embed_inj[OF p_ge_0]], simp)
     apply (rule prob_space.indep_vars_compose2[where Y="\<lambda>_. the_inv_into {0..<p} (zfact_embed p)" and M'="\<lambda>_. measure_pmf (pmf_of_set (carrier (ZFact p)))"])
       apply (rule prob_space_measure_pmf)
-     apply (rule hash_indep_pmf[OF zfact_prime_is_field[OF assms(1)] zfact_finite[OF p_ge_0]])
-        using  zfact_embed_ran[OF p_ge_0] apply blast
+     apply (rule hash_indep_pmf, metis zfact_prime_is_field[OF assms(1)] zfact_finite[OF p_ge_0])
+        using zfact_embed_ran[OF p_ge_0] apply blast
        apply simp
       apply (subst card_image, metis zfact_embed_inj[OF p_ge_0] inj_on_subset, simp)
      apply (metis assms(2))

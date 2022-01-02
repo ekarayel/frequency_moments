@@ -870,7 +870,7 @@ definition encode_state where
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
     N\<^sub>S \<times>\<^sub>S  
     N\<^sub>S \<times>\<^sub>S  
-    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) (N\<^sub>S \<times>\<^sub>S N\<^sub>S)))"
+    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (N\<^sub>S \<times>\<^sub>S N\<^sub>S))))"
 
 lemma "inj_on encode_state (dom encode_state)"
   apply (rule encoding_imp_inj)
@@ -881,21 +881,21 @@ lemma "inj_on encode_state (dom encode_state)"
   apply (rule prod_encoding, metis nat_encoding)
   by (metis encode_extensional prod_encoding nat_encoding)
 
-theorem fk_space_usage:
+theorem fk_exact_space_usage:
   assumes "k \<ge> 1"
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
   assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
   assumes "as \<noteq> []"
-  defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
-  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> fk_space_usage (k, n, length as, \<epsilon>, \<delta>)" (is "AE \<omega> in sketch. (_  \<le> ?rhs)")
+  defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
+  shows "AE \<omega> in M. bit_count (encode_state \<omega>) \<le> fk_space_usage (k, n, length as, \<epsilon>, \<delta>)" (is "AE \<omega> in M. (_  \<le> ?rhs)")
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
 
-  have a:"sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x))
+  have a:"M = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x))
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list as u}))"
-    apply (subst sketch_def)
+    apply (subst M_def)
     apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) assms(5)], simp)
     by (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
 
@@ -923,7 +923,7 @@ proof -
       ereal (2 * log 2 (real k + 1) + 1) + (
       ereal (2 * log 2 (real (length as) + 1) + 1) + (
        (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 ((n-1)+1) + 1) + ereal (2 * log 2 ((length as-1)+1) + 1)) + 1))+ 1))))"
-      apply (simp add:encode_state_def dependent_bit_count prod_bit_count PiE_iff comp_def
+      apply (simp add:encode_state_def dependent_bit_count prod_bit_count PiE_iff comp_def encode_extensional_def
           del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps plus_ereal.simps sum_list_ereal times_ereal.simps)
       apply (rule add_mono, simp add: nat_bit_count[simplified])
       apply (rule add_mono, simp add: nat_bit_count[simplified])

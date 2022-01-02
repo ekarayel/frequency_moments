@@ -357,64 +357,29 @@ lemma encoding_compose:
   shows "is_encoding (\<lambda>x. if P x then f (g x) else None)"
   using assms by (simp add: inj_onD is_encoding_def)
 
-lemma suc_n_le_2_pow_n:
-  fixes n :: nat
-  shows "n + 1 \<le> 2 ^ n"
-  by (induction n, simp, simp)
-
-lemma log_est: "log 2 (real n + 1) \<le> n"
-proof -
-  have "1 + real n \<le> 2 powr (real n)"
-    using suc_n_le_2_pow_n apply (simp add: powr_realpow)
-    by (metis numeral_power_eq_of_nat_cancel_iff of_nat_Suc of_nat_mono)
-  thus ?thesis 
-    by (simp add: Transcendental.log_le_iff)
-qed
-
-lemma log_2_ln: 
-  assumes "x \<ge> 1"
-  shows "2 * log 2 x \<le> 3 * ln (x::real)"
-proof -
-  have "exp (2::real) = exp (1+(1::real))" by simp
-  also have "... \<le> (272/100::real)*(272/100)"
-    apply (subst exp_add)
-    apply (rule mult_mono) 
-    apply (metis e_less_272 order_less_imp_le)
-    apply (metis e_less_272 order_less_imp_le)
-    by simp+
-  also have "... \<le> 8"
-    by simp
-  finally have b:"exp (2::real) \<le> 8" by auto
-
-  have a:"2 \<le> 3 * ln (2::real)"
-    apply (subst ln_powr[symmetric], simp, simp)
-    by (subst ln_ge_iff, simp, simp add:b)
-
-  show ?thesis
-  apply (simp add:log_def)
-  apply (subst pos_divide_le_eq, simp)
-    using mult_left_mono[OF a ln_ge_zero[OF assms]]
-    by simp
-qed
-
 subsection \<open>Extensional Maps\<close>
 
-fun encode_extensional where
-  "encode_extensional I e f = (
-    if f \<in> extensional (set I) then 
-      list\<^sub>S e (map f I)
+definition encode_extensional :: "'a list \<Rightarrow> 'b encoding \<Rightarrow> ('a \<Rightarrow> 'b) encoding"  (infixr "\<rightarrow>\<^sub>S" 65)  where
+  "encode_extensional xs e f = (
+    if f \<in> extensional (set xs) then 
+      list\<^sub>S e (map f xs)
     else
       None)"
 
 lemma encode_extensional:
   assumes "is_encoding e"
-  shows "is_encoding (\<lambda>x. encode_extensional I e x)"
-  apply simp
+  shows "is_encoding (\<lambda>x. (xs \<rightarrow>\<^sub>S e) x)"
+  apply (simp add:encode_extensional_def)
   apply (rule encoding_compose[where f="list\<^sub>S e"])
    apply (metis list_encoding assms)
   apply (rule inj_onI, simp)
   using extensionalityI by fastforce
 
+lemma extensional_bit_count:
+  assumes "f \<in> extensional (set xs)"
+  shows "bit_count ((xs \<rightarrow>\<^sub>S e) f) = (\<Sum>x \<leftarrow> xs. bit_count (e (f x)) + 1) + 1"
+  using assms 
+  by (simp add:encode_extensional_def list_bit_count comp_def)
 
 subsection \<open>Ordered Sets\<close>
 
@@ -450,11 +415,5 @@ proof -
     using assms by simp+
   finally show ?thesis by simp
 qed
-
-lemma eventually_prod_I2:
-  assumes "eventually Q F1"
-  assumes "eventually (\<lambda>y. \<forall>x. \<not>(Q x) \<or> (P (x, y))) F2"
-  shows "eventually P (F1 \<times>\<^sub>F F2)"
-  using assms apply (simp add:eventually_prod_filter) by blast
 
 end

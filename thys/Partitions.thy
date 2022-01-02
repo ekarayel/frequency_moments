@@ -80,7 +80,6 @@ lemma enum_partitions_aux_range:
   "x \<in> set (enum_partitions_aux n) \<Longrightarrow> set (snd x) = {k. k < fst x}"
   by (induction n arbitrary:x, simp, simp, force)
 
-
 lemma enum_partitions_aux_len:
   "x \<in> set (enum_partitions_aux n) \<Longrightarrow> length (snd x) = n"
   by (induction n arbitrary:x, simp, simp, force)

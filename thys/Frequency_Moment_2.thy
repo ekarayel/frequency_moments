@@ -563,8 +563,8 @@ definition encode_state where
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
-    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) (list\<^sub>S (zfact\<^sub>S p)) \<times>\<^sub>S
-    encode_extensional (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) I\<^sub>S)))"
+    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (list\<^sub>S (zfact\<^sub>S p))) \<times>\<^sub>S
+    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S))))"
 
 lemma "inj_on encode_state (dom encode_state)"
   apply (rule encoding_imp_inj)
@@ -575,12 +575,12 @@ lemma "inj_on encode_state (dom encode_state)"
   apply (rule prod_encoding, metis encode_extensional list_encoding zfact_encoding)
   by (metis encode_extensional int_encoding)
 
-theorem f2_space_usage:
+theorem f2_exact_space_usage:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
   assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
-  defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
-  shows "AE \<omega> in sketch. bit_count (encode_state \<omega>) \<le> f2_space_usage (n, length as, \<epsilon>, \<delta>)"
+  defines "M \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
+  shows "AE \<omega> in M. bit_count (encode_state \<omega>) \<le> f2_space_usage (n, length as, \<epsilon>, \<delta>)"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
@@ -658,7 +658,7 @@ proof -
        + (ereal (real s\<^sub>1 * real s\<^sub>2) * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1) ) + 1))))"
       using a_2
       apply (simp add: encode_state_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] 
-        dependent_bit_count prod_bit_count
+        dependent_bit_count prod_bit_count encode_extensional_def
           del:encode_dependent_sum.simps encode_prod.simps N\<^sub>S.simps plus_ereal.simps of_nat_add)
       apply (rule add_mono, rule nat_bit_count)
       apply (rule add_mono, rule nat_bit_count)
@@ -678,7 +678,7 @@ proof -
 
   show ?thesis
     apply (subst AE_measure_pmf_iff)
-    apply (subst sketch_def)
+    apply (subst M_def)
     apply (subst f2_alg_sketch[OF assms(1) assms(2), where n="n" and as="as"])
     apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:f2_space_usage.simps)
     apply (subst set_prod_pmf, simp)

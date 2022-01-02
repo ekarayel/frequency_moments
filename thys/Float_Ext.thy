@@ -171,6 +171,11 @@ proof -
   thus ?thesis using q_def by blast
 qed
 
+lemma suc_n_le_2_pow_n:
+  fixes n :: nat
+  shows "n + 1 \<le> 2 ^ n"
+  by (induction n, simp, simp)
+
 lemma float_bit_count:
   fixes m :: int
   fixes e :: int
@@ -266,6 +271,16 @@ lemma float_bit_count_zero:
   "bit_count (F\<^sub>S (float_of 0)) = 4"
   apply (subst zero_float.abs_eq[symmetric])
   by (simp add:F\<^sub>S_def)
+
+
+lemma log_est: "log 2 (real n + 1) \<le> n"
+proof -
+  have "1 + real n \<le> 2 powr (real n)"
+    using suc_n_le_2_pow_n apply (simp add: powr_realpow)
+    by (metis numeral_power_eq_of_nat_cancel_iff of_nat_Suc of_nat_mono)
+  thus ?thesis 
+    by (simp add: Transcendental.log_le_iff)
+qed
 
 lemma truncate_float_bit_count:
   "bit_count (F\<^sub>S (float_of (truncate_down r x))) \<le> 8 + 4 * real r + 2*log 2 (2 + abs (log 2 (abs x)))" 
