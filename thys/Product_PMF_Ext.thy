@@ -1,11 +1,10 @@
 section \<open>Indexed Products of Probability Mass Functions\<close>
 
-text \<open>This section introduces a restricted version of Pi_pmf where the default value is undefined
-and contains some additional results about that case in addition to "HOL-Probability.Product_PMF"\<close>
+text \<open>This section introduces a restricted version of @{term "Pi_pmf"} where the default value is undefined
+and contains some additional results about that case in addition to \verb|HOL-Probability.Product_PMF|\<close>
 
 theory Product_PMF_Ext
-  imports Main "HOL-Probability.Probability_Mass_Function" "HOL-Probability.Stream_Space"
-      "HOL-Probability.Independent_Family" Probability_Ext "HOL-Probability.Product_PMF"
+  imports Main Probability_Ext "HOL-Probability.Product_PMF"
 begin
 
 definition prod_pmf where "prod_pmf I M = Pi_pmf I undefined M"
