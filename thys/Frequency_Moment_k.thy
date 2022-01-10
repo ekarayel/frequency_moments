@@ -1,11 +1,8 @@
 section \<open>Frequency Moment $k$\<close>
 
 theory Frequency_Moment_k
-  imports Main Median "HOL-Probability.Stream_Space" Prod_PMF Lp.Lp
-  List_Ext Encoding "HOL-Library.Landau_Symbols" Frequency_Moments Landau_Ext
+  imports Main Median Product_PMF_Ext Lp.Lp List_Ext Encoding Frequency_Moments Landau_Ext
 begin
-
-definition if_then_else where "if_then_else p q r = (if p then q else r)"
 
 type_synonym fk_state = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> (nat \<times> nat))"
 
@@ -242,6 +239,11 @@ next
      apply (simp add:algebra_simps)
     by simp
 qed
+
+definition if_then_else where "if_then_else p q r = (if p then q else r)"
+
+text \<open>This definition is introduced to be able to temporarily substitute @{term "(if p then q else r)"}
+with @{term "if_then_else p q r"}, which unblocks the simplifier to process @{term "q"} and @{term "r"}.\<close>
 
 lemma fk_alg_aux_2:
   "fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update' x s\<^sub>1 s\<^sub>2 c)) as (0, return_pmf (\<lambda>_. undefined))

@@ -1,6 +1,6 @@
 section \<open>Float\<close>
 
-text \<open>Extensions to "HOL-Library.Float"\<close>
+text \<open>This section contains results about floating point numbers in addition to "HOL-Library.Float"\<close>
 
 theory Float_Ext
   imports "HOL-Library.Float" Encoding
@@ -77,7 +77,7 @@ lemma real_of_rat_of_float: "real_of_rat (rat_of_float x) = real_of_float x"
    apply (metis (mono_tags, opaque_lifting) Float.rep_eq compute_real_of_float mantissa_exponent of_int_mult of_int_numeral of_int_power of_rat_of_int_eq)
   by (metis Float.rep_eq Float_mantissa_exponent compute_real_of_float of_int_numeral of_int_power of_rat_divide of_rat_of_int_eq)
 
-subsection \<open>Encoding\<close>
+text \<open>Definition of an encoding for floating point numbers.\<close>
 
 definition F\<^sub>S where "F\<^sub>S f = (I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)"
 
@@ -266,12 +266,10 @@ next
   then show ?thesis by (simp add:f_def F\<^sub>S_def)
 qed
 
-
 lemma float_bit_count_zero:
   "bit_count (F\<^sub>S (float_of 0)) = 4"
   apply (subst zero_float.abs_eq[symmetric])
   by (simp add:F\<^sub>S_def)
-
 
 lemma log_est: "log 2 (real n + 1) \<le> n"
 proof -

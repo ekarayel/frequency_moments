@@ -1,9 +1,7 @@
 section \<open>Universal Hash Families\<close>
 
 theory UniversalHashFamily
-  imports Main "HOL-Algebra.Polynomials" "HOL-Algebra.Polynomial_Divisibility" PolynomialCounting
-  "HOL-Probability.Probability_Measure"
-  "HOL-Probability.Independent_Family" Probability_Ext "HOL-Probability.Distributions" Prod_PMF
+  imports Main PolynomialCounting Product_PMF_Ext
 begin
 
 definition k_universal where

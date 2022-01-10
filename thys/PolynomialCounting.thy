@@ -1,7 +1,8 @@
 section \<open>Counting Polynomials\<close>
 
 theory PolynomialCounting
-  imports Main "HOL-Algebra.Polynomial_Divisibility" "HOL-Algebra.Polynomials" "HOL-Library.FuncSet"
+  imports Main"HOL-Algebra.Polynomial_Divisibility" "HOL-Algebra.Polynomials" "HOL-Library.FuncSet"
+    Set_Ext 
 begin
 
 definition bounded_degree_polynomials
@@ -390,18 +391,6 @@ proof -
     by (simp add: finite_mostly_constant_maps finite_PiE)
   ultimately have "M = ?B" by (simp add: card_seteq)
   thus ?thesis using M_def by auto
-qed
-
-
-text \<open>This is like @{thm [source] card_vimage_inj} but supports @{term "inj_on"} instead.\<close>
-lemma card_vimage_inj_on:
-  assumes "inj_on f B"
-  assumes "A \<subseteq> f ` B"
-  shows "card (f -` A \<inter> B) = card A"
-proof -
-  have "A = f ` (f -` A \<inter> B)" using assms(2) by auto
-  thus ?thesis using assms card_image 
-    by (metis inf_le2 inj_on_subset)
 qed
 
 lemma inv_subsetI:

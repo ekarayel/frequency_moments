@@ -1,8 +1,10 @@
-section \<open>Multisets\<close> 
+section \<open>Extensions to "HOL-Library.Multisets"\<close> 
 
 theory Multiset_Ext
   imports Main "HOL.Real" "HOL-Library.Multiset"
 begin
+
+text \<open>This section contains results about multisets in addition to "HOL.Multiset"\<close>
 
 text \<open>This is a induction scheme over the distinct elements of a multisets: 
 We can represent each multiset as a sum like: 

@@ -1,8 +1,14 @@
+section \<open>Landau Symbols (Extensions)\<close>
+
 theory Landau_Ext
   imports "HOL-Library.Landau_Symbols" "HOL.Topological_Spaces"
 begin
 
-lemma sum_in_bigo_r: (* intentional copy of sum_in_bio with order of assumptions reversed *)
+text \<open>This section contains results about Landau Symbols in addition to "HOL-Library.Landau".\<close>
+
+text \<open>The following lemma is an intentional copy of @{thm [source] sum_in_bigo} with order of assumptions reversed *)\<close>
+
+lemma sum_in_bigo_r: 
   assumes "f2 \<in> O[F'](g)"
   assumes "f1 \<in> O[F'](g)"
   shows "(\<lambda>x. f1 x + f2 x) \<in> O[F'](g)"

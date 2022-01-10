@@ -1,8 +1,7 @@
 section \<open>Frequency Moment $2$\<close>
 
 theory Frequency_Moment_2
-  imports Main "HOL-Library.Landau_Symbols"
-    Median Probability_Ext Partitions Primes_Ext Encoding List_Ext Prod_PMF
+  imports Main Median Partitions Primes_Ext Encoding List_Ext 
     UniversalHashFamilyOfPrime Frequency_Moments Landau_Ext
 begin
 

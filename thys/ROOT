@@ -1,4 +1,4 @@
-session StreamingAlgorithms = HOL +
+session FrequencyMoments = HOL +
   sessions
     "Bertrands_Postulate"
     "HOL-Algebra"
@@ -13,15 +13,16 @@ session StreamingAlgorithms = HOL +
     Frequency_Moment_2
     Frequency_Moment_k
     Landau_Ext
-    Least
     List_Ext
     Median
     Multiset_Ext
+    OrderStatistics
     Partitions
     PolynomialCounting
     Primes_Ext
     Probability_Ext
-    Prod_PMF
+    Product_PMF_Ext
+    Set_Ext
     UniversalHashFamilyOfPrime
     UniversalHashFamily
   document_files

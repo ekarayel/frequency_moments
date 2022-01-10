@@ -1,10 +1,10 @@
-section \<open>List\<close>
-
-text \<open>Extensions to "HOL.List"\<close>
+section \<open>Extensions to "HOL.List"\<close>
 
 theory List_Ext
   imports Main "HOL.List"
 begin
+
+text \<open>This section contains results about lists in addition to "HOL.List"\<close>
 
 lemma count_list_gr_1:
   "(x \<in> set xs) = (count_list xs x \<ge> 1)"

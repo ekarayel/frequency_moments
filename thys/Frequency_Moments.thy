@@ -1,3 +1,5 @@
+section "Frequency Moments"
+
 theory Frequency_Moments
   imports Main HOL.List HOL.Rat List_Ext
 begin

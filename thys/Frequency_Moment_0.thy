@@ -1,8 +1,7 @@
 section \<open>Frequency Moment $0$\<close>
 
 theory Frequency_Moment_0
-  imports Main  "HOL-Probability.Probability_Mass_Function"
-  Primes_Ext Float_Ext Median Least UniversalHashFamilyOfPrime Encoding
+  imports Main Primes_Ext Float_Ext Median OrderStatistics UniversalHashFamilyOfPrime Encoding
   Frequency_Moments Landau_Ext
 begin
 
@@ -36,15 +35,15 @@ definition f0_sketch where
 lemma f0_alg_sketch:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
-  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> f0_update x) xs (f0_init \<delta> \<epsilon> n)"
+  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
   defines "t \<equiv> nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
   defines "s \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
   defines "p \<equiv> find_prime_above (max n 19)"
   defines "r \<equiv> nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 24)"
-  shows "sketch = map_pmf (\<lambda>x. (s,t,p,r, x, \<lambda>i \<in> {0..<s}. f0_sketch p r t (x i) xs))
+  shows "sketch = map_pmf (\<lambda>x. (s,t,p,r, x, \<lambda>i \<in> {0..<s}. f0_sketch p r t (x i) as))
     (prod_pmf {0..<s} (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 2)))" 
-proof (subst sketch_def, induction xs rule:rev_induct)
+proof (subst sketch_def, induction as rule:rev_induct)
   case Nil
   then show ?case
     apply (simp add:s_def[symmetric] p_def[symmetric] map_pmf_def[symmetric] t_def[symmetric] r_def[symmetric])
@@ -81,7 +80,6 @@ proof -
     by simp+
   finally show ?thesis by simp
 qed
-
 
 lemma (in prob_space) prob_sub_additiveI:
   assumes "Collect P \<in> sets M"
@@ -170,56 +168,6 @@ proof -
     using assms apply linarith by simp
 qed
 
-lemma card_ordered_pairs:
-  fixes M :: "('a ::linorder) set" 
-  assumes "finite M"
-  shows "2 * card {(x,y) \<in> M \<times> M. x < y} = card M * (card M - 1)"
-proof -
-  have "2 * card {(x,y) \<in> M \<times> M. x < y} =
-    card {(x,y) \<in> M \<times> M. x < y} + card ((\<lambda>x. (snd x, fst x))`{(x,y) \<in> M \<times> M. x < y})"
-    apply (subst card_image)
-    apply (rule inj_onI, simp add:case_prod_beta prod_eq_iff)
-    by simp
-  also have "... = card {(x,y) \<in> M \<times> M. x < y} + card {(x,y) \<in> M \<times> M. y < x}"
-    apply (rule arg_cong2[where f="(+)"], simp)
-    apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym)
-     apply (rule image_subsetI, simp add:case_prod_beta)
-    apply (rule subsetI, simp) 
-    using image_iff by fastforce 
-  also have "... = card ({(x,y) \<in> M \<times> M. x < y} \<union> {(x,y) \<in> M \<times> M. y < x})"
-    apply (rule card_Un_disjoint[symmetric])
-    apply (rule finite_subset[where B="M \<times> M"], rule subsetI, simp add:case_prod_beta mem_Times_iff)
-    using assms apply simp
-    apply (rule finite_subset[where B="M \<times> M"], rule subsetI, simp add:case_prod_beta mem_Times_iff)
-    using assms apply simp
-    apply (rule order_antisym, rule subsetI, simp add:case_prod_beta, force) 
-    by simp
-  also have "... = card ((M \<times> M) - {(x,y) \<in> M \<times> M. x = y})"
-    apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym, rule subsetI, simp add:case_prod_beta, force)
-    by (rule subsetI, simp add:case_prod_beta, force)
-  also have "... = card (M \<times> M) - card {(x,y) \<in> M \<times> M. x = y}"
-    apply (rule card_Diff_subset)
-    apply (rule finite_subset[where B="M \<times> M"], rule subsetI, simp add:case_prod_beta mem_Times_iff)
-    using assms apply simp
-    by (rule subsetI, simp add:case_prod_beta mem_Times_iff)
-  also have "... = card M ^ 2 - card ((\<lambda>x. (x,x)) ` M)"
-    apply (rule arg_cong2[where f="(-)"])
-    using assms apply (simp add:power2_eq_square)
-    apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym, rule subsetI, simp add:case_prod_beta, force)
-    by (rule image_subsetI, simp)
-  also have "... = card M ^ 2 - card M"
-    apply (rule arg_cong2[where f="(-)"], simp)
-    apply (rule card_image)
-    by (rule inj_onI, simp)
-  also have "... = card M * (card M - 1)"
-    apply (cases "card M \<ge> 0", simp add:power2_eq_square algebra_simps)
-    by simp
-  finally show ?thesis by simp
-qed
-
 lemma f0_collision_prob:
   fixes p :: nat
   assumes "Factorial_Ring.prime p"
@@ -278,10 +226,9 @@ proof -
         by (simp add: divide_powr_uminus powr_diff)
 
       have a_4_1: "1 \<le> 2 * (1 - 2 powr (- real r))"
-        apply simp
-        apply (subst a_3)
-         apply (subst (2) two_powr_0[symmetric])
-         apply (rule powr_mono) using assms(5) by simp+
+        apply (simp, subst a_3, subst (2) two_powr_0[symmetric])
+        apply (rule powr_mono)
+        using assms(5) by simp+
 
       have a_4: "(c*1) / (1 - 2 powr (-real r)) \<le> c * 2" 
         apply (subst pos_divide_le_eq, simp)

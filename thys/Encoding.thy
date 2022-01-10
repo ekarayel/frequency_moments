@@ -2,8 +2,12 @@ section \<open>Encoding\<close>
 
 theory Encoding
   imports Main "HOL-Library.Sublist" "HOL-Library.Extended_Real" "HOL-Library.FuncSet" 
-  "HOL.Transcendental" "HOL-Library.Float" "HOL-Analysis.Complex_Transcendental"
+  HOL.Transcendental
 begin
+
+text \<open>This section contains a flexible library for encoding high level data structures into bit
+strings. The library defines encoding functions for primitive types, as well as combinators
+to build encodings for more complex types. It is used to measure the size of the data structures.\<close>
 
 fun is_prefix where 
   "is_prefix (Some x) (Some y) = prefix x y" |
@@ -114,7 +118,7 @@ fun append_encoding :: "bool list option \<Rightarrow> bool list option \<Righta
 lemma bit_count_append: "bit_count (x1@\<^sub>Sx2) = bit_count x1 + bit_count x2"
   by (cases x1, simp, cases x2, simp, simp)
 
-subsection \<open>Lists\<close>
+text \<open>Encodings for lists\<close>
 
 fun list\<^sub>S where
   "list\<^sub>S f [] = Some [False]" |
@@ -184,7 +188,7 @@ lemma list_encoding:
   shows "is_encoding (list\<^sub>S f)"
   by (metis encoding_by_witness[where g="decode_list f"] list_encoding_aux assms)
 
-subsection \<open>Natural numbers\<close>
+text \<open>Encoding for natural numbers\<close>
 
 fun nat_encoding_aux :: "nat \<Rightarrow> bool list" 
   where
@@ -233,7 +237,7 @@ proof -
     by (metis nat_bit_count le_ereal_le  add.commute)
 qed
 
-subsection \<open>Integers\<close>
+text \<open>Encoding for integers\<close>
 
 fun I\<^sub>S :: "int \<Rightarrow> bool list option"
   where 
@@ -269,7 +273,7 @@ proof -
   thus ?thesis using assms le_ereal_le int_bit_count by blast
 qed
 
-subsection \<open>Cartesian Product\<close>
+text \<open>Encoding for Cartesian products\<close>
 
 fun encode_prod :: "'a encoding \<Rightarrow> 'b encoding \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>S" 65)
   where 
@@ -314,7 +318,7 @@ lemma prod_bit_count_2:
   "bit_count ((e1 \<times>\<^sub>S e2) x) = bit_count (e1 (fst x)) + bit_count (e2 (snd x))"
   by (simp add:bit_count_append)
 
-subsection \<open>Dependent Product\<close>
+text \<open>Encoding for dependent sums\<close>
 
 fun encode_dependent_sum :: "'a encoding \<Rightarrow> ('a \<Rightarrow> 'b encoding) \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>D" 65)
   where 
@@ -349,7 +353,8 @@ lemma dependent_bit_count:
   "bit_count ((e\<^sub>1 \<times>\<^sub>D e\<^sub>2) (x\<^sub>1,x\<^sub>2)) = bit_count (e\<^sub>1 x\<^sub>1) + bit_count (e\<^sub>2 x\<^sub>1 x\<^sub>2)"
   by (simp add:bit_count_append)
 
-subsection \<open>Composition\<close>
+text \<open>This lemma helps derive an encoding on the domain of an injective function using an 
+existing encoding on its image.\<close>
 
 lemma encoding_compose:
   assumes "is_encoding f"
@@ -357,7 +362,7 @@ lemma encoding_compose:
   shows "is_encoding (\<lambda>x. if P x then f (g x) else None)"
   using assms by (simp add: inj_onD is_encoding_def)
 
-subsection \<open>Extensional Maps\<close>
+text \<open>Encoding for extensional maps defined on an enumerable set.\<close>
 
 definition encode_extensional :: "'a list \<Rightarrow> 'b encoding \<Rightarrow> ('a \<Rightarrow> 'b) encoding"  (infixr "\<rightarrow>\<^sub>S" 65)  where
   "encode_extensional xs e f = (
@@ -381,7 +386,7 @@ lemma extensional_bit_count:
   using assms 
   by (simp add:encode_extensional_def list_bit_count comp_def)
 
-subsection \<open>Ordered Sets\<close>
+text \<open>Encoding for ordered sets.\<close>
 
 fun set\<^sub>S where "set\<^sub>S e S = (if finite S then list\<^sub>S e (sorted_list_of_set S) else None)"
 

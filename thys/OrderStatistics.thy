@@ -1,7 +1,7 @@
 section \<open>Least\<close>
 
-theory Least
-  imports Main "HOL-Library.Multiset" List_Ext Multiset_Ext
+theory OrderStatistics
+  imports Main "HOL-Library.Multiset" List_Ext Multiset_Ext Set_Ext
 begin
 
 text \<open>Returns the rank of an element within a set.\<close>
@@ -73,17 +73,6 @@ lemma rank_of_image:
   apply (subst card_image)
    apply (metis strict_mono_on_imp_inj_on rank_strict_mono assms) 
   by simp
-
-text \<open>This is like @{thm [source] card_vimage_inj} but supports @{term "inj_on"} instead.\<close>
-lemma card_vimage_inj_on:
-  assumes "inj_on f B"
-  assumes "A \<subseteq> f ` B"
-  shows "card (f -` A \<inter> B) = card A"
-proof -
-  have "A = f ` (f -` A \<inter> B)" using assms(2) by auto
-  thus ?thesis using assms card_image 
-    by (metis inf_le2 inj_on_subset)
-qed
 
 lemma card_least:
   assumes "finite S"

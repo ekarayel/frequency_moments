@@ -1,11 +1,10 @@
 section \<open>Field\<close>
 
 theory Field
-  imports Main "HOL-Algebra.Polynomial_Divisibility" "HOL-Algebra.Polynomials"
-  "HOL-Algebra.IntRing"
+  imports Main "HOL-Algebra.Ring_Divisibility" "HOL-Algebra.IntRing"
 begin
 
-text \<open>In this section, we show that the factor ring @{term "ZFact p"} for
+text \<open>This section contains a proof that the factor ring @{term "ZFact p"} for
 @{term [names_short] "prime p"} is a field. Note that the bulk of the work has already been done in
 HOL-Algebra, in particular it is established that @{term "ZFact p"} is a domain.
 
@@ -14,8 +13,8 @@ multiplication by a non-zero element is an injective map between the elements of
 domain. But an injective map between sets of the same non-finite cardinality is also surjective.
 Hence we can find the unit element in the image of such a map.
 
-We also introduce a bijection between @{term "ZFact p"} and @{term "{0..<(p::nat)}"} which will 
-be useful to hash natural numbers.\<close>
+Additionally the canonical bijection between @{term "ZFact p"} and @{term "{0..<(p::nat)}"}
+is introduced, which is useful for hashing natural numbers.\<close>
 
 definition zfact_embed :: "nat \<Rightarrow> nat \<Rightarrow> int set" where
   "zfact_embed p k = Idl\<^bsub>\<Z>\<^esub> {int p} +>\<^bsub>\<Z>\<^esub> (int k)"
@@ -100,7 +99,6 @@ lemma zfact_finite:
   shows "finite (carrier (ZFact (int p)))"
   using zfact_card 
   by (metis assms card_ge_0_finite)
-
 
 lemma finite_domains_are_fields:
   assumes "domain R"
