@@ -4,6 +4,8 @@ theory Frequency_Moments
   imports Main HOL.List HOL.Rat List_Ext
 begin
 
+text \<open>This section contains a definition of the frequency moments of a stream.\<close>
+
 definition F where
   "F k xs = (\<Sum> x \<in> set xs. (rat_of_nat (count_list xs x)^k))"
 

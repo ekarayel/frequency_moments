@@ -5,6 +5,11 @@ theory Frequency_Moment_2
     UniversalHashFamilyOfPrime Frequency_Moments Landau_Ext
 begin
 
+text \<open>This section contains a formalization of the algorithm for the second frequency moment.
+It is based on the algorithm described in \cite[\textsection 2.2]{alon1999}.
+The only difference is that the algorithm is adapted to work with prime field of odd order, which
+greatly reduces the implementation complexity.\<close>
+
 fun f2_hash where
   "f2_hash p h k = (if hash p k h \<in> {k. 2*k < p} then int p - 1 else - int p - 1)"
 

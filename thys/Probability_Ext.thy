@@ -1,6 +1,6 @@
-section \<open>Probabilities and Independent Families\<close>
+section \<open>Probability Spaces\<close>
 
-text \<open>Some additional results about probabilities and independent families.\<close>
+text \<open>Some additional results about probability spaces in addition to "HOL-Probability".\<close>
 
 theory Probability_Ext
   imports Main "HOL-Probability.Independent_Family" Multiset_Ext "HOL-Probability.Stream_Space"

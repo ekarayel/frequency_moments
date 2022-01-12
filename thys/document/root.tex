@@ -43,6 +43,18 @@
 
 \title{Formalization of Randomized Approximation Algorithms for Frequency Moments}
 \author{Emin Karayel}
+\begin{abstract}
+In 1999 Alon et.\ al.\ introduced the still active research topic of approximating the frequency moments of a data stream using randomized algorithms with minimal spage usage.
+This includes the problem of estimating the cardinality of the stream elements---the zeroth frequency moment.
+But, also higher order frequency moments that provide information about the skew of the data stream, which is for example critical information for parallel processing.
+The frequency moment of a data stream $a_1, \ldots, a_m \in U$ can be defined as $F_k := \sum_{u \in U} C(u,a)^k$ where $C(u,a)$ is the count of occurences of $u$ in the stream $a$.
+They introduce both lower bounds and upper bounds, which were later improved by newer publications.
+The algorithms have guaranteed success probability and accuracy, without making any assumptions on the input distribution.
+They are an interesting use-case for formal verification, because they rely on deep results from both algebra and analysis, require a large body of existing results.
+This work contains the formal verification of three algorithms for the approximation of $F_0$, $F_2$ and $F_k$ for $k \geq 3$.
+To achieve it, the formalization also includes reusable components common to all algorithms, such as universal hash families, the median method, formal modelling of one-pass data stream algorithms and a generic flexible encoding library for the verification of space complexities.
+\end{abstract}
+
 \maketitle
 
 \tableofcontents
@@ -53,29 +65,34 @@
 % generated text of all theories
 \input{session}
 \appendix
-\section{Informal proof of correctness for the $F_0$ algorithm}
+\section{Informal proof of correctness for the $F_0$ algorithm\label{sec:f0_proof}}
 This section contains a detailed informal proof for the correctness of the $F_0$-algorithm.
-Because of the standard argument about medians we only want to show that each of the estimates the median is taken from is within the desired interval with success probability $\frac{2}{3}$.
+Because of the standard amplification result about medians (see for example \cite{alon1999}) it
+is enough to show that each of the estimates the median is taken from is within the desired interval
+with success probability $\frac{2}{3}$.
 
-To verify the latter, let $a_1, \ldots, a_m$ be the stream elements, where we assume that the elements are a subset of $\{0,\ldots,n-1\}$ and $0 < \delta < 1$ be the desired relative accuracy.
-Let $p$ be the smallest prime such that $p \geq \max (n,19)$ and let $h$ be a random polynomial over $GF(p)$ with degree strictly less than $2$.
+To verify the latter, let $a_1, \ldots, a_m$ be the stream elements, where we assume that the
+elements are a subset of $\{0,\ldots,n-1\}$ and $0 < \delta < 1$ be the desired relative accuracy.
+Let $p$ be the smallest prime such that $p \geq \max (n,19)$ and let $h$ be a random polynomial over
+$GF(p)$ with degree strictly less than $2$.
 The algoritm also introduces the internal parameters $t, r$ defined by:
 \begin{eqnarray*}
     t & := & \lceil 80\delta^{-2} \rceil \\
     r & := & 4 \log_2 \lceil \delta^{-1} \rceil + 24
 \end{eqnarray*}
-Now we can describe the estimate the algorithm obtains:
+The estimate the algorithm obtains is:
 \begin{align*}
     A := & \left\{ a_1, \ldots, a_m \right\} &
     H := & \left\{ \lfloor h(a) \rfloor_r \middle \vert a \in A \right\} \\
-    R := & \begin{cases} t p \left(\mathrm{rank}_t (H) \right)^{-1} & \textrm{ if } \size{H} \geq t \\
+    R := & \begin{cases} t p \left(\mathrm{min}_t (H) \right)^{-1} & \textrm{ if } \size{H} \geq t \\
     \size{H} & \textrm{ othewise,} \end{cases} &
 \end{align*}
-We want to show that
+Here $\mathrm{min}_t(H)$ denotes the $t$-th smallest element of $H$.
+With these definitions, it is possible to state the goal as:
 \[
     P(\size{R - F_0} \leq \delta \size{F_0}) \geq \frac{2}{3} \textrm{.}  
 \]
-We show the result by investigating the two cases $F_0 \geq t$ and $F_0 < t$ seperately.
+which is shown by separately in the following two subsections for the cases $F_0 \geq t$ and $F_0 < t$.
 \subsection{Case $F_0 \geq t$}
 Let us introduce:
 \begin{eqnarray*}
@@ -83,13 +100,16 @@ Let us introduce:
     R^* & := & tp \left( \mathrm{rank}^{\#}_t(H^*) \right)^{-1}
 \end{eqnarray*}
 These definitions correspond to the $H$, $R$ but with a few minor modifications.
-We compute $H^*$ as a multiset, this means we are keeping track of the multiplicities of its elements.
+The set $H^*$ is a multiset, this means that each element also has a multiplicity, counting the
+number of \emph{distinct} elements of $A$ being mapped by $h$ to the same value.
 Note that by definition: $\size{H^*}=\size{A}$.
-Similarly the operation $rank^{\#}_t$ obtains the rank-$t$ element of the multiset (taking multiplicities into account).
-We also avoid the rounding operation $\lfloor \cdot \rfloor_r$ in the definition of $H^*$.
-The key reason for the introduction of these alternative versions of $H, R$ is that it is easier to show probabilistic bounds on the distances $\size{R^* - F_0}$, 
-$\size{R^* - R}$ as opposed to $\size{R - F_0}$ directly.
-In particular, what we plan to show is that:
+Similarly the operation $\mathrm{min}^{\#}_t$ obtains the $t$-th element of the multiset $H$
+(taking multiplicities into account).
+Note also that there is no rounding operation $\lfloor \cdot \rfloor_r$ in the definition of $H^*$.
+The key reason for the introduction of these alternative versions of $H, R$ is that it is easier to
+show probabilistic bounds on the distances $\size{R^* - F_0}$ and $\size{R^* - R}$ as opposed to 
+$\size{R - F_0}$ directly.
+In particular the plan is to show:
 \begin{eqnarray}
  \delta' & := & \frac{3}{4}\delta \\
  P\left(\size{R^*-F_0} > \delta' F_0\right) & \leq & \frac{2}{9} \textrm{, and} \label{eq:r_star_dev} \\
@@ -107,48 +127,48 @@ For the verification of \autoref{eq:r_star_dev} let us introduce:
 \[
     Q(u) = \size{\left\{h(a) < u \mid a \in A \right\}}
 \]
-then we observe that $\mathrm{rank}_t^{\#}(H^*) < u$ if $Q(u) \geq t$ and $\mathrm{rank}_t^{\#}(H^*) \geq v$ if $Q(v) \leq t-1$.
+and observe that $\mathrm{min}_t^{\#}(H^*) < u$ if $Q(u) \geq t$ and $\mathrm{min}_t^{\#}(H^*) \geq v$ if $Q(v) \leq t-1$.
 To see why this is true note that, if at least $t$ elements of $A$ are mapped by $h$ below a certain value, then the rank $t$ element must also be within them, and thus also be below that value.
 And that the opposite direction of this conclusion is also true.
-Note that this relies on the fact that $H^*$ is a multiset and we are taking multiplicities into account, when computing the rank $t$ element. 
+Note that this relies on the fact that $H^*$ is a multiset and that multiplicities are being taken into account, when computing the $t$-th smallest element. 
 
-Alternatively, we could also write $Q(u) = \sum_{a \in A} 1_{\{h(a) < u\}}$\footnote{The notation $1_A$ is shorthand for the indicator function of $A$, i.e., $1_A(x)=1$ if $x \in A$ and $0$ otherwise.}, i.e., $Q$ is a sum of pairwise independent $\{0,1\}$-valued random variables, with expectation $\frac{u}{p}$ and variance $\frac{u}{p} - \frac{u^2}{p^2}$.
+Alternatively, it is also possible to write $Q(u) = \sum_{a \in A} 1_{\{h(a) < u\}}$\footnote{The notation $1_A$ is shorthand for the indicator function of $A$, i.e., $1_A(x)=1$ if $x \in A$ and $0$ otherwise.}, i.e., $Q$ is a sum of pairwise independent $\{0,1\}$-valued random variables, with expectation $\frac{u}{p}$ and variance $\frac{u}{p} - \frac{u^2}{p^2}$.
 \footnote{A consequence of $h$ being choosen uniformly from a $2$-independent hash family.}
-Using lineariy of expectation and Bienaym\'e's identity, we can conclude that $\var \, Q(u) \leq \expectation \, Q(u) = |A|u p^{-1} = F_0 u p^{-1}$ for $u \in \{0,\ldots,p\}$.
+Using lineariy of expectation and Bienaym\'e's identity, it follows that $\var \, Q(u) \leq \expectation \, Q(u) = |A|u p^{-1} = F_0 u p^{-1}$ for $u \in \{0,\ldots,p\}$.
 
-For $v = \left\lfloor \frac{tp}{(1-\delta') F_0} \right\rfloor$ we have
+For $v = \left\lfloor \frac{tp}{(1-\delta') F_0} \right\rfloor$ it is possible to conclude:
 \begin{eqnarray*}
     t-1 & \leq\footnotemark & \frac{t}{(1-\delta')} - 3\sqrt{\frac{t}{(1-\delta')}} - 1 \\
      &\leq&  \frac{F_0 v}{p} - 3 \sqrt{\frac{F_0 v}{p}} \leq \expectation Q(v) - 3 \sqrt{\var Q(v)}
 \end{eqnarray*}
 \footnotetext{The verification of this inequality is a lengthy but straightforward calculcation using the definition of $\delta'$ and $t$.}
-and thus we can conclude using Tchebyshev's inequality:
+and thus using Tchebyshev's inequality:
 \begin{align}
     P\left(R^* < \left(1-\delta'\right) F_0\right) & = P\left(\mathrm{rank}_t^{\#}(H^*) > \frac{tp}{(1-\delta')F_0}\right) \nonumber \\ 
     & \leq P(\mathrm{rank}_t^{\#}(H^*) \geq v) = P(Q(v) \leq t-1) \label{eq:r_star_upper_bound} \\
     & \leq P\left(Q(v) \leq \expectation Q(v) - 3 \sqrt{\var Q(v)}\right) \leq \frac{1}{9} \textrm{.} \nonumber
 \end{align}
-Similarly for $u = \left\lceil \frac{tp}{(1+\delta') F_0} \right\rceil$ we have
+Similarly for $u = \left\lceil \frac{tp}{(1+\delta') F_0} \right\rceil$ it is possible to conclude:
 \begin{eqnarray*}
     t & \geq & \frac{t}{(1+\delta')} + 3\sqrt{\frac{t}{(1+\delta')}+1} + 1 \\
      &\geq&  \frac{F_0 u}{p} + 3 \sqrt{\frac{F_0 u}{p}} \geq \expectation Q(u) + 3 \sqrt{\var Q(v)}
 \end{eqnarray*}
-and thus we can conclude using Tchebyshev's inequality:
+and thus using Tchebyshev's inequality:
 \begin{align}
     P\left(R^* > \left(1+\delta'\right) F_0\right) & = P\left(\mathrm{rank}_t^{\#}(H^*) < \frac{tp}{(1+\delta')F_0}\right) \nonumber \\ 
     & \leq P(\mathrm{rank}_t^{\#}(H^*) < u) = P(Q(u) \geq t) \label{eq:r_star_lower_bound} \\
     & \leq P\left(Q(u) \geq \expectation Q(u) + 3 \sqrt{\var Q(u)}\right) \leq \frac{1}{9} \textrm{.} \nonumber
 \end{align}
-To verfiy \autoref{eq:r_star_r} we note that
+To verfiy \autoref{eq:r_star_r}, note that
 \begin{equation}
     \label{eq:rank_eq}
-    \mathrm{rank}_t(H) = \lfloor \mathrm{rank}_t^{\#}(H^*) \rfloor_r
+    \mathrm{min}_t(H) = \lfloor \mathrm{min}_t^{\#}(H^*) \rfloor_r
 \end{equation}
 if there are no collisions, induced by the application of $\lfloor h(\cdot) \rfloor_r$ on the elements of $A$.
-If we are even more careful, we note that the equation would remain true, as long as there are no collision within the smallest $t$ elements of $H^*$.
-Because we need to show \autoref{eq:r_star_r} only in the case where $R^* \geq (1-\delta') F_0$, i.e., when $\mathrm{rank}_t^{\#}(H^*) \leq v$,
+Even more carefully, note that the equation would remain true, as long as there are no collision within the smallest $t$ elements of $H^*$.
+Because \autoref{eq:r_star_r} needs to be shown only in the case where $R^* \geq (1-\delta') F_0$, i.e., when $\mathrm{min}_t^{\#}(H^*) \leq v$,
 it is enough to bound the probability of a collision in the range $[0; v]$.
-Moreover \autoref{eq:rank_eq} implies $\size{\mathrm{rank}_t(H) - \mathrm{rank}_t^{\#}(H^*)} \leq \max(\mathrm{rank}_t^{\#}(H^*), \mathrm{rank}_t(H)) 2^{-r}$ from
+Moreover \autoref{eq:rank_eq} implies $\size{\mathrm{min}_t(H) - \mathrm{min}_t^{\#}(H^*)} \leq \max(\mathrm{min}_t^{\#}(H^*), \mathrm{min}_t(H)) 2^{-r}$ from
 which it is possible to derive $\size{R^*-R} \leq \frac{\delta}{4} F_0$.
 % R* = tp/rank_t#, R = tp/rank_t => |R-R*| = | tp [ rank_t - rank_t# / rank_t rank_t# ] | <= 
 % tp \max{rank_t, rank_t#} 2^-r / rank_t rank_t# <= t 2^-r <= t 2^-24 d'^4 <= F_0 d'^4 2^-24 <= 1/4 d' F_0
@@ -159,15 +179,14 @@ which it is possible to derive $\size{R^*-R} \leq \frac{\delta}{4} F_0$.
 %    \lfloor h(a) \rfloor_r & \neq & \lfloor h(b) \rfloor_r \textrm{ for } a \neq b \in A \wedge h(a) \leq v \wedge h(b) \leq v
 %\end{eqnarray*}
 %then $\mathrm{rank}_t(H) = \lfloor \mathrm{rank}_t^{\#}(H^*) \rfloor_r$.
-Another observation we want to make is that $h$ is injective with probability $1-\frac{1}{p}$, this is because $h$ is choosen uniformly from the polynomials of degree less than $2$.
+Another important fact is that $h$ is injective with probability $1-\frac{1}{p}$, this is because $h$ is choosen uniformly from the polynomials of degree less than $2$.
 If it is a degree $1$ polynomial, it is a linear function on $GF(p)$ and thus injective.
-Because we have choosen $p \geq 18$, we can bound the probability that $h$ is not injective by $1/18$.
-However, even if $h$ is injective, there is still a possibility of collision, because of the application of the rounding operation $\lfloor \cdot \rfloor_r$. 
-The plan is to bound that probability by $1/18$ as well to be able to show \autoref{eq:r_star_r}.
-
+Because $p \geq 18$ the probability that $h$ is not injective can be bounded by $1/18$.
+However, even if $h$ is injective, there is still a possibility of collision, because of the application of the rounding operation $\lfloor \cdot \rfloor_r$.
+The plan is to bound that probability by $1/18$ as well to show \autoref{eq:r_star_r}.
 \begin{eqnarray*}
     P\left( \size{R^*-F_0} \leq \delta' F_0 \wedge \size{R-R^*} > \frac{\delta}{4} F_0 \right) & \leq & \\
-    P\left( R^* \geq (1-\delta') F_0 \wedge \mathrm{rank}_t^{\#}(H^*) \neq \mathrm{rank}_t(H) \wedge h \textrm{ injective}\right) + P(\neg h \textrm{ injective}) & \leq & \\
+    P\left( R^* \geq (1-\delta') F_0 \wedge \mathrm{min}_t^{\#}(H^*) \neq \mathrm{min}_t(H) \wedge h \textrm{ inj.}\right) + P(\neg h \textrm{ inj.}) & \leq & \\
     P\left( \exists a \neq b \in A. \lfloor h(a) \rfloor_r = \lfloor h(b) \rfloor_r \leq v \wedge h(a) \neq h(b) \right) + \frac{1}{18} & \leq & \\
     \frac{1}{18} + \sum_{a \neq b \in A} P\left(\lfloor h(a) \rfloor_r = \lfloor h(b) \rfloor_r \leq v \wedge h(a) \neq h(b) \right) & \leq & \\
     \frac{1}{18} + \sum_{a \neq b \in A} P\left(\size{h(a) - h(b)} \leq v 2^{-r} \wedge h(a) \leq v (1+2^{-r}) \wedge h(a) \neq h(b) \right) & \leq & \\
@@ -175,18 +194,18 @@ The plan is to bound that probability by $1/18$ as well to be able to show \auto
     \frac{1}{18} + 6 \frac{F_0^2 v^2}{p^2} 2^{-r} & \leq & \frac{1}{9} \textrm{.}
 %    96 t^2 2^{-r} + \frac{1}{18} & \leq & \frac{1}{9}
 \end{eqnarray*}
-Which shows that \autoref{eq:r_star_r} is true and using \autoref{eq:r_star_upper_bound} and~\ref{eq:r_star_lower_bound} we can verify 
-\autoref{eq:r_star_dev}, which means with the reasoning in \autoref{eq:concl} we can confirm:
+Which shows that \autoref{eq:r_star_r} is true and \autoref{eq:r_star_upper_bound} and~\ref{eq:r_star_lower_bound} implies 
+\autoref{eq:r_star_dev}, which means the reasoning in \autoref{eq:concl} confirms:
 \begin{equation}
     P(\size{R - F_0} \leq \delta \size{F_0}) \geq \frac{2}{3}
 \end{equation}
 
-In the following subsection, we will confirm that this is also true for the remaining case, if $F_0 < t$, concluding the proof.
+The following subsection confirms that this is also true for the remaining case, if $F_0 < t$, concluding the proof.
 \subsection{Case $F_0 < t$}
-Note that in this case $\size{H} \leq F_0 < t$ and thus $R = \size{H}$. We want to show that
+Note that in this case $\size{H} \leq F_0 < t$ and thus $R = \size{H}$, hence the goal is to show that:
 $P(\size{H} \neq F_0) \leq \frac{1}{3}$.
 
-The latter can only happen, if there is a collision induced by the application of $\lfloor h(\cdot)\rfloor_r$. As before, we rely on the fact that $h$ is not injective with probability at $\frac{1}{18}$.
+The latter can only happen, if there is a collision induced by the application of $\lfloor h(\cdot)\rfloor_r$. As before $h$ is not injective with probability at least $\frac{1}{18}$, hence:
 \begin{eqnarray*}
     P\left( \size{R - F_0} > \delta F_0\right) & \leq & \\
     P\left( R \neq F_0 \right) & \leq & \\
@@ -198,11 +217,8 @@ The latter can only happen, if there is a collision induced by the application o
     \frac{1}{18} + F_0^2 2^{-r+1} \leq \frac{1}{9} \textrm{.}
 \end{eqnarray*}
 Which concludes the proof. \qed
-
-% optional bibliography
-%\bibliographystyle{abbrv}
-%\bibliography{root}
-
+\bibliographystyle{abbrv}
+\bibliography{root}
 \end{document}
 
 %%% Local Variables:

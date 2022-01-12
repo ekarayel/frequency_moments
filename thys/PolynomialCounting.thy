@@ -5,6 +5,9 @@ theory PolynomialCounting
     Set_Ext 
 begin
 
+text \<open>This section contains results about the count of polynomials with a given degree interpolating
+a certain number of points.\<close>
+
 definition bounded_degree_polynomials
   where "bounded_degree_polynomials F n = {x. x \<in> carrier (poly_ring F) \<and> (degree x < n \<or> x = [])}"
 
@@ -138,11 +141,11 @@ In the case of finite fields it is actually only necessary to show either that t
 such polynomial or at least one - because a function whose domain and co-domain has the same finite
 cardinality is injective if and only if it is surjective.
 
-Here we are interested in a more generic result (over finite fields). We also want to count the 
+In the following a more generic result (over finite fields) is shown, counting the 
 number of polynomials of degree @{term "k+n-(1::nat)"} interpolating @{term "k"} points for
 non-negative @{term "n"}. As it turns out there are @{term "card (carrier F)^n"} such polynomials.
 The trick is to observe that, for a given fix on the coefficients of order @{term "k"} to 
-@{term "k+n-(1::nat)"} and the values at @{term "k"} points we have at most one fitting polynomial.
+@{term "k+n-(1::nat)"} and the values at @{term "k"} points there is at most one fitting polynomial.
 
 An alternative way of stating the above result is that there is bijection between the polynomials
 of degree @{term "n+k-(1::nat)"} and the product space $F^k \times F^n$ where the first component is
@@ -152,12 +155,12 @@ coefficients of order at least @{term "k"}.\<close>
 definition split_poly where "split_poly F K p = 
   (restrict (ring.eval F p) K, \<lambda>k. ring.coeff F p (k+card K))"
 
-text \<open>We call the bijection @{term "split_poly"} it returns the evaluation of the polynomial
+text \<open>The bijection @{term "split_poly"} returns the evaluation of the polynomial
 at the points in @{term "K"} and the coefficients of order at least @{term "card K"}.
 
-We first show that its image is a subset of the product space mentioned above, after that we will
-show that  @{term "split_poly"} is injective and finally we will be able to show that its image
-is exactly that product space using cardinalities.\<close>
+In the following it is shown that its image is a subset of the product space mentioned above, and
+that @{term "split_poly"} is injective and finally that its image is exactly that product space
+using cardinalities.\<close>
 
 lemma split_poly_image:
   assumes "field F"

@@ -3,7 +3,6 @@ section \<open>Universal Hash Family for $\{0..<p\}$\<close>
 text \<open>Specialization of universal hash families from arbitrary finite 
   fields to $\{0..<p\}$.\<close>
 
-
 theory UniversalHashFamilyOfPrime
   imports Field UniversalHashFamily Probability_Ext Encoding
 begin

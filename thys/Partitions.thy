@@ -4,8 +4,8 @@ theory Partitions
   imports Main "HOL-Library.Multiset" "HOL.Real" List_Ext
 begin
 
-text \<open>In this section, we define a function that enumerates all the partitions of
-@{text "{0..<n}"}. We represent the partitions as lists with @{text "n"} elements. If the element
+text \<open>This section introduces a function that enumerates all the partitions of
+@{text "{0..<n}"}. The partitions are represented as lists with @{text "n"} elements. If the element
 at index @{text "i"} and @{text "j"} have the same value, then @{text "i"} and @{text "j"} are in
 the same partition.\<close>
 
@@ -137,7 +137,6 @@ next
   qed
 qed
 
-
 fun verify where
   "verify r x 0 _ = True" |
   "verify r x (Suc n) 0 = verify r x n n" |
@@ -157,7 +156,7 @@ lemma verify_elim:
 
 lemma has_eq_relation_elim:
   "has_eq_relation r xs = (length r = length xs \<and> verify r xs (length xs) (length xs))"
-  apply (simp add: has_eq_relation_def verify_elim ) 
+  apply (simp add: has_eq_relation_def verify_elim) 
   by (metis (mono_tags, lifting) less_trans nat_neq_iff)
 
 lemma sum_filter: "sum_list (map (\<lambda>p. if f p then (r::real) else 0) y) = r*(length (filter f y))"

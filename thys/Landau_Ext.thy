@@ -1,4 +1,4 @@
-section \<open>Landau Symbols (Extensions)\<close>
+section \<open>Landau Symbols\<close>
 
 theory Landau_Ext
   imports "HOL-Library.Landau_Symbols" "HOL.Topological_Spaces"

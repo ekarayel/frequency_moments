@@ -4,6 +4,9 @@ theory Frequency_Moment_k
   imports Main Median Product_PMF_Ext Lp.Lp List_Ext Encoding Frequency_Moments Landau_Ext
 begin
 
+text \<open>This section contains a formalization of the algorithm for the $k$-th frequency moment.
+It is based on the algorithm described in \cite[\textsection 2.1]{alon1999}.\<close>
+
 type_synonym fk_state = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> (nat \<times> nat))"
 
 fun fk_init :: "nat \<Rightarrow> rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> fk_state pmf" where

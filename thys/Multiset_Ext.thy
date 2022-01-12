@@ -1,4 +1,4 @@
-section \<open>Extensions to "HOL-Library.Multisets"\<close> 
+section \<open>Multisets\<close>
 
 theory Multiset_Ext
   imports Main "HOL.Real" "HOL-Library.Multiset"

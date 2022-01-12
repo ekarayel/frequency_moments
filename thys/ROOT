@@ -27,3 +27,4 @@ session FrequencyMoments = HOL +
     UniversalHashFamily
   document_files
     "root.tex"
+    "root.bib"

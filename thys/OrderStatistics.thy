@@ -1,12 +1,14 @@
-section \<open>Least\<close>
+section \<open>Order Statistics\<close>
 
 theory OrderStatistics
   imports Main "HOL-Library.Multiset" List_Ext Multiset_Ext Set_Ext
 begin
 
-text \<open>Returns the rank of an element within a set.\<close>
+text \<open>This section contains definitions and results about order statistics.\<close>
+
 
 definition rank_of :: "'a :: linorder \<Rightarrow> 'a set \<Rightarrow> nat" where "rank_of x S = card {y \<in> S. y < x}"  
+text \<open>The function @{term "rank_of"} returns the rank of an element within a set.\<close>
 
 lemma rank_mono:
   assumes "finite S"
@@ -42,9 +44,9 @@ proof -
     by simp
 qed
 
-text \<open>Returns the k smallest elements of a finite set.\<close>
 
 definition least where "least k S = {y \<in> S. rank_of y S < k}"
+text \<open>The function @{term "least"} returns the k smallest elements of a finite set.\<close>
 
 lemma rank_strict_mono: 
   assumes "finite S"
