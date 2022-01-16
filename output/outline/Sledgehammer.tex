@@ -1,0 +1,170 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Sledgehammer}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{Sledgehammer: Isabelle--ATP Linkup%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Sledgehammer\isanewline
+\isakeyword{imports}\ Presburger\ SMT\isanewline
+\isakeyword{keywords}\isanewline
+\ \ {\isachardoublequoteopen}sledgehammer{\isachardoublequoteclose}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ diag\ \isakeyword{and}\isanewline
+\ \ {\isachardoublequoteopen}sledgehammer{\isacharunderscore}{\kern0pt}params{\isachardoublequoteclose}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ thy{\isacharunderscore}{\kern0pt}decl\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+%
+\isatagML
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}ATP{\isacharslash}{\kern0pt}system{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}tptp{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}async{\isacharunderscore}{\kern0pt}manager{\isacharunderscore}{\kern0pt}legacy{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}util{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}fact{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}proof{\isacharunderscore}{\kern0pt}methods{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}isar{\isacharunderscore}{\kern0pt}annotate{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}isar{\isacharunderscore}{\kern0pt}proof{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}isar{\isacharunderscore}{\kern0pt}preplay{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}isar{\isacharunderscore}{\kern0pt}compress{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}isar{\isacharunderscore}{\kern0pt}minimize{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}isar{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}atp{\isacharunderscore}{\kern0pt}systems{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}prover{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}prover{\isacharunderscore}{\kern0pt}atp{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}prover{\isacharunderscore}{\kern0pt}smt{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}prover{\isacharunderscore}{\kern0pt}minimize{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}mepo{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}mash{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}commands{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Sledgehammer{\isacharslash}{\kern0pt}sledgehammer{\isacharunderscore}{\kern0pt}tactics{\isachardot}{\kern0pt}ML{\isacartoucheclose}%
+\endisatagML
+{\isafoldML}%
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=Sledgehammer.tex%:%
+%:%11=7%:%
+%:%27=9%:%
+%:%28=9%:%
+%:%29=10%:%
+%:%30=11%:%
+%:%31=12%:%
+%:%32=13%:%
+%:%33=14%:%
+%:%38=14%:%
+%:%43=15%:%
+%:%48=16%:%
+%:%49=16%:%
+%:%50=17%:%
+%:%51=17%:%
+%:%52=18%:%
+%:%53=18%:%
+%:%54=19%:%
+%:%55=19%:%
+%:%56=20%:%
+%:%57=20%:%
+%:%58=21%:%
+%:%59=21%:%
+%:%60=22%:%
+%:%61=22%:%
+%:%62=23%:%
+%:%63=23%:%
+%:%64=24%:%
+%:%65=24%:%
+%:%66=25%:%
+%:%67=25%:%
+%:%68=26%:%
+%:%69=26%:%
+%:%70=27%:%
+%:%71=27%:%
+%:%72=28%:%
+%:%73=28%:%
+%:%74=29%:%
+%:%75=29%:%
+%:%76=30%:%
+%:%77=30%:%
+%:%78=31%:%
+%:%79=31%:%
+%:%80=32%:%
+%:%81=32%:%
+%:%82=33%:%
+%:%83=33%:%
+%:%84=34%:%
+%:%85=34%:%
+%:%86=35%:%
+%:%87=35%:%
+%:%88=36%:%
+%:%89=36%:%
+%:%94=36%:%
+%:%99=37%:%
+%:%104=38%:%

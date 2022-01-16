@@ -4,6 +4,9 @@ theory Median
   imports Main "HOL-Probability.Hoeffding" "HOL-Library.Multiset" Probability_Ext "HOL.List"
 begin
 
+text \<open>This section includes an amplification result for estimation algorithms using the median
+method.\<close>
+
 fun sort_primitive where
   "sort_primitive i j f k = (if k = i then min (f i) (f j) else (if k = j then max (f i) (f j) else f k))"
 
@@ -126,8 +129,96 @@ lemma median_alt_def:
   using assms
   by (simp add:median_def sort_map_eq_sort[symmetric] del:sort_map.simps)
 
+definition up_ray :: "('a :: linorder) set \<Rightarrow> bool" where
+  "up_ray I = (\<forall>x y. x \<in> I \<longrightarrow> x \<le> y \<longrightarrow> y \<in> I)"
+
+lemma up_ray_borel:
+  assumes "up_ray (I :: (('a :: linorder_topology) set))"
+  shows "I \<in> borel"
+proof (cases "closed I")
+  case True
+  then show ?thesis using borel_closed by blast
+next
+  case False
+  hence b:"\<not> closed I" by blast
+
+  have "open I"
+  proof (rule Topological_Spaces.openI)
+    fix x
+    assume c:"x \<in> I"
+    show "\<exists>T. open T \<and> x \<in> T \<and> T \<subseteq> I"
+    proof (cases "\<exists>y. y < x \<and> y \<in> I")
+      case True
+      then obtain y where a:"y < x \<and> y \<in> I" by blast
+      have "open {y<..}" by simp
+      moreover have "x \<in> {y<..}" using a by simp
+      moreover have "{y<..} \<subseteq> I"
+        apply (rule subsetI)
+        using a assms(1) apply (simp add: up_ray_def) 
+        by (metis less_le_not_le)
+      ultimately show ?thesis by blast
+    next
+      case False
+      hence "I \<subseteq> {x..}" using linorder_not_less by auto
+      moreover have "{x..} \<subseteq> I"
+        using c assms(1)  apply (simp add: up_ray_def) 
+        by blast
+      ultimately have "I = {x..}" 
+        by (rule order_antisym)
+      moreover have "closed {x..}" by simp
+      ultimately have "False" using b by auto
+      then show ?thesis by simp
+    qed
+  qed
+  then show ?thesis by simp
+qed
+
+definition down_ray :: "('a :: linorder) set \<Rightarrow> bool" where
+  "down_ray I = (\<forall>x y. y \<in> I \<longrightarrow> x \<le> y \<longrightarrow> x \<in> I)"
+
+lemma down_ray_borel:
+  assumes "down_ray (I :: (('a :: linorder_topology) set))"
+  shows "I \<in> borel"
+proof -
+  have "up_ray (-I)"
+    using assms apply (simp add: up_ray_def down_ray_def) by blast
+  hence "(-I) \<in> borel" using up_ray_borel by blast
+  thus "I \<in> borel" 
+    by (metis borel_comp double_complement)
+qed
+
 definition interval :: "('a :: linorder) set \<Rightarrow> bool" where
   "interval I = (\<forall>x y z. x \<in> I \<longrightarrow> z \<in> I \<longrightarrow> x \<le> y \<longrightarrow> y \<le> z \<longrightarrow> y \<in> I)"
+
+lemma interval_borel:
+  assumes "interval (I :: (('a :: linorder_topology) set))"
+  shows "I \<in> borel"
+proof (cases "I = {}")
+  case True
+  then show ?thesis by simp
+next
+  case False
+  then obtain x where a:"x \<in> I" by blast
+  have "\<And>y z. y \<in> I \<union> {x..} \<Longrightarrow> y \<le> z \<Longrightarrow> z \<in> I \<union> {x..}" 
+    by (metis assms a interval_def  IntE UnE Un_Int_eq(1) Un_Int_eq(2) atLeast_iff nle_le order.trans)
+  hence "up_ray (I \<union> {x..})"
+    using up_ray_def by blast
+  hence b:"I \<union> {x..} \<in> borel" 
+    using up_ray_borel by blast
+
+  have "\<And>y z. y \<in> I \<union> {..x} \<Longrightarrow> z \<le> y \<Longrightarrow> z \<in> I \<union> {..x}" 
+    by (metis assms a interval_def UnE UnI1 UnI2 atMost_iff dual_order.trans linorder_le_cases)
+  hence "down_ray (I \<union> {..x})"
+    using down_ray_def by blast
+  hence c:"I \<union> {..x} \<in> borel"
+    using down_ray_borel by blast
+
+  have "I = (I \<union> {x..}) \<inter> (I \<union> {..x})"
+    using a by fastforce    
+
+  then show ?thesis using b c
+    by (metis sets.Int)
+qed
 
 lemma interval_rule:
   assumes "interval I"
@@ -138,7 +229,6 @@ lemma interval_rule:
   using assms(1) apply (simp add:interval_def)
   using assms by blast
 
-
 lemma sorted_int:
   assumes "interval I"
   assumes "sorted xs"
@@ -147,7 +237,6 @@ lemma sorted_int:
   shows "xs ! j \<in> I"
   apply (rule interval_rule[where a="xs ! i" and b="xs ! k"])
   using assms by (simp add: sorted_nth_mono)+
-
 
 lemma mid_in_interval:
   assumes "2*length (filter (\<lambda>x. x \<in> I) xs) > length xs"
@@ -205,13 +294,12 @@ proof -
   qed
 qed
 
-
 lemma median_est:
-  fixes \<delta> :: "real"
-  assumes "2*card {k. k < n \<and> abs (f k - \<mu>) \<le> \<delta>} > n"
-  shows "abs (median f n - \<mu>) \<le> \<delta>"
+  assumes "interval I"
+  assumes "2*card {k. k < n \<and> f k \<in> I} > n"
+  shows "median f n \<in> I"
 proof -
-  have a:"{k. k < n \<and> abs (f k - \<mu>) \<le> \<delta>} = {i. i < n \<and> \<bar>map f [0..<n] ! i - \<mu>\<bar> \<le> \<delta>}"
+  have a:"{k. k < n \<and> f k \<in> I} = {i. i < n \<and> map f [0..<n] ! i \<in> I}"
     apply (rule order_antisym)
      apply (rule subsetI, simp)
     apply (rule subsetI, simp) 
@@ -219,32 +307,13 @@ proof -
 
   show ?thesis
     apply (simp add:median_def)
-    apply (rule mid_in_interval[where I="{x. abs (x-\<mu>) \<le> \<delta>}" and xs="sort (map f [0..<n])", simplified])
-     using assms apply (simp add:filter_sort comp_def length_filter_conv_card a)
-    by (simp add:interval_def, auto)
-qed
-
-lemma median_est_2:
-  fixes a b :: "real"
-  assumes "2*card {k. k < n \<and> f k \<in> {a..b}} > n"
-  shows "median f n \<in> {a..b}"
-proof -
-  have a:"{k. k < n \<and> f k \<in> {a..b}} = {i. i < n \<and> map f [0..<n] ! i \<in> {a..b}}"
-    apply (rule order_antisym)
-     apply (rule subsetI, simp)
-    apply (rule subsetI, simp) 
-    by (metis add_0 diff_zero nth_map_upt)
-
-  show ?thesis
-    apply (simp add:median_def)
-    apply (rule mid_in_interval[where I="{a..b}" and xs="sort (map f [0..<n])", simplified])
+    apply (rule mid_in_interval[where I="I" and xs="sort (map f [0..<n])", simplified])
      using assms a apply (simp add:filter_sort comp_def length_filter_conv_card)
-    by (simp add:interval_def)
+    by (simp add:assms)
 qed
-
 
 lemma median_measurable:
-  fixes X :: "nat \<Rightarrow> 'a \<Rightarrow> ('b :: {linorder,topological_space, linorder_topology, second_countable_topology})"
+  fixes X :: "nat \<Rightarrow> 'a \<Rightarrow> ('b :: {linorder, topological_space, linorder_topology, second_countable_topology})"
   assumes "n \<ge> 1" 
   assumes "\<And>i. i < n \<Longrightarrow> X i \<in> measurable M borel"
   shows "(\<lambda>x. median (\<lambda>i. X i x) n) \<in> measurable M borel"
@@ -302,17 +371,18 @@ proof -
     by (simp add:t_def[symmetric] meas_ptw_def)
 qed
 
-lemma (in prob_space) median_bound_gen:
-  fixes a b :: real
+lemma (in prob_space) median_bound:
   fixes n :: nat
+  fixes I :: "('b :: {linorder_topology, second_countable_topology}) set"
+  assumes "interval I"
   assumes "\<alpha> > 0"
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> - ln \<epsilon> / (2 * \<alpha>\<^sup>2)"
-  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> {a..b}) \<ge> 1/2+\<alpha>" 
-  shows "\<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> {a..b}) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
+  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> I) \<ge> 1/2+\<alpha>" 
+  shows "\<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> I) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
 proof -
-  define Y :: "nat \<Rightarrow> 'a \<Rightarrow> real" where "Y = (\<lambda>i. indicator {a..b} \<circ> (X i))"
+  define Y :: "nat \<Rightarrow> 'a \<Rightarrow> real" where "Y = (\<lambda>i. indicator I \<circ> (X i))"
 
   define t where "t = (\<Sum>i = 0..<n. expectation (Y i)) - n/2"
   have "0 < -ln \<epsilon> / (2 * \<alpha>\<^sup>2)"  
@@ -324,7 +394,7 @@ proof -
   hence n_ge_1:"n \<ge> 1" by linarith
   hence n_ge_0:"n > 0" by simp
 
-  have ind_comp: "\<And>i. indicator {a..b} \<circ> (X i) = indicator {\<omega>. X i \<omega> \<in> {a..b}}"
+  have ind_comp: "\<And>i. indicator I \<circ> (X i) = indicator {\<omega>. X i \<omega> \<in> I}"
     apply (rule ext)
     by (simp add:indicator_def comp_def)
 
@@ -332,13 +402,13 @@ proof -
     by (simp add:algebra_simps)
   also have "... \<le> (\<Sum> i = 0..<n. expectation (Y i)) - n/2"
     apply (rule diff_right_mono, rule sum_mono)
-    using assms(5) by (simp add:Y_def ind_comp measure_inters) 
+    using assms(6) by (simp add:Y_def ind_comp measure_inters) 
   also have "... = t" by (simp add:t_def)
   finally have t_ge_a: "t \<ge> \<alpha> * n" by simp
 
   have d: "0 \<le> \<alpha> * n" 
     apply (rule mult_nonneg_nonneg)
-    using assms(1) n_ge_0 by simp+
+    using assms(2) n_ge_0 by simp+
   also have "... \<le> t" using t_ge_a by simp
   finally have t_ge_0: "t \<ge> 0" by simp
 
@@ -349,34 +419,34 @@ proof -
   have Y_indep: "indep_vars (\<lambda>_. borel) Y {0..<n}"
     apply (subst Y_def)
     apply (rule indep_vars_compose[where M'="(\<lambda>_. borel)"])
-     apply (metis assms(3))
-    by simp
+     apply (metis assms(4))
+    using interval_borel[OF assms(1)] by simp
  
   hence b:"Hoeffding_ineq M {0..<n} Y (\<lambda>i. 0) (\<lambda>i. 1)" 
     apply (simp add:Hoeffding_ineq_def indep_interval_bounded_random_variables_def)
     by (simp add:prob_space_axioms indep_interval_bounded_random_variables_axioms_def Y_def Y_indep)
 
-  have c: "\<And>\<omega>. (\<Sum>i = 0..<n. Y i \<omega>) > n/2 \<Longrightarrow> median (\<lambda>i. X i \<omega>) n \<in> {a..b}"
+  have c: "\<And>\<omega>. (\<Sum>i = 0..<n. Y i \<omega>) > n/2 \<Longrightarrow> median (\<lambda>i. X i \<omega>) n \<in> I"
   proof -
     fix \<omega>
     assume "(\<Sum>i = 0..<n. Y i \<omega>) > n/2"
-    hence "n < 2 * card ({0..<n} \<inter> {i. X i \<omega> \<in> {a..b}})" 
+    hence "n < 2 * card ({0..<n} \<inter> {i. X i \<omega> \<in> I})" 
       by (simp add:Y_def indicator_def) 
-    also have "... = 2 * card {i. i < n \<and> X i \<omega> \<in> {a..b}}"
+    also have "... = 2 * card {i. i < n \<and> X i \<omega> \<in> I}"
       apply (simp)
       apply (rule arg_cong[where f="card"])
       by (rule order_antisym, rule subsetI, simp, rule subsetI, simp)
-    finally have "2 * card {i. i < n \<and> X i \<omega> \<in> {a..b}} > n" by simp
-    thus "median (\<lambda>i. X i \<omega>) n \<in> {a..b}"
-      using median_est_2 by simp
+    finally have "2 * card {i. i < n \<and> X i \<omega> \<in> I} > n" by simp
+    thus "median (\<lambda>i. X i \<omega>) n \<in> I"
+      using median_est[OF assms(1)] by simp
   qed
 
   have "1 - \<epsilon> \<le> 1- exp (- (2 * \<alpha>\<^sup>2 * real n))" 
     apply simp
     apply (subst ln_ge_iff[symmetric])
-    using assms(2) apply simp
-    using assms(4) apply (subst (asm) pos_divide_le_eq) 
-     apply (simp add: assms(1) power2_eq_square)
+    using assms(3) apply simp
+    using assms(5) apply (subst (asm) pos_divide_le_eq) 
+     apply (simp add: assms(2) power2_eq_square)
     by (simp add: mult_of_nat_commute)
   also have "... \<le> 1- exp (- (2 * t\<^sup>2 / real n))" 
     apply simp
@@ -391,14 +461,26 @@ proof -
     using Y_indep apply (simp add:indep_vars_def)
     apply (rule arg_cong2[where f="measure"], simp)
     by (rule order_antisym, rule subsetI, simp add:not_le, rule subsetI, simp add:not_le)
-  also have "... \<le> \<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> {a..b})"
+  also have "... \<le> \<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> I)"
     apply (rule finite_measure_mono)
      apply (rule subsetI) using c apply simp 
-    apply measurable
+    using interval_borel[OF assms(1)] apply measurable
     apply (rule median_measurable[OF n_ge_1])
-    using assms(3) by (simp add:indep_vars_def)
+    using assms(4) by (simp add:indep_vars_def)
   finally show ?thesis by simp
 qed
+
+lemma (in prob_space) median_bound_1:
+  fixes a b :: real
+  fixes n :: nat
+  assumes "\<alpha> > 0"
+  assumes "\<epsilon> \<in> {0<..<1}"
+  assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
+  assumes "n \<ge> - ln \<epsilon> / (2 * \<alpha>\<^sup>2)"
+  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> {a..b}) \<ge> 1/2+\<alpha>" 
+  shows "\<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> {a..b}) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
+  apply (rule median_bound[OF _ assms(1) assms(2) assms(3) assms(4) assms(5)])
+  by (simp add:interval_def)+
 
 lemma (in prob_space) median_bound_2:
   fixes \<mu> :: real
@@ -424,7 +506,7 @@ proof -
   hence a:"\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> {\<mu>- \<delta>..\<mu>+\<delta>}) \<ge> 2/3" by simp
   
   have "1-\<epsilon> \<le> \<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> {\<mu>-\<delta>..\<mu>+\<delta>})"
-    apply (rule median_bound_gen[OF _ assms(1) assms(2), where \<alpha>="1/6"], simp) 
+    apply (rule median_bound_1[OF _ assms(1) assms(2), where \<alpha>="1/6"], simp) 
      apply (simp add:power2_eq_square)
     using assms(3) apply simp
     using a by simp

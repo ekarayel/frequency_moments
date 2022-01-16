@@ -1,0 +1,328 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Main}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{Main HOL%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\begin{isamarkuptext}%
+Classical Higher-order Logic -- only ``Main'', excluding real and
+  complex numbers etc.%
+\end{isamarkuptext}\isamarkuptrue%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Main\isanewline
+\ \ \isakeyword{imports}\isanewline
+\ \ \ \ Predicate{\isacharunderscore}{\kern0pt}Compile\isanewline
+\ \ \ \ Quickcheck{\isacharunderscore}{\kern0pt}Narrowing\isanewline
+\ \ \ \ Mirabelle\isanewline
+\ \ \ \ Extraction\isanewline
+\ \ \ \ Nunchaku\isanewline
+\ \ \ \ BNF{\isacharunderscore}{\kern0pt}Greatest{\isacharunderscore}{\kern0pt}Fixpoint\isanewline
+\ \ \ \ Filter\isanewline
+\ \ \ \ Conditionally{\isacharunderscore}{\kern0pt}Complete{\isacharunderscore}{\kern0pt}Lattices\isanewline
+\ \ \ \ Binomial\isanewline
+\ \ \ \ GCD\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Namespace cleanup%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{hide{\isacharunderscore}{\kern0pt}const}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}\isakeyword{open}{\isacharparenright}{\kern0pt}\isanewline
+\ \ czero\ cinfinite\ cfinite\ csum\ cone\ ctwo\ Csum\ cprod\ cexp\ image{\isadigit{2}}\ image{\isadigit{2}}p\ vimage{\isadigit{2}}p\ Gr\ Grp\ collect\isanewline
+\ \ fsts\ snds\ setl\ setr\ convol\ pick{\isacharunderscore}{\kern0pt}middlep\ fstOp\ sndOp\ csquare\ relImage\ relInvImage\ Succ\ Shift\isanewline
+\ \ shift\ proj\ id{\isacharunderscore}{\kern0pt}bnf\isanewline
+\isanewline
+\isacommand{hide{\isacharunderscore}{\kern0pt}fact}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}\isakeyword{open}{\isacharparenright}{\kern0pt}\ id{\isacharunderscore}{\kern0pt}bnf{\isacharunderscore}{\kern0pt}def\ type{\isacharunderscore}{\kern0pt}definition{\isacharunderscore}{\kern0pt}id{\isacharunderscore}{\kern0pt}bnf{\isacharunderscore}{\kern0pt}UNIV%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Syntax cleanup%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{no{\isacharunderscore}{\kern0pt}notation}\isamarkupfalse%
+\isanewline
+\ \ ordLeq{\isadigit{2}}\ {\isacharparenleft}{\kern0pt}\isakeyword{infix}\ {\isachardoublequoteopen}{\isacharless}{\kern0pt}{\isacharequal}{\kern0pt}o{\isachardoublequoteclose}\ {\isadigit{5}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ ordLeq{\isadigit{3}}\ {\isacharparenleft}{\kern0pt}\isakeyword{infix}\ {\isachardoublequoteopen}{\isasymle}o{\isachardoublequoteclose}\ {\isadigit{5}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ ordLess{\isadigit{2}}\ {\isacharparenleft}{\kern0pt}\isakeyword{infix}\ {\isachardoublequoteopen}{\isacharless}{\kern0pt}o{\isachardoublequoteclose}\ {\isadigit{5}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ ordIso{\isadigit{2}}\ {\isacharparenleft}{\kern0pt}\isakeyword{infix}\ {\isachardoublequoteopen}{\isacharequal}{\kern0pt}o{\isachardoublequoteclose}\ {\isadigit{5}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ card{\isacharunderscore}{\kern0pt}of\ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharbar}{\kern0pt}{\isacharunderscore}{\kern0pt}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}csum\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharplus}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{6}}{\isadigit{5}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}cprod\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharasterisk}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{8}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}cexp\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharcircum}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{9}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ BNF{\isacharunderscore}{\kern0pt}Def{\isachardot}{\kern0pt}convol\ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymlangle}{\isacharparenleft}{\kern0pt}{\isacharunderscore}{\kern0pt}{\isacharcomma}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isasymrangle}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\isanewline
+\isacommand{bundle}\isamarkupfalse%
+\ cardinal{\isacharunderscore}{\kern0pt}syntax\isanewline
+\isakeyword{begin}\isanewline
+\isanewline
+\isacommand{notation}\isamarkupfalse%
+\isanewline
+\ \ ordLeq{\isadigit{2}}\ {\isacharparenleft}{\kern0pt}\isakeyword{infix}\ {\isachardoublequoteopen}{\isacharless}{\kern0pt}{\isacharequal}{\kern0pt}o{\isachardoublequoteclose}\ {\isadigit{5}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ ordLeq{\isadigit{3}}\ {\isacharparenleft}{\kern0pt}\isakeyword{infix}\ {\isachardoublequoteopen}{\isasymle}o{\isachardoublequoteclose}\ {\isadigit{5}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ ordLess{\isadigit{2}}\ {\isacharparenleft}{\kern0pt}\isakeyword{infix}\ {\isachardoublequoteopen}{\isacharless}{\kern0pt}o{\isachardoublequoteclose}\ {\isadigit{5}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ ordIso{\isadigit{2}}\ {\isacharparenleft}{\kern0pt}\isakeyword{infix}\ {\isachardoublequoteopen}{\isacharequal}{\kern0pt}o{\isachardoublequoteclose}\ {\isadigit{5}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ card{\isacharunderscore}{\kern0pt}of\ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharbar}{\kern0pt}{\isacharunderscore}{\kern0pt}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}csum\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharplus}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{6}}{\isadigit{5}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}cprod\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharasterisk}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{8}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}cexp\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharcircum}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{9}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\isanewline
+\isacommand{alias}\isamarkupfalse%
+\ cinfinite\ {\isacharequal}{\kern0pt}\ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}cinfinite\isanewline
+\isacommand{alias}\isamarkupfalse%
+\ czero\ {\isacharequal}{\kern0pt}\ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}czero\isanewline
+\isacommand{alias}\isamarkupfalse%
+\ cone\ {\isacharequal}{\kern0pt}\ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}cone\isanewline
+\isacommand{alias}\isamarkupfalse%
+\ ctwo\ {\isacharequal}{\kern0pt}\ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic{\isachardot}{\kern0pt}ctwo\isanewline
+\isanewline
+\isacommand{end}\isamarkupfalse%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Lattice syntax%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{bundle}\isamarkupfalse%
+\ lattice{\isacharunderscore}{\kern0pt}syntax\isanewline
+\isakeyword{begin}\isanewline
+\isanewline
+\isacommand{notation}\isamarkupfalse%
+\isanewline
+\ \ bot\ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymbottom}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ top\ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymtop}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ inf\ \ {\isacharparenleft}{\kern0pt}\isakeyword{infixl}\ {\isachardoublequoteopen}{\isasymsqinter}{\isachardoublequoteclose}\ {\isadigit{7}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ sup\ \ {\isacharparenleft}{\kern0pt}\isakeyword{infixl}\ {\isachardoublequoteopen}{\isasymsqunion}{\isachardoublequoteclose}\ {\isadigit{6}}{\isadigit{5}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ Inf\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymSqinter}\ {\isacharunderscore}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{9}}{\isadigit{0}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{9}}{\isadigit{0}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ Sup\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymSqunion}\ {\isacharunderscore}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{9}}{\isadigit{0}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{9}}{\isadigit{0}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\isanewline
+\isacommand{syntax}\isamarkupfalse%
+\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}INF{\isadigit{1}}{\isachardoublequoteclose}\ \ \ \ \ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}pttrns\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\ \ \ \ \ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isasymSqinter}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}INF{\isachardoublequoteclose}\ \ \ \ \ \ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}pttrn\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ set\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isasymSqinter}{\isacharunderscore}{\kern0pt}{\isasymin}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}SUP{\isadigit{1}}{\isachardoublequoteclose}\ \ \ \ \ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}pttrns\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\ \ \ \ \ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isasymSqunion}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}SUP{\isachardoublequoteclose}\ \ \ \ \ \ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}pttrn\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ set\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isasymSqunion}{\isacharunderscore}{\kern0pt}{\isasymin}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\isanewline
+\isacommand{end}\isamarkupfalse%
+\isanewline
+\isanewline
+\isacommand{bundle}\isamarkupfalse%
+\ no{\isacharunderscore}{\kern0pt}lattice{\isacharunderscore}{\kern0pt}syntax\isanewline
+\isakeyword{begin}\isanewline
+\isanewline
+\isacommand{no{\isacharunderscore}{\kern0pt}notation}\isamarkupfalse%
+\isanewline
+\ \ bot\ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymbottom}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ top\ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymtop}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ inf\ \ {\isacharparenleft}{\kern0pt}\isakeyword{infixl}\ {\isachardoublequoteopen}{\isasymsqinter}{\isachardoublequoteclose}\ {\isadigit{7}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ sup\ \ {\isacharparenleft}{\kern0pt}\isakeyword{infixl}\ {\isachardoublequoteopen}{\isasymsqunion}{\isachardoublequoteclose}\ {\isadigit{6}}{\isadigit{5}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ Inf\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymSqinter}\ {\isacharunderscore}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{9}}{\isadigit{0}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{9}}{\isadigit{0}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{and}\isanewline
+\ \ Sup\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isasymSqunion}\ {\isacharunderscore}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{9}}{\isadigit{0}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{9}}{\isadigit{0}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\isanewline
+\isacommand{no{\isacharunderscore}{\kern0pt}syntax}\isamarkupfalse%
+\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}INF{\isadigit{1}}{\isachardoublequoteclose}\ \ \ \ \ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}pttrns\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\ \ \ \ \ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isasymSqinter}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}INF{\isachardoublequoteclose}\ \ \ \ \ \ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}pttrn\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ set\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isasymSqinter}{\isacharunderscore}{\kern0pt}{\isasymin}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}SUP{\isadigit{1}}{\isachardoublequoteclose}\ \ \ \ \ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}pttrns\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\ \ \ \ \ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isasymSqunion}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}SUP{\isachardoublequoteclose}\ \ \ \ \ \ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}pttrn\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ set\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isasymSqunion}{\isacharunderscore}{\kern0pt}{\isasymin}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharslash}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\isanewline
+\isacommand{end}\isamarkupfalse%
+\isanewline
+\isanewline
+\isacommand{unbundle}\isamarkupfalse%
+\ no{\isacharunderscore}{\kern0pt}lattice{\isacharunderscore}{\kern0pt}syntax\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=Main.tex%:%
+%:%11=1%:%
+%:%23=4%:%
+%:%24=5%:%
+%:%32=8%:%
+%:%33=8%:%
+%:%34=9%:%
+%:%35=10%:%
+%:%36=11%:%
+%:%37=12%:%
+%:%38=13%:%
+%:%39=14%:%
+%:%40=15%:%
+%:%41=16%:%
+%:%42=17%:%
+%:%43=18%:%
+%:%44=19%:%
+%:%45=20%:%
+%:%59=22%:%
+%:%69=24%:%
+%:%70=24%:%
+%:%71=25%:%
+%:%72=26%:%
+%:%73=27%:%
+%:%74=28%:%
+%:%75=29%:%
+%:%76=29%:%
+%:%83=32%:%
+%:%93=34%:%
+%:%94=34%:%
+%:%95=35%:%
+%:%96=36%:%
+%:%97=37%:%
+%:%98=38%:%
+%:%99=39%:%
+%:%100=40%:%
+%:%101=41%:%
+%:%102=42%:%
+%:%103=43%:%
+%:%104=44%:%
+%:%105=45%:%
+%:%106=45%:%
+%:%107=46%:%
+%:%108=47%:%
+%:%109=48%:%
+%:%110=48%:%
+%:%111=49%:%
+%:%112=50%:%
+%:%113=51%:%
+%:%114=52%:%
+%:%115=53%:%
+%:%116=54%:%
+%:%117=55%:%
+%:%118=56%:%
+%:%119=57%:%
+%:%120=58%:%
+%:%121=58%:%
+%:%122=59%:%
+%:%123=59%:%
+%:%124=60%:%
+%:%125=60%:%
+%:%126=61%:%
+%:%127=61%:%
+%:%128=62%:%
+%:%129=63%:%
+%:%137=66%:%
+%:%147=68%:%
+%:%148=68%:%
+%:%149=69%:%
+%:%150=70%:%
+%:%151=71%:%
+%:%152=71%:%
+%:%153=72%:%
+%:%154=73%:%
+%:%155=74%:%
+%:%156=75%:%
+%:%157=76%:%
+%:%158=77%:%
+%:%159=78%:%
+%:%160=79%:%
+%:%161=79%:%
+%:%162=80%:%
+%:%163=81%:%
+%:%164=82%:%
+%:%165=83%:%
+%:%166=84%:%
+%:%167=85%:%
+%:%168=85%:%
+%:%169=86%:%
+%:%170=87%:%
+%:%171=87%:%
+%:%172=88%:%
+%:%173=89%:%
+%:%174=90%:%
+%:%175=90%:%
+%:%176=91%:%
+%:%177=92%:%
+%:%178=93%:%
+%:%179=94%:%
+%:%180=95%:%
+%:%181=96%:%
+%:%182=97%:%
+%:%183=98%:%
+%:%184=98%:%
+%:%185=99%:%
+%:%186=100%:%
+%:%187=101%:%
+%:%188=102%:%
+%:%189=103%:%
+%:%190=104%:%
+%:%191=104%:%
+%:%192=105%:%
+%:%193=106%:%
+%:%194=106%:%
+%:%197=107%:%
+%:%202=108%:%

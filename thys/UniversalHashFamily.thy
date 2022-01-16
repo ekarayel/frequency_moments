@@ -4,29 +4,23 @@ theory UniversalHashFamily
   imports Main PolynomialCounting Product_PMF_Ext
 begin
 
-definition k_universal where
-  "k_universal k H f U V = (
-    (\<forall>x \<in> U. \<forall>h \<in> H. f h x \<in> V) \<and> finite V \<and> V \<noteq> {} \<and>
-    (\<forall>x \<in> U. \<forall>v \<in> V. \<P>(h in pmf_of_set H. f h x = v) = 1 / real (card V)) \<and>
-    (\<forall>x \<subseteq> U. card x \<le> k \<and> finite x \<longrightarrow> prob_space.indep_vars (pmf_of_set H) (\<lambda>_. pmf_of_set V) f x))"
-
-
-text \<open>A k-independent hash family $\mathcal H$ is probability space, whose elements are hash functions 
+text \<open>A k-universal hash family $\mathcal H$ is probability space, whose elements are hash functions 
 with domain $U$ and range ${i. i < m}$ such that:
 
 \begin{itemize}
 \item For every fixed $x \in U$ and value $y < m$ exactly $\frac{1}{m}$ of the hash functions map
   $x$ to $y$: $P_{h \in \mathcal H} \left(h(x) = y\right) = \frac{1}{m}$.
-\item For $k$ universe elements: $x_1,\cdots,x_k$ the functions $h(x_1), \cdots, h(x_m)$ form
-  independent random variables.
+\item For at most $k$ universe elements: $x_1,\cdots,x_m$ the functions $h(x_1), \cdots, h(x_m)$ 
+  are independent random variables.
 \end{itemize}
 
-In this section, we construct $k$-independent hash families following the approach outlined
+In this section, we construct $k$-universal hash families following the approach outlined
 by Wegman and Carter using the polynomials of degree less than $k$ over a finite field.\<close>
 
 text \<open>A hash function is just polynomial evaluation.\<close>
 
-definition hash where "hash F x \<omega> = ring.eval F \<omega> x"
+definition hash :: "('a, 'b) ring_scheme \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a" 
+  where "hash F x \<omega> = ring.eval F \<omega> x"
 
 lemma hash_range:
   assumes "ring F"
@@ -186,7 +180,8 @@ qed
 text \<open>We introduce k-wise independent random variables using the existing definition of
 independent random variables.\<close>
 
-definition (in prob_space) k_wise_indep_vars where
+definition (in prob_space) k_wise_indep_vars :: 
+  "nat \<Rightarrow> ('b \<Rightarrow> 'c measure) \<Rightarrow> ('b \<Rightarrow> 'a \<Rightarrow> 'c) \<Rightarrow> 'b set \<Rightarrow> bool" where
   "k_wise_indep_vars k M' X' I = (\<forall>J \<subseteq> I. card J \<le> k \<longrightarrow> finite J \<longrightarrow> indep_vars M' X' J)" 
 
 lemma hash_k_wise_indep:

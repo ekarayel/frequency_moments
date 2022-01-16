@@ -40,9 +40,10 @@ definition f0_sketch where
   "f0_sketch p r t h xs = least t ((\<lambda>x. float_of (truncate_down r (hash p x h))) ` (set xs))"
 
 lemma f0_alg_sketch:
+  fixes n :: nat
+  fixes as :: "nat list"
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
-  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
   defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
   defines "t \<equiv> nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
   defines "s \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
@@ -429,7 +430,7 @@ lemma of_bool_square: "(of_bool x)\<^sup>2 = ((of_bool x)::real)"
 theorem f0_alg_correct:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
-  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  assumes "set as \<subseteq> {0..<n}"
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n) \<bind> f0_result"
   shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1 - of_rat \<epsilon>"
 proof -
@@ -567,16 +568,14 @@ proof -
 
   have "m \<le> card {0..<n}" 
     apply (subst m_def)
-    apply (rule card_mono, simp)
-    apply (rule subsetI)
-    using  assms(3) by simp
+    by (rule card_mono, simp, simp add:assms(3))
   also have "... \<le> p"
     by (metis p_def find_prime_above_lower_bound card_atLeastLessThan diff_zero max_def order_trans)
   finally have m_le_p: "m \<le> p" by simp
 
   have xs_le_p: "\<And>x. x \<in> set as \<Longrightarrow> x < p" 
     apply (rule order_less_le_trans[where y="n"])
-    using assms(3) apply simp
+    using assms(3) atLeastLessThan_iff apply blast
     by (metis p_def find_prime_above_lower_bound max_def order_trans)
 
   have m_eq_F_0: "real m = of_rat (F 0 as)"
@@ -1251,7 +1250,7 @@ proof -
 
   show ?thesis
     apply (subst M_def)
-    apply (subst f0_alg_sketch[OF assms(1) assms(2) assms(3)], simp)
+    apply (subst f0_alg_sketch[OF assms(1) assms(2)], simp)
     apply (simp add:t_def[symmetric] p_def[symmetric] r_def[symmetric] s_def[symmetric] map_pmf_def)
     apply (subst bind_assoc_pmf)
     apply (subst bind_return_pmf)
@@ -1300,7 +1299,7 @@ lemma f_subset:
 theorem f0_exact_space_usage:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
-  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  assumes "set as \<subseteq> {0..<n}"
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
   shows "AE \<omega> in M. bit_count (encode_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
 proof -
@@ -1400,7 +1399,7 @@ proof -
       apply (rule image_subsetI, simp)
       apply (rule hash_range[OF p_ge_0, where n="2"])
        using b_1 apply (simp add: PiE_iff)
-      using assms(3) n_le_p order_less_le_trans by blast
+      by (metis assms(3) n_le_p order_less_le_trans atLeastLessThan_iff subset_eq)
     hence b_4: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) as) ` {0..<s} \<Longrightarrow> 
       y \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {0..<p}"
       by force
@@ -1419,7 +1418,7 @@ proof -
       bit_count (list\<^sub>S (list\<^sub>S (zfact\<^sub>S p)) (map x [0..<s])) +
       bit_count (list\<^sub>S (set\<^sub>S F\<^sub>S) (map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as) [0..<s]))"
       apply (simp add:b_2 encode_state_def dependent_bit_count prod_bit_count
-        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] encode_extensional_def
+        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] fun\<^sub>S_def
         del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
       by (simp add:ac_simps del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
     also have "... \<le> ereal (2* log 2 (real s + 1) + 1) + ereal  (2* log 2 (real t + 1) + 1)
@@ -1468,7 +1467,7 @@ proof -
   show ?thesis
     apply (subst AE_measure_pmf_iff, rule ballI)
     apply (subst (asm) M_def)
-    apply (subst (asm) f0_alg_sketch[OF assms(1) assms(2) assms(3)], simp)
+    apply (subst (asm) f0_alg_sketch[OF assms(1) assms(2)], simp)
     apply (simp add:s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric])
     apply (subst (asm) set_prod_pmf, simp)
     apply (simp add:comp_def)

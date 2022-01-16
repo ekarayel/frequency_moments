@@ -1,0 +1,112 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{SAT}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{Reconstructing external resolution proofs for propositional logic%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ SAT\isanewline
+\isakeyword{imports}\ Argo\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+%
+\isatagML
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}prop{\isacharunderscore}{\kern0pt}logic{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}sat{\isacharunderscore}{\kern0pt}solver{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}sat{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Argo{\isacharslash}{\kern0pt}argo{\isacharunderscore}{\kern0pt}sat{\isacharunderscore}{\kern0pt}solver{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isanewline
+\isacommand{method{\isacharunderscore}{\kern0pt}setup}\isamarkupfalse%
+\ sat\ {\isacharequal}{\kern0pt}\ {\isacartoucheopen}Scan{\isachardot}{\kern0pt}succeed\ {\isacharparenleft}{\kern0pt}SIMPLE{\isacharunderscore}{\kern0pt}METHOD{\isacharprime}{\kern0pt}\ o\ SAT{\isachardot}{\kern0pt}sat{\isacharunderscore}{\kern0pt}tac{\isacharparenright}{\kern0pt}{\isacartoucheclose}\isanewline
+\ \ {\isachardoublequoteopen}SAT\ solver{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{method{\isacharunderscore}{\kern0pt}setup}\isamarkupfalse%
+\ satx\ {\isacharequal}{\kern0pt}\ {\isacartoucheopen}Scan{\isachardot}{\kern0pt}succeed\ {\isacharparenleft}{\kern0pt}SIMPLE{\isacharunderscore}{\kern0pt}METHOD{\isacharprime}{\kern0pt}\ o\ SAT{\isachardot}{\kern0pt}satx{\isacharunderscore}{\kern0pt}tac{\isacharparenright}{\kern0pt}{\isacartoucheclose}\isanewline
+\ \ {\isachardoublequoteopen}SAT\ solver\ {\isacharparenleft}{\kern0pt}with\ definitional\ CNF{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}%
+\endisatagML
+{\isafoldML}%
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=SAT.tex%:%
+%:%11=8%:%
+%:%27=10%:%
+%:%28=10%:%
+%:%29=11%:%
+%:%30=12%:%
+%:%35=12%:%
+%:%40=13%:%
+%:%45=14%:%
+%:%46=14%:%
+%:%47=15%:%
+%:%48=15%:%
+%:%49=16%:%
+%:%50=16%:%
+%:%51=17%:%
+%:%52=17%:%
+%:%53=18%:%
+%:%54=19%:%
+%:%55=19%:%
+%:%56=20%:%
+%:%57=21%:%
+%:%58=22%:%
+%:%59=22%:%
+%:%60=23%:%
+%:%65=23%:%
+%:%70=24%:%
+%:%75=25%:%

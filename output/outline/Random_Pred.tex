@@ -1,0 +1,238 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Random{\isacharunderscore}{\kern0pt}Pred}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{The Random-Predicate Monad%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Random{\isacharunderscore}{\kern0pt}Pred\isanewline
+\isakeyword{imports}\ Quickcheck{\isacharunderscore}{\kern0pt}Random\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isacommand{fun}\isamarkupfalse%
+\ iter{\isacharprime}{\kern0pt}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ itself\ {\isasymRightarrow}\ natural\ {\isasymRightarrow}\ natural\ {\isasymRightarrow}\ Random{\isachardot}{\kern0pt}seed\ {\isasymRightarrow}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a{\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}random{\isacharparenright}{\kern0pt}\ Predicate{\isachardot}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}iter{\isacharprime}{\kern0pt}\ T\ nrandom\ sz\ seed\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}if\ nrandom\ {\isacharequal}{\kern0pt}\ {\isadigit{0}}\ then\ bot{\isacharunderscore}{\kern0pt}class{\isachardot}{\kern0pt}bot\ else\isanewline
+\ \ \ \ \ let\ {\isacharparenleft}{\kern0pt}{\isacharparenleft}{\kern0pt}x{\isacharcomma}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharcomma}{\kern0pt}\ seed{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ Quickcheck{\isacharunderscore}{\kern0pt}Random{\isachardot}{\kern0pt}random\ sz\ seed\isanewline
+\ \ \ in\ Predicate{\isachardot}{\kern0pt}Seq\ {\isacharparenleft}{\kern0pt}{\isacharpercent}{\kern0pt}u{\isachardot}{\kern0pt}\ Predicate{\isachardot}{\kern0pt}Insert\ x\ {\isacharparenleft}{\kern0pt}iter{\isacharprime}{\kern0pt}\ T\ {\isacharparenleft}{\kern0pt}nrandom\ {\isacharminus}{\kern0pt}\ {\isadigit{1}}{\isacharparenright}{\kern0pt}\ sz\ seed{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ iter\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}natural\ {\isasymRightarrow}\ natural\ {\isasymRightarrow}\ Random{\isachardot}{\kern0pt}seed\ {\isasymRightarrow}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a{\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}random{\isacharparenright}{\kern0pt}\ Predicate{\isachardot}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}iter\ nrandom\ sz\ seed\ {\isacharequal}{\kern0pt}\ iter{\isacharprime}{\kern0pt}\ {\isacharparenleft}{\kern0pt}TYPE{\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\ nrandom\ sz\ seed{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharbrackleft}{\kern0pt}code{\isacharbrackright}{\kern0pt}{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}iter\ nrandom\ sz\ seed\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}if\ nrandom\ {\isacharequal}{\kern0pt}\ {\isadigit{0}}\ then\ bot{\isacharunderscore}{\kern0pt}class{\isachardot}{\kern0pt}bot\ else\isanewline
+\ \ \ \ \ let\ {\isacharparenleft}{\kern0pt}{\isacharparenleft}{\kern0pt}x{\isacharcomma}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharcomma}{\kern0pt}\ seed{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ Quickcheck{\isacharunderscore}{\kern0pt}Random{\isachardot}{\kern0pt}random\ sz\ seed\isanewline
+\ \ \ in\ Predicate{\isachardot}{\kern0pt}Seq\ {\isacharparenleft}{\kern0pt}{\isacharpercent}{\kern0pt}u{\isachardot}{\kern0pt}\ Predicate{\isachardot}{\kern0pt}Insert\ x\ {\isacharparenleft}{\kern0pt}iter\ {\isacharparenleft}{\kern0pt}nrandom\ {\isacharminus}{\kern0pt}\ {\isadigit{1}}{\isacharparenright}{\kern0pt}\ sz\ seed{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ iter{\isacharunderscore}{\kern0pt}def\ iter{\isacharprime}{\kern0pt}{\isachardot}{\kern0pt}simps\ {\isacharbrackleft}{\kern0pt}of\ {\isacharunderscore}{\kern0pt}\ nrandom{\isacharbrackright}{\kern0pt}\ \isacommand{{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{type{\isacharunderscore}{\kern0pt}synonym}\isamarkupfalse%
+\ {\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred\ {\isacharequal}{\kern0pt}\ {\isachardoublequoteopen}Random{\isachardot}{\kern0pt}seed\ {\isasymRightarrow}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ Predicate{\isachardot}{\kern0pt}pred\ {\isasymtimes}\ Random{\isachardot}{\kern0pt}seed{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ empty\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{where}\ {\isachardoublequoteopen}empty\ {\isacharequal}{\kern0pt}\ Pair\ bot{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ single\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ {\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{where}\ {\isachardoublequoteopen}single\ x\ {\isacharequal}{\kern0pt}\ Pair\ {\isacharparenleft}{\kern0pt}Predicate{\isachardot}{\kern0pt}single\ x{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ bind\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred\ {\isasymRightarrow}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ random{\isacharunderscore}{\kern0pt}pred{\isacharparenright}{\kern0pt}\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{where}\isanewline
+\ \ \ \ {\isachardoublequoteopen}bind\ R\ f\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymlambda}s{\isachardot}{\kern0pt}\ let\isanewline
+\ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}P{\isacharcomma}{\kern0pt}\ s{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ R\ s{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}s{\isadigit{1}}{\isacharcomma}{\kern0pt}\ s{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ Random{\isachardot}{\kern0pt}split{\isacharunderscore}{\kern0pt}seed\ s{\isacharprime}{\kern0pt}\isanewline
+\ \ \ \ \ in\ {\isacharparenleft}{\kern0pt}Predicate{\isachardot}{\kern0pt}bind\ P\ {\isacharparenleft}{\kern0pt}{\isacharpercent}{\kern0pt}a{\isachardot}{\kern0pt}\ fst\ {\isacharparenleft}{\kern0pt}f\ a\ s{\isadigit{1}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharcomma}{\kern0pt}\ s{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ union\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}union\ R{\isadigit{1}}\ R{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymlambda}s{\isachardot}{\kern0pt}\ let\isanewline
+\ \ \ \ \ {\isacharparenleft}{\kern0pt}P{\isadigit{1}}{\isacharcomma}{\kern0pt}\ s{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ R{\isadigit{1}}\ s{\isacharsemicolon}{\kern0pt}\ {\isacharparenleft}{\kern0pt}P{\isadigit{2}}{\isacharcomma}{\kern0pt}\ s{\isacharprime}{\kern0pt}{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ R{\isadigit{2}}\ s{\isacharprime}{\kern0pt}\isanewline
+\ \ \ in\ {\isacharparenleft}{\kern0pt}sup{\isacharunderscore}{\kern0pt}class{\isachardot}{\kern0pt}sup\ P{\isadigit{1}}\ P{\isadigit{2}}{\isacharcomma}{\kern0pt}\ s{\isacharprime}{\kern0pt}{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ if{\isacharunderscore}{\kern0pt}randompred\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}bool\ {\isasymRightarrow}\ unit\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}if{\isacharunderscore}{\kern0pt}randompred\ b\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}if\ b\ then\ single\ {\isacharparenleft}{\kern0pt}{\isacharparenright}{\kern0pt}\ else\ empty{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ iterate{\isacharunderscore}{\kern0pt}upto\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}natural\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ natural\ {\isasymRightarrow}\ natural\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}iterate{\isacharunderscore}{\kern0pt}upto\ f\ n\ m\ {\isacharequal}{\kern0pt}\ Pair\ {\isacharparenleft}{\kern0pt}Predicate{\isachardot}{\kern0pt}iterate{\isacharunderscore}{\kern0pt}upto\ f\ n\ m{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ not{\isacharunderscore}{\kern0pt}randompred\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}unit\ random{\isacharunderscore}{\kern0pt}pred\ {\isasymRightarrow}\ unit\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}not{\isacharunderscore}{\kern0pt}randompred\ P\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymlambda}s{\isachardot}{\kern0pt}\ let\isanewline
+\ \ \ \ \ {\isacharparenleft}{\kern0pt}P{\isacharprime}{\kern0pt}{\isacharcomma}{\kern0pt}\ s{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ P\ s\isanewline
+\ \ \ in\ if\ Predicate{\isachardot}{\kern0pt}eval\ P{\isacharprime}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isacharparenright}{\kern0pt}\ then\ {\isacharparenleft}{\kern0pt}Orderings{\isachardot}{\kern0pt}bot{\isacharcomma}{\kern0pt}\ s{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}\ else\ {\isacharparenleft}{\kern0pt}Predicate{\isachardot}{\kern0pt}single\ {\isacharparenleft}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharcomma}{\kern0pt}\ s{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ Random\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}Random{\isachardot}{\kern0pt}seed\ {\isasymRightarrow}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isasymtimes}\ {\isacharparenleft}{\kern0pt}unit\ {\isasymRightarrow}\ term{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isasymtimes}\ Random{\isachardot}{\kern0pt}seed{\isacharparenright}{\kern0pt}\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{where}\ {\isachardoublequoteopen}Random\ g\ {\isacharequal}{\kern0pt}\ scomp\ g\ {\isacharparenleft}{\kern0pt}Pair\ {\isasymcirc}\ {\isacharparenleft}{\kern0pt}Predicate{\isachardot}{\kern0pt}single\ {\isasymcirc}\ fst{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ map\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isacharparenright}{\kern0pt}\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ random{\isacharunderscore}{\kern0pt}pred\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ random{\isacharunderscore}{\kern0pt}pred{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{where}\ {\isachardoublequoteopen}map\ f\ P\ {\isacharequal}{\kern0pt}\ bind\ P\ {\isacharparenleft}{\kern0pt}single\ {\isasymcirc}\ f{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{hide{\isacharunderscore}{\kern0pt}const}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}\isakeyword{open}{\isacharparenright}{\kern0pt}\ iter{\isacharprime}{\kern0pt}\ iter\ empty\ single\ bind\ union\ if{\isacharunderscore}{\kern0pt}randompred\isanewline
+\ \ iterate{\isacharunderscore}{\kern0pt}upto\ not{\isacharunderscore}{\kern0pt}randompred\ Random\ map\isanewline
+\isanewline
+\isacommand{hide{\isacharunderscore}{\kern0pt}fact}\isamarkupfalse%
+\ iter{\isacharprime}{\kern0pt}{\isachardot}{\kern0pt}simps\isanewline
+\ \ \isanewline
+\isacommand{hide{\isacharunderscore}{\kern0pt}fact}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}\isakeyword{open}{\isacharparenright}{\kern0pt}\ iter{\isacharunderscore}{\kern0pt}def\ empty{\isacharunderscore}{\kern0pt}def\ single{\isacharunderscore}{\kern0pt}def\ bind{\isacharunderscore}{\kern0pt}def\ union{\isacharunderscore}{\kern0pt}def\isanewline
+\ \ if{\isacharunderscore}{\kern0pt}randompred{\isacharunderscore}{\kern0pt}def\ iterate{\isacharunderscore}{\kern0pt}upto{\isacharunderscore}{\kern0pt}def\ not{\isacharunderscore}{\kern0pt}randompred{\isacharunderscore}{\kern0pt}def\ Random{\isacharunderscore}{\kern0pt}def\ map{\isacharunderscore}{\kern0pt}def\ \isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=Random_Pred.tex%:%
+%:%11=4%:%
+%:%27=6%:%
+%:%28=6%:%
+%:%29=7%:%
+%:%30=8%:%
+%:%35=8%:%
+%:%38=9%:%
+%:%39=10%:%
+%:%40=10%:%
+%:%41=11%:%
+%:%42=12%:%
+%:%44=14%:%
+%:%45=15%:%
+%:%46=16%:%
+%:%47=16%:%
+%:%48=17%:%
+%:%49=18%:%
+%:%50=19%:%
+%:%51=20%:%
+%:%52=20%:%
+%:%53=21%:%
+%:%55=23%:%
+%:%58=24%:%
+%:%62=24%:%
+%:%63=24%:%
+%:%69=24%:%
+%:%72=25%:%
+%:%73=26%:%
+%:%74=26%:%
+%:%75=27%:%
+%:%76=28%:%
+%:%77=28%:%
+%:%78=29%:%
+%:%79=30%:%
+%:%80=31%:%
+%:%81=31%:%
+%:%82=32%:%
+%:%83=33%:%
+%:%84=34%:%
+%:%85=34%:%
+%:%86=35%:%
+%:%87=36%:%
+%:%90=39%:%
+%:%91=40%:%
+%:%92=41%:%
+%:%93=41%:%
+%:%94=42%:%
+%:%95=43%:%
+%:%97=45%:%
+%:%98=46%:%
+%:%99=47%:%
+%:%100=47%:%
+%:%101=48%:%
+%:%102=49%:%
+%:%103=50%:%
+%:%104=51%:%
+%:%105=51%:%
+%:%106=52%:%
+%:%107=53%:%
+%:%108=54%:%
+%:%109=55%:%
+%:%110=55%:%
+%:%111=56%:%
+%:%112=57%:%
+%:%114=59%:%
+%:%115=60%:%
+%:%116=61%:%
+%:%117=61%:%
+%:%118=62%:%
+%:%119=63%:%
+%:%120=64%:%
+%:%121=64%:%
+%:%122=65%:%
+%:%123=66%:%
+%:%124=67%:%
+%:%125=67%:%
+%:%126=68%:%
+%:%127=69%:%
+%:%128=70%:%
+%:%129=70%:%
+%:%130=71%:%
+%:%131=72%:%
+%:%132=72%:%
+%:%133=73%:%
+%:%136=74%:%
+%:%141=75%:%

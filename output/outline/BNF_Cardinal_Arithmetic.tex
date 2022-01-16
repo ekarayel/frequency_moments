@@ -1,0 +1,4178 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{Cardinal Arithmetic as Needed by Bounded Natural Functors%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Arithmetic\isanewline
+\isakeyword{imports}\ BNF{\isacharunderscore}{\kern0pt}Cardinal{\isacharunderscore}{\kern0pt}Order{\isacharunderscore}{\kern0pt}Relation\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ dir{\isacharunderscore}{\kern0pt}image{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}{\isasymAnd}x\ y{\isachardot}{\kern0pt}\ {\isacharparenleft}{\kern0pt}f\ x\ {\isacharequal}{\kern0pt}\ f\ y{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}x\ {\isacharequal}{\kern0pt}\ y{\isacharparenright}{\kern0pt}{\isacharsemicolon}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order\ r{\isasymrbrakk}\ {\isasymLongrightarrow}\ r\ {\isacharequal}{\kern0pt}o\ dir{\isacharunderscore}{\kern0pt}image\ r\ f{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ dir{\isacharunderscore}{\kern0pt}image{\isacharunderscore}{\kern0pt}ordIso{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ simp\ add{\isacharcolon}{\kern0pt}\ inj{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}def\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}def{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}dir{\isacharunderscore}{\kern0pt}image{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ bij{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}bij\ f{\isachardoublequoteclose}\ \isakeyword{and}\ co{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ {\isacharparenleft}{\kern0pt}dir{\isacharunderscore}{\kern0pt}image\ r\ f{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{from}\isamarkupfalse%
+\ assms\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}Field\ {\isacharparenleft}{\kern0pt}dir{\isacharunderscore}{\kern0pt}image\ r\ f{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ UNIV{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharbrackleft}{\kern0pt}of\ UNIV\ r{\isacharbrackright}{\kern0pt}\ \isacommand{unfolding}\isamarkupfalse%
+\ bij{\isacharunderscore}{\kern0pt}def\ dir{\isacharunderscore}{\kern0pt}image{\isacharunderscore}{\kern0pt}Field\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{moreover}\isamarkupfalse%
+\ \isacommand{from}\isamarkupfalse%
+\ bij\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymAnd}x\ y{\isachardot}{\kern0pt}\ {\isacharparenleft}{\kern0pt}f\ x\ {\isacharequal}{\kern0pt}\ f\ y{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}x\ {\isacharequal}{\kern0pt}\ y{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{unfolding}\isamarkupfalse%
+\ bij{\isacharunderscore}{\kern0pt}def\ inj{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{with}\isamarkupfalse%
+\ co\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ {\isacharparenleft}{\kern0pt}dir{\isacharunderscore}{\kern0pt}image\ r\ f{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharbrackleft}{\kern0pt}of\ UNIV\ r{\isacharbrackright}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ordIso{\isadigit{2}}{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ dir{\isacharunderscore}{\kern0pt}image{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ blast\isanewline
+\ \ \isacommand{ultimately}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ordIso{\isacharunderscore}{\kern0pt}refl{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r\ {\isasymLongrightarrow}\ r\ {\isacharequal}{\kern0pt}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}ordIso{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}refl{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r\ {\isasymLongrightarrow}\ r\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordIso{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}ordLeq{\isacharcomma}{\kern0pt}\ rule\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}ordIso{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}subst{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}A\ {\isacharequal}{\kern0pt}\ B\ {\isasymLongrightarrow}\ {\isacharbar}{\kern0pt}A{\isacharbar}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ {\isacharbar}{\kern0pt}B{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ ordIso{\isacharunderscore}{\kern0pt}refl\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}order{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ r\ {\isasymLongrightarrow}\ Field\ r\ {\isacharequal}{\kern0pt}\ UNIV{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharbrackleft}{\kern0pt}of\ UNIV\ r{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ simp%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Zero%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ czero\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}czero\ {\isacharequal}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ czero{\isacharunderscore}{\kern0pt}ordIso{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}czero\ {\isacharequal}{\kern0pt}o\ czero{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty{\isacharunderscore}{\kern0pt}ordIso\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ czero{\isacharunderscore}{\kern0pt}def{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}czero{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}empty{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}A{\isacharbar}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}czero\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isacharprime}{\kern0pt}b\ rel{\isacharparenright}{\kern0pt}\ {\isasymlongleftrightarrow}\ A\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isacharprime}{\kern0pt}a\ set{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ czero{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ iffI{\isacharbrackleft}{\kern0pt}OF\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty{\isadigit{2}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}refl\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty{\isacharunderscore}{\kern0pt}ordIso{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isanewline
+\isacommand{abbreviation}\isamarkupfalse%
+\ Cnotzero\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}Cnotzero\ {\isacharparenleft}{\kern0pt}r\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isacharprime}{\kern0pt}a\ rel{\isacharparenright}{\kern0pt}\ {\isasymequiv}\ {\isasymnot}{\isacharparenleft}{\kern0pt}r\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}czero\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isacharprime}{\kern0pt}a\ rel{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isasymand}\ Card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cnotzero{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}empty{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cnotzero\ r\ {\isasymLongrightarrow}\ Field\ r\ {\isasymnoteq}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ czero{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ force%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ czeroI{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isasymlbrakk}Card{\isacharunderscore}{\kern0pt}order\ r{\isacharsemicolon}{\kern0pt}\ Field\ r\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isasymrbrakk}\ {\isasymLongrightarrow}\ r\ {\isacharequal}{\kern0pt}o\ czero{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ Cnotzero{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}empty\ ordIso{\isacharunderscore}{\kern0pt}transitive{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ czero{\isacharunderscore}{\kern0pt}ordIso{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ blast%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ czeroE{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}r\ {\isacharequal}{\kern0pt}o\ czero\ {\isasymLongrightarrow}\ Field\ r\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ czero{\isacharunderscore}{\kern0pt}def\isanewline
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}drule\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}cong{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty{\isadigit{2}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cnotzero{\isacharunderscore}{\kern0pt}mono{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isasymlbrakk}Cnotzero\ r{\isacharsemicolon}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order\ q{\isacharsemicolon}{\kern0pt}\ r\ {\isasymle}o\ q{\isasymrbrakk}\ {\isasymLongrightarrow}\ Cnotzero\ q{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ccontr{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{apply}\isamarkupfalse%
+\ auto\isanewline
+\isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}drule\ czeroE{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}erule\ notE{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}erule\ czeroI{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}drule\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty{\isadigit{3}}{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{done}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{(In)finite cardinals%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ cinfinite\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}cinfinite\ r\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymnot}\ finite\ {\isacharparenleft}{\kern0pt}Field\ r{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{abbreviation}\isamarkupfalse%
+\ Cinfinite\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}Cinfinite\ r\ {\isasymequiv}\ cinfinite\ r\ {\isasymand}\ Card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ cfinite\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}cfinite\ r\ {\isacharequal}{\kern0pt}\ finite\ {\isacharparenleft}{\kern0pt}Field\ r{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{abbreviation}\isamarkupfalse%
+\ Cfinite\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}Cfinite\ r\ {\isasymequiv}\ cfinite\ r\ {\isasymand}\ Card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cfinite{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}Cinfinite{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Cfinite\ r{\isacharsemicolon}{\kern0pt}\ Cinfinite\ s{\isasymrbrakk}\ {\isasymLongrightarrow}\ r\ {\isacharless}{\kern0pt}o\ s{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cfinite{\isacharunderscore}{\kern0pt}def\ cinfinite{\isacharunderscore}{\kern0pt}def\isanewline
+\ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ finite{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}infinite\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}well{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemmas}\isamarkupfalse%
+\ natLeq{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}order\ {\isacharequal}{\kern0pt}\ natLeq{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharbrackleft}{\kern0pt}unfolded\ Field{\isacharunderscore}{\kern0pt}natLeq{\isacharbrackright}{\kern0pt}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ natLeq{\isacharunderscore}{\kern0pt}cinfinite{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}cinfinite\ natLeq{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}natLeq\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ infinite{\isacharunderscore}{\kern0pt}UNIV{\isacharunderscore}{\kern0pt}nat{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ natLeq{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}cinfinite{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ inf{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}natLeq\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{from}\isamarkupfalse%
+\ inf\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}natLeq\ {\isasymle}o\ {\isacharbar}{\kern0pt}Field\ r{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ infinite{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}natLeq{\isacharunderscore}{\kern0pt}ordLeq\ \isacommand{by}\isamarkupfalse%
+\ blast\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{from}\isamarkupfalse%
+\ inf\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ r{\isacharbar}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ r{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}unique\ ordIso{\isacharunderscore}{\kern0pt}symmetric{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}czero{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}cinfinite\ r\ {\isasymLongrightarrow}\ {\isasymnot}\ {\isacharparenleft}{\kern0pt}r\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}czero\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isacharprime}{\kern0pt}a\ rel{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}cases\ {\isachardoublequoteopen}Field\ r\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ dest{\isacharcolon}{\kern0pt}\ czeroE{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cinfinite{\isacharunderscore}{\kern0pt}Cnotzero{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ r\ {\isasymLongrightarrow}\ Cnotzero\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ conjI{\isacharbrackleft}{\kern0pt}OF\ cinfinite{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}czero{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ simp{\isacharunderscore}{\kern0pt}all%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cinfinite{\isacharunderscore}{\kern0pt}cong{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}r{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}{\isacharsemicolon}{\kern0pt}\ Cinfinite\ r{\isadigit{1}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ Cinfinite\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ordIso{\isadigit{2}}{\isacharbrackleft}{\kern0pt}of\ r{\isadigit{1}}\ r{\isadigit{2}}{\isacharbrackright}{\kern0pt}\ \isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ ordIso{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}ordLeq\isanewline
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ dest{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}infinite{\isacharbrackleft}{\kern0pt}OF\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}mono{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}r{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{2}}{\isacharsemicolon}{\kern0pt}\ cinfinite\ r{\isadigit{1}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ cinfinite\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ dest{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}infinite{\isacharbrackleft}{\kern0pt}OF\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Binary sum%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ csum\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharplus}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{6}}{\isadigit{5}}{\isacharparenright}{\kern0pt}\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}\ {\isasymequiv}\ {\isacharbar}{\kern0pt}Field\ r{\isadigit{1}}\ {\isacharless}{\kern0pt}{\isacharplus}{\kern0pt}{\isachargreater}{\kern0pt}\ Field\ r{\isadigit{2}}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Field{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Field\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ Inl\ {\isacharbackquote}{\kern0pt}\ Field\ r\ {\isasymunion}\ Inr\ {\isacharbackquote}{\kern0pt}\ Field\ s{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ \isacommand{by}\isamarkupfalse%
+\ auto%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}Cnotzero{\isadigit{1}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}Cnotzero\ r{\isadigit{1}}\ {\isasymLongrightarrow}\ Cnotzero\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}def\ \isacommand{using}\isamarkupfalse%
+\ Cnotzero{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}empty{\isacharbrackleft}{\kern0pt}of\ r{\isadigit{1}}{\isacharbrackright}{\kern0pt}\ Plus{\isacharunderscore}{\kern0pt}eq{\isacharunderscore}{\kern0pt}empty{\isacharunderscore}{\kern0pt}conv{\isacharbrackleft}{\kern0pt}of\ {\isachardoublequoteopen}Field\ r{\isadigit{1}}{\isachardoublequoteclose}\ {\isachardoublequoteopen}Field\ r{\isadigit{2}}{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}\isanewline
+\ \ \ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}czero{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}empty{\isacharbrackleft}{\kern0pt}of\ {\isachardoublequoteopen}Field\ r{\isadigit{1}}\ {\isacharless}{\kern0pt}{\isacharplus}{\kern0pt}{\isachargreater}{\kern0pt}\ Field\ r{\isadigit{2}}{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ intro{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{1}}{\isachardoublequoteclose}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}Field\ r{\isadigit{1}}\ {\isacharequal}{\kern0pt}\ UNIV{\isachardoublequoteclose}\ {\isachardoublequoteopen}Field\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ UNIV{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ assms\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{unfolding}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}cinfinite\ r{\isadigit{1}}\ {\isasymor}\ cinfinite\ r{\isadigit{2}}\ {\isasymLongrightarrow}\ cinfinite\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ csum{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cinfinite{\isacharunderscore}{\kern0pt}csum{\isadigit{1}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}Cinfinite\ r{\isadigit{1}}\ {\isasymLongrightarrow}\ Cinfinite\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ csum{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ conjI{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cinfinite{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}Cinfinite\ r{\isadigit{1}}\ {\isasymor}\ Cinfinite\ r{\isadigit{2}}\ {\isasymLongrightarrow}\ Cinfinite\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ csum{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ conjI{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cinfinite{\isacharunderscore}{\kern0pt}csum{\isacharunderscore}{\kern0pt}weak{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isasymlbrakk}Cinfinite\ r{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ Cinfinite\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ Cinfinite\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}erule\ Cinfinite{\isacharunderscore}{\kern0pt}csum{\isadigit{1}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}cong{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}p{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ ordIso{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}cong{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}cong{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ q\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ q{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ ordIso{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}cong{\isadigit{1}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}\ {\isasymLongrightarrow}\ q\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ q\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ ordIso{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}mono{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}p{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ ordLeq{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}mono{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{1}}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ q\ {\isasymle}o\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ q{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ ordLeq{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}\ {\isasymLongrightarrow}\ q\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ q\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ ordLeq{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}csum{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ p{\isadigit{1}}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isasymle}o\ p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}Plus{\isadigit{1}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}csum{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ p{\isadigit{2}}\ {\isasymLongrightarrow}\ p{\isadigit{2}}\ {\isasymle}o\ p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}Plus{\isadigit{2}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}com{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ p{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{1}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}commute{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}assoc{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{3}}\ {\isacharequal}{\kern0pt}o\ p{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ p{\isadigit{3}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}assoc{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cfinite{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Cfinite\ r{\isacharsemicolon}{\kern0pt}\ Cfinite\ s{\isasymrbrakk}\ {\isasymLongrightarrow}\ Cfinite\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cfinite{\isacharunderscore}{\kern0pt}def\ csum{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ \isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on\ \isacommand{by}\isamarkupfalse%
+\ simp%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{3}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{3}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{3}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{3}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ csum{\isacharunderscore}{\kern0pt}assoc{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{3}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{3}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ csum{\isacharunderscore}{\kern0pt}assoc\ csum{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}\ ordIso{\isacharunderscore}{\kern0pt}symmetric{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{3}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{3}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ csum{\isacharunderscore}{\kern0pt}com\ csum{\isacharunderscore}{\kern0pt}cong{\isadigit{1}}\ csum{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{3}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{3}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ csum{\isacharunderscore}{\kern0pt}assoc\ csum{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}\ ordIso{\isacharunderscore}{\kern0pt}symmetric{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{3}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{3}}{\isacharparenright}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{4}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ csum{\isacharunderscore}{\kern0pt}assoc\ ordIso{\isacharunderscore}{\kern0pt}symmetric{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Plus{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}A\ {\isacharless}{\kern0pt}{\isacharplus}{\kern0pt}{\isachargreater}{\kern0pt}\ B{\isacharbar}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ {\isacharbar}{\kern0pt}A{\isacharbar}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ {\isacharbar}{\kern0pt}B{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ csum{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}refl{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Un{\isacharunderscore}{\kern0pt}csum{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}A\ {\isasymunion}\ B{\isacharbar}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}A{\isacharbar}{\kern0pt}\ {\isacharplus}{\kern0pt}c\ {\isacharbar}{\kern0pt}B{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}trans{\isacharbrackleft}{\kern0pt}OF\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Un{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}ordLeq\ Plus{\isacharunderscore}{\kern0pt}csum{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ blast%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{One%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ cone\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}cone\ {\isacharequal}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of\ {\isacharbraceleft}{\kern0pt}{\isacharparenleft}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cone{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ cone{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cone{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cfinite{\isacharunderscore}{\kern0pt}cone{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cfinite\ cone{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cfinite{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cone{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cone{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}czero{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymnot}\ {\isacharparenleft}{\kern0pt}cone\ {\isacharequal}{\kern0pt}o\ czero{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ czero{\isacharunderscore}{\kern0pt}def\ cone{\isacharunderscore}{\kern0pt}def\ ordIso{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}ordLeq\ \isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty{\isadigit{3}}\ empty{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}insert\ \isacommand{by}\isamarkupfalse%
+\ blast%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cone{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}Cnotzero{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cnotzero\ r\ {\isasymLongrightarrow}\ cone\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cone{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}singl{\isacharunderscore}{\kern0pt}ordLeq{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ intro{\isacharcolon}{\kern0pt}\ czeroI{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Two%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ ctwo\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}ctwo\ {\isacharequal}{\kern0pt}\ {\isacharbar}{\kern0pt}UNIV\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ bool\ set{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ctwo{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ ctwo{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ ctwo{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ctwo{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}czero{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymnot}\ {\isacharparenleft}{\kern0pt}ctwo\ {\isacharequal}{\kern0pt}o\ czero{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty{\isadigit{3}}{\isacharbrackleft}{\kern0pt}of\ {\isachardoublequoteopen}UNIV\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ bool\ set{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}\ ordIso{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}ordLeq\isanewline
+\isacommand{unfolding}\isamarkupfalse%
+\ czero{\isacharunderscore}{\kern0pt}def\ ctwo{\isacharunderscore}{\kern0pt}def\ \isacommand{using}\isamarkupfalse%
+\ UNIV{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}empty\ \isacommand{by}\isamarkupfalse%
+\ auto%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ctwo{\isacharunderscore}{\kern0pt}Cnotzero{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cnotzero\ ctwo{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ ctwo{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}czero\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ctwo{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Family sum%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ Csum\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}Csum\ r\ rs\ {\isasymequiv}\ {\isacharbar}{\kern0pt}SIGMA\ i\ {\isacharcolon}{\kern0pt}\ Field\ r{\isachardot}{\kern0pt}\ Field\ {\isacharparenleft}{\kern0pt}rs\ i{\isacharparenright}{\kern0pt}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{syntax}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}Csum{\isachardoublequoteclose}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}pttrn\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isacharasterisk}{\kern0pt}\ {\isacharprime}{\kern0pt}a{\isacharparenright}{\kern0pt}\ set\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ {\isacharprime}{\kern0pt}b\ {\isacharasterisk}{\kern0pt}\ {\isacharprime}{\kern0pt}b\ set\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isacharasterisk}{\kern0pt}\ {\isacharprime}{\kern0pt}b{\isacharparenright}{\kern0pt}\ {\isacharasterisk}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isacharasterisk}{\kern0pt}\ {\isacharprime}{\kern0pt}b{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\ set{\isachardoublequoteclose}\isanewline
+\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{3}}CSUM\ {\isacharunderscore}{\kern0pt}{\isacharcolon}{\kern0pt}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isacharcomma}{\kern0pt}\ {\isadigit{5}}{\isadigit{1}}{\isacharcomma}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ {\isadigit{1}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\isanewline
+\isanewline
+\isacommand{translations}\isamarkupfalse%
+\isanewline
+\ \ {\isachardoublequoteopen}CSUM\ i{\isacharcolon}{\kern0pt}r{\isachardot}{\kern0pt}\ rs{\isachardoublequoteclose}\ {\isacharequal}{\kern0pt}{\isacharequal}{\kern0pt}\ {\isachardoublequoteopen}CONST\ Csum\ r\ {\isacharparenleft}{\kern0pt}{\isacharpercent}{\kern0pt}i{\isachardot}{\kern0pt}\ rs{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ SIGMA{\isacharunderscore}{\kern0pt}CSUM{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}SIGMA\ i\ {\isacharcolon}{\kern0pt}\ I{\isachardot}{\kern0pt}\ As\ i{\isacharbar}{\kern0pt}\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}CSUM\ i\ {\isacharcolon}{\kern0pt}\ {\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}{\isachardot}{\kern0pt}\ {\isacharbar}{\kern0pt}As\ i{\isacharbar}{\kern0pt}\ {\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ Csum{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Product%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ cprod\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharasterisk}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{8}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbar}{\kern0pt}Field\ r{\isadigit{1}}\ {\isasymtimes}\ Field\ r{\isadigit{2}}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cprod{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{1}}{\isachardoublequoteclose}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}card{\isacharunderscore}{\kern0pt}order\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}Field\ r{\isadigit{1}}\ {\isacharequal}{\kern0pt}\ UNIV{\isachardoublequoteclose}\ {\isachardoublequoteopen}Field\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ UNIV{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ assms\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ cprod{\isacharunderscore}{\kern0pt}def\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cprod{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ cprod{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{1}}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ q\ {\isasymle}o\ r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ q{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ cprod{\isacharunderscore}{\kern0pt}def\ ordLeq{\isacharunderscore}{\kern0pt}Times{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}\ {\isasymLongrightarrow}\ q\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ q\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ cprod{\isacharunderscore}{\kern0pt}def\ ordLeq{\isacharunderscore}{\kern0pt}Times{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}mono{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}p{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordLeq{\isacharunderscore}{\kern0pt}transitive{\isacharbrackleft}{\kern0pt}OF\ cprod{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}\ cprod{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}cprod{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Cnotzero\ p{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order\ p{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ p{\isadigit{2}}\ {\isasymle}o\ p{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}Times{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ intro{\isacharcolon}{\kern0pt}\ czeroI{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}cprod{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}cinfinite\ r{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ cinfinite\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ cinfinite\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ cinfinite{\isacharunderscore}{\kern0pt}def\ cprod{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ infinite{\isacharunderscore}{\kern0pt}cartesian{\isacharunderscore}{\kern0pt}product{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}cprod{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Cnotzero\ r{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ Cinfinite\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ cinfinite\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cinfinite{\isacharunderscore}{\kern0pt}mono{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ intro{\isacharcolon}{\kern0pt}\ ordLeq{\isacharunderscore}{\kern0pt}cprod{\isadigit{2}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cinfinite{\isacharunderscore}{\kern0pt}cprod{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Cnotzero\ r{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ Cinfinite\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ Cinfinite\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cinfinite{\isacharunderscore}{\kern0pt}cprod{\isadigit{2}}\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cprod{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}cong{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}p{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}{\isacharsemicolon}{\kern0pt}\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ ordIso{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}ordLeq\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cprod{\isacharunderscore}{\kern0pt}mono{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}cong{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}p{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ p{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ ordIso{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}ordLeq\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cprod{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}\ {\isasymLongrightarrow}\ q\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ q\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ ordIso{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}ordLeq\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cprod{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}com{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ p{\isadigit{2}}\ {\isacharasterisk}{\kern0pt}c\ p{\isadigit{1}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ cprod{\isacharunderscore}{\kern0pt}def\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Times{\isacharunderscore}{\kern0pt}commute{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Csum{\isacharunderscore}{\kern0pt}Times{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isasymforall}i\ {\isasymin}\ I{\isachardot}{\kern0pt}\ {\isacharbar}{\kern0pt}A\ i{\isacharbar}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}B{\isacharbar}{\kern0pt}\ {\isasymLongrightarrow}\ {\isacharparenleft}{\kern0pt}CSUM\ i\ {\isacharcolon}{\kern0pt}\ {\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}{\isachardot}{\kern0pt}\ {\isacharbar}{\kern0pt}A\ i{\isacharbar}{\kern0pt}\ {\isacharparenright}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}\ {\isacharasterisk}{\kern0pt}c\ {\isacharbar}{\kern0pt}B{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ Csum{\isacharunderscore}{\kern0pt}def\ cprod{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Sigma{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Csum{\isacharunderscore}{\kern0pt}Times{\isacharprime}{\kern0pt}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}{\isasymforall}i\ {\isasymin}\ I{\isachardot}{\kern0pt}\ {\isacharbar}{\kern0pt}A\ i{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}CSUM\ i\ {\isacharcolon}{\kern0pt}\ {\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}{\isachardot}{\kern0pt}\ {\isacharbar}{\kern0pt}A\ i{\isacharbar}{\kern0pt}\ {\isacharparenright}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}\ {\isacharasterisk}{\kern0pt}c\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{from}\isamarkupfalse%
+\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharparenright}{\kern0pt}\ \isacommand{have}\isamarkupfalse%
+\ {\isacharasterisk}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}r\ {\isacharequal}{\kern0pt}o\ {\isacharbar}{\kern0pt}Field\ r{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}unique{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{with}\isamarkupfalse%
+\ assms{\isacharparenleft}{\kern0pt}{\isadigit{2}}{\isacharparenright}{\kern0pt}\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymforall}i\ {\isasymin}\ I{\isachardot}{\kern0pt}\ {\isacharbar}{\kern0pt}A\ i{\isacharbar}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}Field\ r{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ ordLeq{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}trans{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}CSUM\ i\ {\isacharcolon}{\kern0pt}\ {\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}{\isachardot}{\kern0pt}\ {\isacharbar}{\kern0pt}A\ i{\isacharbar}{\kern0pt}\ {\isacharparenright}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}\ {\isacharasterisk}{\kern0pt}c\ {\isacharbar}{\kern0pt}Field\ r{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Csum{\isacharunderscore}{\kern0pt}Times{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{from}\isamarkupfalse%
+\ {\isacharasterisk}{\kern0pt}\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}\ {\isacharasterisk}{\kern0pt}c\ {\isacharbar}{\kern0pt}Field\ r{\isacharbar}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}\ {\isacharasterisk}{\kern0pt}c\ r{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}refl\ cprod{\isacharunderscore}{\kern0pt}def\ ordIso{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}ordLeq{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}csum{\isacharunderscore}{\kern0pt}distrib{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{3}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{3}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}def\ cprod{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Times{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}distrib\ ordIso{\isacharunderscore}{\kern0pt}symmetric{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}absorb{\isadigit{2}}{\isacharprime}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{2}}{\isacharsemicolon}{\kern0pt}\ r{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{2}}{\isacharsemicolon}{\kern0pt}\ cinfinite\ r{\isadigit{1}}\ {\isasymor}\ cinfinite\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ conjunct{\isadigit{2}}{\isacharbrackleft}{\kern0pt}OF\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}infinite{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ cinfinite{\isacharunderscore}{\kern0pt}def\ dest{\isacharcolon}{\kern0pt}\ cinfinite{\isacharunderscore}{\kern0pt}mono{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}absorb{\isadigit{1}}{\isacharprime}{\kern0pt}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ card{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{and}\ r{\isadigit{1}}{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\ cr{\isadigit{1}}{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}cinfinite\ r{\isadigit{1}}\ {\isasymor}\ cinfinite\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordIso{\isacharunderscore}{\kern0pt}transitive{\isacharcomma}{\kern0pt}\ rule\ csum{\isacharunderscore}{\kern0pt}com{\isacharcomma}{\kern0pt}\ rule\ csum{\isacharunderscore}{\kern0pt}absorb{\isadigit{2}}{\isacharprime}{\kern0pt}{\isacharcomma}{\kern0pt}\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ assms{\isacharparenright}{\kern0pt}{\isacharplus}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}absorb{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Cinfinite\ r{\isadigit{2}}{\isacharsemicolon}{\kern0pt}\ r{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{2}}{\isasymrbrakk}\ {\isasymLongrightarrow}\ r{\isadigit{2}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ csum{\isacharunderscore}{\kern0pt}absorb{\isadigit{1}}{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}\ auto%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Exponentiation%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ cexp\ {\isacharparenleft}{\kern0pt}\isakeyword{infixr}\ {\isachardoublequoteopen}{\isacharcircum}{\kern0pt}c{\isachardoublequoteclose}\ {\isadigit{9}}{\isadigit{0}}{\isacharparenright}{\kern0pt}\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}\ {\isasymequiv}\ {\isacharbar}{\kern0pt}Func\ {\isacharparenleft}{\kern0pt}Field\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}Field\ r{\isadigit{1}}{\isacharparenright}{\kern0pt}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cexp{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}mono{\isacharprime}{\kern0pt}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{1}}{\isachardoublequoteclose}\ \isakeyword{and}\ {\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{and}\ n{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Field\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}\ {\isasymLongrightarrow}\ Field\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+{\isacharparenleft}{\kern0pt}cases\ {\isachardoublequoteopen}Field\ p{\isadigit{1}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ True\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}Field\ p{\isadigit{2}}\ {\isasymnoteq}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}\ {\isasymLongrightarrow}\ Func\ {\isacharparenleft}{\kern0pt}Field\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{unfolding}\isamarkupfalse%
+\ Func{\isacharunderscore}{\kern0pt}is{\isacharunderscore}{\kern0pt}emp\ \isacommand{by}\isamarkupfalse%
+\ simp\isanewline
+\ \ \isacommand{with}\isamarkupfalse%
+\ True\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ {\isacharbar}{\kern0pt}Func\ {\isacharparenleft}{\kern0pt}Field\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}Field\ p{\isadigit{1}}{\isacharparenright}{\kern0pt}{\isacharbar}{\kern0pt}{\isacharbar}{\kern0pt}\ {\isasymle}o\ cone{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ cone{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}cases\ {\isachardoublequoteopen}Field\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}{\isacharcomma}{\kern0pt}\ auto\ intro{\isacharcolon}{\kern0pt}\ surj{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}ordLeq\ simp{\isacharcolon}{\kern0pt}\ Func{\isacharunderscore}{\kern0pt}empty{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Func\ {\isacharparenleft}{\kern0pt}Field\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}Field\ p{\isadigit{1}}{\isacharparenright}{\kern0pt}{\isacharbar}{\kern0pt}\ {\isasymle}o\ cone{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ cexp{\isacharunderscore}{\kern0pt}def{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ cone{\isachardoublequoteclose}\ \isacommand{unfolding}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}def\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\isanewline
+\ \ \isacommand{proof}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}cases\ {\isachardoublequoteopen}Field\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{case}\isamarkupfalse%
+\ True\isanewline
+\ \ \ \ \isacommand{with}\isamarkupfalse%
+\ n\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}Field\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\ \ \ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}cone\ {\isasymle}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\ \isacommand{unfolding}\isamarkupfalse%
+\ cone{\isacharunderscore}{\kern0pt}def\ cexp{\isacharunderscore}{\kern0pt}def\ Func{\isacharunderscore}{\kern0pt}def\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ intro{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordLeqI{\isacharbrackleft}{\kern0pt}\isakeyword{where}\ f{\isacharequal}{\kern0pt}{\isachardoublequoteopen}{\isasymlambda}{\isacharunderscore}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}\ undefined{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{using}\isamarkupfalse%
+\ {\isacartoucheopen}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ cone{\isacartoucheclose}\ ordLeq{\isacharunderscore}{\kern0pt}transitive\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{next}\isamarkupfalse%
+\isanewline
+\ \ \ \ \isacommand{case}\isamarkupfalse%
+\ False\ \isacommand{with}\isamarkupfalse%
+\ True\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ {\isacharparenleft}{\kern0pt}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharbar}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ czero{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}czero{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}empty\ cexp{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ Func{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \ \ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{unfolding}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}def\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}czero{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}empty\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{qed}\isamarkupfalse%
+\isanewline
+\isacommand{next}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ False\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ p{\isadigit{1}}{\isacharbar}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}Field\ r{\isadigit{1}}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\ \isakeyword{and}\ {\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ p{\isadigit{2}}{\isacharbar}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}Field\ r{\isadigit{2}}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isadigit{1}}\ {\isadigit{2}}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{obtain}\isamarkupfalse%
+\ f{\isadigit{1}}\ \isakeyword{where}\ f{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}f{\isadigit{1}}\ {\isacharbackquote}{\kern0pt}\ Field\ r{\isadigit{1}}\ {\isacharequal}{\kern0pt}\ Field\ p{\isadigit{1}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isadigit{1}}\ \isacommand{unfolding}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordLeq{\isadigit{2}}{\isacharbrackleft}{\kern0pt}OF\ False{\isacharcomma}{\kern0pt}\ symmetric{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{obtain}\isamarkupfalse%
+\ f{\isadigit{2}}\ \isakeyword{where}\ f{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}inj{\isacharunderscore}{\kern0pt}on\ f{\isadigit{2}}\ {\isacharparenleft}{\kern0pt}Field\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isachardoublequoteopen}f{\isadigit{2}}\ {\isacharbackquote}{\kern0pt}\ Field\ p{\isadigit{2}}\ {\isasymsubseteq}\ Field\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isadigit{2}}\ \isacommand{unfolding}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordLeq{\isacharbrackleft}{\kern0pt}symmetric{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ blast\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isadigit{0}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Func{\isacharunderscore}{\kern0pt}map\ {\isacharparenleft}{\kern0pt}Field\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}\ f{\isadigit{1}}\ f{\isadigit{2}}\ {\isacharbackquote}{\kern0pt}\ {\isacharparenleft}{\kern0pt}Field\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ Field\ {\isacharparenleft}{\kern0pt}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ \isacommand{using}\isamarkupfalse%
+\ Func{\isacharunderscore}{\kern0pt}map{\isacharunderscore}{\kern0pt}surj{\isacharbrackleft}{\kern0pt}OF\ f{\isadigit{1}}\ f{\isadigit{2}}\ n{\isacharcomma}{\kern0pt}\ symmetric{\isacharbrackright}{\kern0pt}\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isadigit{0}}{\isadigit{0}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Field\ {\isacharparenleft}{\kern0pt}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isasymnoteq}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{unfolding}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ Func{\isacharunderscore}{\kern0pt}is{\isacharunderscore}{\kern0pt}emp\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ False\ \isacommand{by}\isamarkupfalse%
+\ simp\isanewline
+\ \ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isadigit{0}}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordLeq{\isadigit{2}}{\isacharbrackleft}{\kern0pt}OF\ {\isadigit{0}}{\isadigit{0}}{\isacharbrackright}{\kern0pt}\ \isacommand{unfolding}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ \isacommand{by}\isamarkupfalse%
+\ blast\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}mono{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{1}}{\isachardoublequoteclose}\ \isakeyword{and}\ {\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{and}\ n{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ czero\ {\isasymLongrightarrow}\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ czero{\isachardoublequoteclose}\ \isakeyword{and}\ card{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}mono{\isacharprime}{\kern0pt}{\isacharbrackleft}{\kern0pt}OF\ {\isadigit{1}}\ {\isadigit{2}}\ czeroE{\isacharbrackleft}{\kern0pt}OF\ n{\isacharbrackleft}{\kern0pt}OF\ czeroI{\isacharbrackleft}{\kern0pt}OF\ card{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isasymle}o\ r{\isadigit{1}}{\isachardoublequoteclose}\ \isakeyword{and}\ q{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ q\ {\isasymle}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ q{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}refl{\isacharbrackleft}{\kern0pt}OF\ q{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}mono{\isacharbrackleft}{\kern0pt}OF\ {\isadigit{1}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ q{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharprime}{\kern0pt}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\ q{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{and}\ n{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Field\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}\ {\isasymLongrightarrow}\ Field\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}q\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ q\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}refl{\isacharbrackleft}{\kern0pt}OF\ q{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}mono{\isacharprime}{\kern0pt}{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ {\isadigit{2}}\ n{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ auto%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\ q{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{and}\ n{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ czero\ {\isasymLongrightarrow}\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ czero{\isachardoublequoteclose}\ \isakeyword{and}\ card{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}q\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ q\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}refl{\isacharbrackleft}{\kern0pt}OF\ q{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}mono{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ {\isadigit{2}}\ n\ card{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ auto%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharunderscore}{\kern0pt}Cnotzero{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isasymle}o\ r{\isadigit{2}}{\isachardoublequoteclose}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\ {\isachardoublequoteopen}Cnotzero\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}q\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isasymle}o\ q\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ assms{\isacharparenleft}{\kern0pt}{\isadigit{3}}{\isacharparenright}{\kern0pt}\ czeroI\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharprime}{\kern0pt}{\isacharbrackleft}{\kern0pt}OF\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharcomma}{\kern0pt}{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}cong{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}{\isachardoublequoteclose}\ \isakeyword{and}\ {\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{and}\ Cr{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{and}\ Cp{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{obtain}\isamarkupfalse%
+\ f\ \isakeyword{where}\ {\isachardoublequoteopen}bij{\isacharunderscore}{\kern0pt}betw\ f\ {\isacharparenleft}{\kern0pt}Field\ p{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}Field\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isadigit{2}}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordIso{\isacharbrackleft}{\kern0pt}of\ {\isachardoublequoteopen}Field\ p{\isadigit{2}}{\isachardoublequoteclose}\ {\isachardoublequoteopen}Field\ r{\isadigit{2}}{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}cong\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isadigit{0}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Field\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}\ {\isasymlongleftrightarrow}\ Field\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{unfolding}\isamarkupfalse%
+\ bij{\isacharunderscore}{\kern0pt}betw{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ r{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ czero\ {\isasymLongrightarrow}\ r{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ czero{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ p{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}r{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ czero\ {\isasymLongrightarrow}\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ czero{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isadigit{0}}\ Cr\ Cp\ czeroE\ czeroI\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{using}\isamarkupfalse%
+\ {\isadigit{0}}\ {\isadigit{1}}\ {\isadigit{2}}\ \isacommand{unfolding}\isamarkupfalse%
+\ ordIso{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}ordLeq\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ r\ p\ cexp{\isacharunderscore}{\kern0pt}mono{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ {\isacharunderscore}{\kern0pt}\ {\isacharunderscore}{\kern0pt}\ Cp{\isacharbrackright}{\kern0pt}\ cexp{\isacharunderscore}{\kern0pt}mono{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ {\isacharunderscore}{\kern0pt}\ {\isacharunderscore}{\kern0pt}\ Cr{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
+\ blast\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}cong{\isadigit{1}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}{\isachardoublequoteclose}\ \isakeyword{and}\ q{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}p{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ q\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ q{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}cong{\isacharbrackleft}{\kern0pt}OF\ {\isadigit{1}}\ {\isacharunderscore}{\kern0pt}\ q\ q{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}rule\ ordIso{\isacharunderscore}{\kern0pt}refl{\isacharbrackleft}{\kern0pt}OF\ q{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\ q{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\ \isakeyword{and}\ p{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ p{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}q\ {\isacharcircum}{\kern0pt}c\ p{\isadigit{2}}\ {\isacharequal}{\kern0pt}o\ q\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}cong{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ {\isadigit{2}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ simp\ only{\isacharcolon}{\kern0pt}\ ordIso{\isacharunderscore}{\kern0pt}refl\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ordIso{\isadigit{2}}{\isacharbrackleft}{\kern0pt}OF\ p\ {\isadigit{2}}{\isacharbrackright}{\kern0pt}\ q\ p{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}cone{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}r\ {\isacharcircum}{\kern0pt}c\ cone\ {\isacharequal}{\kern0pt}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r\ {\isacharcircum}{\kern0pt}c\ cone\ {\isacharequal}{\kern0pt}o\ {\isacharbar}{\kern0pt}Field\ r{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}def\ cone{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ Func{\isacharunderscore}{\kern0pt}empty\isanewline
+\ \ \ \ \ \ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordIso{\isacharbrackleft}{\kern0pt}symmetric{\isacharbrackright}{\kern0pt}\ bij{\isacharunderscore}{\kern0pt}betw{\isacharunderscore}{\kern0pt}def\ Func{\isacharunderscore}{\kern0pt}def\ inj{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}def\ image{\isacharunderscore}{\kern0pt}def\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ exI{\isacharbrackleft}{\kern0pt}of\ {\isacharunderscore}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlambda}f{\isachardot}{\kern0pt}\ f\ {\isacharparenleft}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ auto\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ r{\isacharbar}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ r{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Field{\isacharunderscore}{\kern0pt}ordIso{\isacharbrackleft}{\kern0pt}OF\ assms{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}cprod{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ r{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{1}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{3}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{2}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{3}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharparenleft}{\kern0pt}\isakeyword{is}\ {\isachardoublequoteopen}{\isacharquery}{\kern0pt}L\ {\isacharequal}{\kern0pt}o\ {\isacharquery}{\kern0pt}R{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharquery}{\kern0pt}L\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{3}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}def\ cexp{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Func{\isacharunderscore}{\kern0pt}Times\ \isacommand{by}\isamarkupfalse%
+{\isacharparenleft}{\kern0pt}rule\ ordIso{\isacharunderscore}{\kern0pt}symmetric{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{3}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ {\isacharquery}{\kern0pt}R{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+{\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharparenright}{\kern0pt}\ \isacommand{using}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}com\ r{\isadigit{1}}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cprod{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}infinite{\isadigit{1}}{\isacharprime}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Cinfinite\ r{\isacharsemicolon}{\kern0pt}\ Cnotzero\ p{\isacharsemicolon}{\kern0pt}\ p\ {\isasymle}o\ r{\isasymrbrakk}\ {\isasymLongrightarrow}\ r\ {\isacharasterisk}{\kern0pt}c\ p\ {\isacharequal}{\kern0pt}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ cprod{\isacharunderscore}{\kern0pt}def\isanewline
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}Times{\isacharunderscore}{\kern0pt}infinite{\isacharbrackleft}{\kern0pt}THEN\ conjunct{\isadigit{1}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ czeroI{\isacharparenright}{\kern0pt}{\isacharplus}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}infinite{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ r\ {\isasymLongrightarrow}\ r\ {\isacharasterisk}{\kern0pt}c\ r\ {\isacharequal}{\kern0pt}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}infinite{\isadigit{1}}{\isacharprime}{\kern0pt}\ Cinfinite{\isacharunderscore}{\kern0pt}Cnotzero\ ordLeq{\isacharunderscore}{\kern0pt}refl\ \isacommand{by}\isamarkupfalse%
+\ blast%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}cprod{\isacharunderscore}{\kern0pt}ordLeq{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ r{\isadigit{1}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isadigit{1}}{\isachardoublequoteclose}\ \isakeyword{and}\ r{\isadigit{2}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{and}\ r{\isadigit{3}}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cnotzero\ r{\isadigit{3}}{\isachardoublequoteclose}\ {\isachardoublequoteopen}r{\isadigit{3}}\ {\isasymle}o\ r{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{3}}\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ r{\isadigit{2}}{\isachardoublequoteclose}\ {\isacharparenleft}{\kern0pt}\isakeyword{is}\ {\isachardoublequoteopen}{\isacharquery}{\kern0pt}L\ {\isacharequal}{\kern0pt}o\ {\isacharquery}{\kern0pt}R{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+{\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharquery}{\kern0pt}L\ {\isacharequal}{\kern0pt}o\ r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{2}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{3}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ cexp{\isacharunderscore}{\kern0pt}cprod{\isacharbrackleft}{\kern0pt}OF\ r{\isadigit{1}}{\isacharbrackright}{\kern0pt}\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}r{\isadigit{2}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{3}}{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ {\isacharquery}{\kern0pt}R{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{apply}\isamarkupfalse%
+{\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{apply}\isamarkupfalse%
+{\isacharparenleft}{\kern0pt}rule\ cprod{\isacharunderscore}{\kern0pt}infinite{\isadigit{1}}{\isacharprime}{\kern0pt}{\isacharbrackleft}{\kern0pt}OF\ r{\isadigit{2}}\ r{\isadigit{3}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ \isacommand{using}\isamarkupfalse%
+\ r{\isadigit{1}}\ r{\isadigit{2}}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}fastforce\ simp{\isacharcolon}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cprod{\isacharparenright}{\kern0pt}{\isacharplus}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cnotzero{\isacharunderscore}{\kern0pt}UNIV{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cnotzero\ {\isacharbar}{\kern0pt}UNIV{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordIso{\isacharunderscore}{\kern0pt}czero{\isacharunderscore}{\kern0pt}iff{\isacharunderscore}{\kern0pt}empty{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ordLess{\isacharunderscore}{\kern0pt}ctwo{\isacharunderscore}{\kern0pt}cexp{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}r\ {\isacharless}{\kern0pt}o\ ctwo\ {\isacharcircum}{\kern0pt}c\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r\ {\isacharless}{\kern0pt}o\ {\isacharbar}{\kern0pt}Pow\ {\isacharparenleft}{\kern0pt}Field\ r{\isacharparenright}{\kern0pt}{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ assms\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}Pow{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Pow\ {\isacharparenleft}{\kern0pt}Field\ r{\isacharparenright}{\kern0pt}{\isacharbar}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ ctwo\ {\isacharcircum}{\kern0pt}c\ r{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ ctwo{\isacharunderscore}{\kern0pt}def\ cexp{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Pow{\isacharunderscore}{\kern0pt}Func{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}cexp{\isadigit{1}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}Cnotzero\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}q\ {\isasymle}o\ q\ {\isacharcircum}{\kern0pt}c\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}cases\ {\isachardoublequoteopen}q\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}czero\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isacharprime}{\kern0pt}a\ rel{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ True\ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty\ cexp{\isacharunderscore}{\kern0pt}def\ czero{\isacharunderscore}{\kern0pt}def\ ordIso{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}trans{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{next}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ False\isanewline
+\ \ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordIso{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}trans{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordIso{\isacharunderscore}{\kern0pt}symmetric{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}cone{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ assms{\isacharparenleft}{\kern0pt}{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cone{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}Cnotzero{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ assms{\isacharparenleft}{\kern0pt}{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ notE{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cone{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}czero{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ assumption\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cone{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{done}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}cexp{\isadigit{2}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}ctwo\ {\isasymle}o\ q{\isachardoublequoteclose}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}r\ {\isasymle}o\ q\ {\isacharcircum}{\kern0pt}c\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}cases\ {\isachardoublequoteopen}r\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}czero\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isacharprime}{\kern0pt}a\ rel{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ True\ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ only{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}empty\ cexp{\isacharunderscore}{\kern0pt}def\ czero{\isacharunderscore}{\kern0pt}def\ ordIso{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}trans{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{next}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ False\ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordLess{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}ordLeq{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordLess{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}trans{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordLess{\isacharunderscore}{\kern0pt}ctwo{\isacharunderscore}{\kern0pt}cexp{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ assms{\isacharparenleft}{\kern0pt}{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ assms{\isacharparenleft}{\kern0pt}{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{done}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}cexp{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}ctwo\ {\isasymle}o\ q{\isacharsemicolon}{\kern0pt}\ Cinfinite\ r{\isasymrbrakk}\ {\isasymLongrightarrow}\ cinfinite\ {\isacharparenleft}{\kern0pt}q\ {\isacharcircum}{\kern0pt}c\ r{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cinfinite{\isacharunderscore}{\kern0pt}mono{\isacharbrackleft}{\kern0pt}OF\ ordLeq{\isacharunderscore}{\kern0pt}cexp{\isadigit{2}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ simp{\isacharunderscore}{\kern0pt}all%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cinfinite{\isacharunderscore}{\kern0pt}cexp{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isasymlbrakk}ctwo\ {\isasymle}o\ q{\isacharsemicolon}{\kern0pt}\ Cinfinite\ r{\isasymrbrakk}\ {\isasymLongrightarrow}\ Cinfinite\ {\isacharparenleft}{\kern0pt}q\ {\isacharcircum}{\kern0pt}c\ r{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ cinfinite{\isacharunderscore}{\kern0pt}cexp\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cexp{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ctwo{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}natLeq{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}ctwo\ {\isacharless}{\kern0pt}o\ natLeq{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ ctwo{\isacharunderscore}{\kern0pt}def\ \isacommand{using}\isamarkupfalse%
+\ finite{\isacharunderscore}{\kern0pt}UNIV\ natLeq{\isacharunderscore}{\kern0pt}cinfinite\ natLeq{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order\isanewline
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ Cfinite{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}Cinfinite{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ cfinite{\isacharunderscore}{\kern0pt}def\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ctwo{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}Cinfinite{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ r\ {\isasymLongrightarrow}\ ctwo\ {\isacharless}{\kern0pt}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordLess{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}trans{\isacharbrackleft}{\kern0pt}OF\ ctwo{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}natLeq\ natLeq{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}cinfinite{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ ctwo{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}Cinfinite{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}Cinfinite\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}ctwo\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordLess{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}ordLeq{\isacharbrackleft}{\kern0pt}OF\ ctwo{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}Cinfinite{\isacharbrackleft}{\kern0pt}OF\ assms{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Un{\isacharunderscore}{\kern0pt}Cinfinite{\isacharunderscore}{\kern0pt}bound{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}{\isacharbar}{\kern0pt}A{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isacharsemicolon}{\kern0pt}\ {\isacharbar}{\kern0pt}B{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isacharsemicolon}{\kern0pt}\ Cinfinite\ r{\isasymrbrakk}\ {\isasymLongrightarrow}\ {\isacharbar}{\kern0pt}A\ {\isasymunion}\ B{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp\ add{\isacharcolon}{\kern0pt}\ cinfinite{\isacharunderscore}{\kern0pt}def\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Un{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}infinite{\isacharunderscore}{\kern0pt}Field{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ UNION{\isacharunderscore}{\kern0pt}Cinfinite{\isacharunderscore}{\kern0pt}bound{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}{\isacharbar}{\kern0pt}I{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isacharsemicolon}{\kern0pt}\ {\isasymforall}i\ {\isasymin}\ I{\isachardot}{\kern0pt}\ {\isacharbar}{\kern0pt}A\ i{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isacharsemicolon}{\kern0pt}\ Cinfinite\ r{\isasymrbrakk}\ {\isasymLongrightarrow}\ {\isacharbar}{\kern0pt}{\isasymUnion}i\ {\isasymin}\ I{\isachardot}{\kern0pt}\ A\ i{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp\ add{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}UNION{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}infinite{\isacharunderscore}{\kern0pt}Field\ cinfinite{\isacharunderscore}{\kern0pt}def{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}cinfinite{\isacharunderscore}{\kern0pt}bound{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}p\ {\isasymle}o\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}q\ {\isasymle}o\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ p{\isachardoublequoteclose}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\ {\isachardoublequoteopen}Cinfinite\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}p\ {\isacharplus}{\kern0pt}c\ q\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{from}\isamarkupfalse%
+\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharminus}{\kern0pt}{\isadigit{4}}{\isacharparenright}{\kern0pt}\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ p{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ q{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}def\ \isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}least\ ordLeq{\isacharunderscore}{\kern0pt}transitive\ \isacommand{by}\isamarkupfalse%
+\ blast{\isacharplus}{\kern0pt}\isanewline
+\ \ \isacommand{with}\isamarkupfalse%
+\ assms\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ csum{\isacharunderscore}{\kern0pt}def\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Plus{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}infinite{\isacharunderscore}{\kern0pt}Field{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}cinfinite{\isacharunderscore}{\kern0pt}bound{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}p\ {\isasymle}o\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}q\ {\isasymle}o\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ p{\isachardoublequoteclose}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ q{\isachardoublequoteclose}\ {\isachardoublequoteopen}Cinfinite\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}p\ {\isacharasterisk}{\kern0pt}c\ q\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{from}\isamarkupfalse%
+\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharminus}{\kern0pt}{\isadigit{4}}{\isacharparenright}{\kern0pt}\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ p{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}Field\ q{\isacharbar}{\kern0pt}\ {\isasymle}o\ r{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}def\ \isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}least\ ordLeq{\isacharunderscore}{\kern0pt}transitive\ \isacommand{by}\isamarkupfalse%
+\ blast{\isacharplus}{\kern0pt}\isanewline
+\ \ \isacommand{with}\isamarkupfalse%
+\ assms\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ cprod{\isacharunderscore}{\kern0pt}def\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}Times{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}infinite{\isacharunderscore}{\kern0pt}Field{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}csum{\isacharunderscore}{\kern0pt}cexp{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}r{\isadigit{1}}\ {\isacharasterisk}{\kern0pt}c\ r{\isadigit{2}}\ {\isasymle}o\ {\isacharparenleft}{\kern0pt}r{\isadigit{1}}\ {\isacharplus}{\kern0pt}c\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ ctwo{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}def\ csum{\isacharunderscore}{\kern0pt}def\ cexp{\isacharunderscore}{\kern0pt}def\ ctwo{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\isanewline
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{let}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}f\ {\isacharequal}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlambda}{\isacharparenleft}{\kern0pt}a{\isacharcomma}{\kern0pt}\ b{\isacharparenright}{\kern0pt}{\isachardot}{\kern0pt}\ {\isacharpercent}{\kern0pt}x{\isachardot}{\kern0pt}\ if\ x\ then\ Inl\ a\ else\ Inr\ b{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}inj{\isacharunderscore}{\kern0pt}on\ {\isacharquery}{\kern0pt}f\ {\isacharparenleft}{\kern0pt}Field\ r{\isadigit{1}}\ {\isasymtimes}\ Field\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharparenleft}{\kern0pt}\isakeyword{is}\ {\isachardoublequoteopen}inj{\isacharunderscore}{\kern0pt}on\ {\isacharunderscore}{\kern0pt}\ {\isacharquery}{\kern0pt}LHS{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ inj{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}def\ fun{\isacharunderscore}{\kern0pt}eq{\isacharunderscore}{\kern0pt}iff\ split{\isacharcolon}{\kern0pt}\ bool{\isachardot}{\kern0pt}split{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{moreover}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharquery}{\kern0pt}f\ {\isacharbackquote}{\kern0pt}\ {\isacharquery}{\kern0pt}LHS\ {\isasymsubseteq}\ Func\ {\isacharparenleft}{\kern0pt}UNIV\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ bool\ set{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}Field\ r{\isadigit{1}}\ {\isacharless}{\kern0pt}{\isacharplus}{\kern0pt}{\isachargreater}{\kern0pt}\ Field\ r{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isacharparenleft}{\kern0pt}\isakeyword{is}\ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}\ {\isasymsubseteq}\ {\isacharquery}{\kern0pt}RHS{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ Func{\isacharunderscore}{\kern0pt}def{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{ultimately}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}{\isacharquery}{\kern0pt}LHS{\isacharbar}{\kern0pt}\ {\isasymle}o\ {\isacharbar}{\kern0pt}{\isacharquery}{\kern0pt}RHS{\isacharbar}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ card{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}ordLeq\ \isacommand{by}\isamarkupfalse%
+\ blast\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cfinite{\isacharunderscore}{\kern0pt}cprod{\isacharunderscore}{\kern0pt}Cinfinite{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}Cfinite\ r{\isacharsemicolon}{\kern0pt}\ Cinfinite\ s{\isasymrbrakk}\ {\isasymLongrightarrow}\ r\ {\isacharasterisk}{\kern0pt}c\ s\ {\isasymle}o\ s{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ cprod{\isacharunderscore}{\kern0pt}cinfinite{\isacharunderscore}{\kern0pt}bound{\isacharparenright}{\kern0pt}\isanewline
+\ \ {\isacharparenleft}{\kern0pt}auto\ intro{\isacharcolon}{\kern0pt}\ ordLeq{\isacharunderscore}{\kern0pt}refl\ ordLess{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}ordLeq{\isacharbrackleft}{\kern0pt}OF\ Cfinite{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}Cinfinite{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}cexp{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r\ {\isacharasterisk}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t\ {\isacharequal}{\kern0pt}o\ r\ {\isacharcircum}{\kern0pt}c\ t\ {\isacharasterisk}{\kern0pt}c\ s\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}def\ cexp{\isacharunderscore}{\kern0pt}def\ Field{\isacharunderscore}{\kern0pt}card{\isacharunderscore}{\kern0pt}of\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ Func{\isacharunderscore}{\kern0pt}Times{\isacharunderscore}{\kern0pt}Range{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cprod{\isacharunderscore}{\kern0pt}cexp{\isacharunderscore}{\kern0pt}csum{\isacharunderscore}{\kern0pt}cexp{\isacharunderscore}{\kern0pt}Cinfinite{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ t{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ t{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r\ {\isacharasterisk}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t\ {\isasymle}o\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r\ {\isacharasterisk}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t\ {\isasymle}o\ {\isacharparenleft}{\kern0pt}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ ctwo{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharbrackleft}{\kern0pt}OF\ cprod{\isacharunderscore}{\kern0pt}csum{\isacharunderscore}{\kern0pt}cexp\ conjunct{\isadigit{2}}{\isacharbrackleft}{\kern0pt}OF\ t{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ ctwo{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}ctwo\ {\isacharasterisk}{\kern0pt}c\ t{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}cprod{\isacharbrackleft}{\kern0pt}OF\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}csum{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}ctwo\ {\isacharasterisk}{\kern0pt}c\ t{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}t\ {\isacharasterisk}{\kern0pt}c\ ctwo{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharbrackleft}{\kern0pt}OF\ cprod{\isacharunderscore}{\kern0pt}com\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}csum\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}cprod{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}t\ {\isacharasterisk}{\kern0pt}c\ ctwo{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ ctwo{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ ordIso{\isacharunderscore}{\kern0pt}symmetric{\isacharbrackleft}{\kern0pt}OF\ cexp{\isacharunderscore}{\kern0pt}cprod{\isacharbrackleft}{\kern0pt}OF\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}csum{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ ctwo\ {\isacharequal}{\kern0pt}o\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ cexp{\isacharunderscore}{\kern0pt}cprod{\isacharunderscore}{\kern0pt}ordLeq{\isacharbrackleft}{\kern0pt}OF\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}csum\ t\ ctwo{\isacharunderscore}{\kern0pt}Cnotzero\ ctwo{\isacharunderscore}{\kern0pt}ordLeq{\isacharunderscore}{\kern0pt}Cinfinite{\isacharbrackleft}{\kern0pt}OF\ t{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cfinite{\isacharunderscore}{\kern0pt}cexp{\isacharunderscore}{\kern0pt}Cinfinite{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ s{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cfinite\ s{\isachardoublequoteclose}\ \isakeyword{and}\ t{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ t{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}s\ {\isacharcircum}{\kern0pt}c\ t\ {\isasymle}o\ ctwo\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}cases\ {\isachardoublequoteopen}s\ {\isasymle}o\ ctwo{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ True\ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{using}\isamarkupfalse%
+\ t\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}{\isacharparenright}{\kern0pt}\isanewline
+\isacommand{next}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ False\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}ctwo\ {\isasymle}o\ s{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ ordLeq{\isacharunderscore}{\kern0pt}total{\isacharbrackleft}{\kern0pt}of\ s\ ctwo{\isacharbrackright}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ctwo\ s\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ intro{\isacharcolon}{\kern0pt}\ card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharunderscore}{\kern0pt}well{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}on{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}Cnotzero\ s{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ Cnotzero{\isacharunderscore}{\kern0pt}mono{\isacharbrackleft}{\kern0pt}OF\ ctwo{\isacharunderscore}{\kern0pt}Cnotzero{\isacharbrackright}{\kern0pt}\ s\ \isacommand{by}\isamarkupfalse%
+\ blast\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ st{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cnotzero\ {\isacharparenleft}{\kern0pt}s\ {\isacharasterisk}{\kern0pt}c\ t{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ Cinfinite{\isacharunderscore}{\kern0pt}Cnotzero{\isacharbrackleft}{\kern0pt}OF\ Cinfinite{\isacharunderscore}{\kern0pt}cprod{\isadigit{2}}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}auto\ simp{\isacharcolon}{\kern0pt}\ t{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}s\ {\isacharcircum}{\kern0pt}c\ t\ {\isasymle}o\ {\isacharparenleft}{\kern0pt}ctwo\ {\isacharcircum}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ assms\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}\ ordLess{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}ordLeq{\isacharbrackleft}{\kern0pt}OF\ ordLess{\isacharunderscore}{\kern0pt}ctwo{\isacharunderscore}{\kern0pt}cexp{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}ctwo\ {\isacharcircum}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t\ {\isacharequal}{\kern0pt}o\ ctwo\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}s\ {\isacharasterisk}{\kern0pt}c\ t{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ctwo\ cexp{\isacharunderscore}{\kern0pt}cprod{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}ctwo\ {\isacharcircum}{\kern0pt}c\ {\isacharparenleft}{\kern0pt}s\ {\isacharasterisk}{\kern0pt}c\ t{\isacharparenright}{\kern0pt}\ {\isasymle}o\ ctwo\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ assms\ st\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{2}}{\isacharunderscore}{\kern0pt}Cnotzero\ Cfinite{\isacharunderscore}{\kern0pt}cprod{\isacharunderscore}{\kern0pt}Cinfinite\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ctwo{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ csum{\isacharunderscore}{\kern0pt}Cfinite{\isacharunderscore}{\kern0pt}cexp{\isacharunderscore}{\kern0pt}Cinfinite{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ r{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Card{\isacharunderscore}{\kern0pt}order\ r{\isachardoublequoteclose}\ \isakeyword{and}\ s{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cfinite\ s{\isachardoublequoteclose}\ \isakeyword{and}\ t{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ t{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t\ {\isasymle}o\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ ctwo{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}cases\ {\isachardoublequoteopen}Cinfinite\ r{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ True\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}r\ {\isacharplus}{\kern0pt}c\ s\ {\isacharequal}{\kern0pt}o\ r{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ csum{\isacharunderscore}{\kern0pt}absorb{\isadigit{1}}\ ordLess{\isacharunderscore}{\kern0pt}imp{\isacharunderscore}{\kern0pt}ordLeq{\isacharbrackleft}{\kern0pt}OF\ Cfinite{\isacharunderscore}{\kern0pt}ordLess{\isacharunderscore}{\kern0pt}Cinfinite{\isacharbrackright}{\kern0pt}\ s{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t\ {\isacharequal}{\kern0pt}o\ r\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ t\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cexp{\isacharunderscore}{\kern0pt}cong{\isadigit{1}}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}r\ {\isacharcircum}{\kern0pt}c\ t\ {\isasymle}o\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ ctwo{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ t\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}\ ordLeq{\isacharunderscore}{\kern0pt}csum{\isadigit{1}}\ r{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{next}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ False\isanewline
+\ \ \isacommand{with}\isamarkupfalse%
+\ r\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}Cfinite\ r{\isachardoublequoteclose}\ \isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ cfinite{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}Cfinite\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ Cfinite{\isacharunderscore}{\kern0pt}csum\ s{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ s{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t\ {\isasymle}o\ ctwo\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}intro\ Cfinite{\isacharunderscore}{\kern0pt}cexp{\isacharunderscore}{\kern0pt}Cinfinite\ t{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}ctwo\ {\isacharcircum}{\kern0pt}c\ t\ {\isasymle}o\ {\isacharparenleft}{\kern0pt}r\ {\isacharplus}{\kern0pt}c\ ctwo{\isacharparenright}{\kern0pt}\ {\isacharcircum}{\kern0pt}c\ t{\isachardoublequoteclose}\ \isacommand{using}\isamarkupfalse%
+\ t\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}blast\ intro{\isacharcolon}{\kern0pt}\ cexp{\isacharunderscore}{\kern0pt}mono{\isadigit{1}}\ ordLeq{\isacharunderscore}{\kern0pt}csum{\isadigit{2}}\ Card{\isacharunderscore}{\kern0pt}order{\isacharunderscore}{\kern0pt}ctwo{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}{\kern0pt}thesis\ \isacommand{{\isachardot}{\kern0pt}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ Cinfinite{\isacharunderscore}{\kern0pt}cardSuc{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}Cinfinite\ r\ {\isasymLongrightarrow}\ Cinfinite\ {\isacharparenleft}{\kern0pt}cardSuc\ r{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}\ cinfinite{\isacharunderscore}{\kern0pt}def\ cardSuc{\isacharunderscore}{\kern0pt}Card{\isacharunderscore}{\kern0pt}order\ cardSuc{\isacharunderscore}{\kern0pt}finite{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ cardSuc{\isacharunderscore}{\kern0pt}UNION{\isacharunderscore}{\kern0pt}Cinfinite{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}Cinfinite\ r{\isachardoublequoteclose}\ {\isachardoublequoteopen}relChain\ {\isacharparenleft}{\kern0pt}cardSuc\ r{\isacharparenright}{\kern0pt}\ As{\isachardoublequoteclose}\ {\isachardoublequoteopen}B\ {\isasymle}\ {\isacharparenleft}{\kern0pt}{\isasymUnion}i\ {\isasymin}\ Field\ {\isacharparenleft}{\kern0pt}cardSuc\ r{\isacharparenright}{\kern0pt}{\isachardot}{\kern0pt}\ As\ i{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\ {\isachardoublequoteopen}{\isacharbar}{\kern0pt}B{\isacharbar}{\kern0pt}\ {\isacharless}{\kern0pt}{\isacharequal}{\kern0pt}o\ r{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymexists}i\ {\isasymin}\ Field\ {\isacharparenleft}{\kern0pt}cardSuc\ r{\isacharparenright}{\kern0pt}{\isachardot}{\kern0pt}\ B\ {\isasymle}\ As\ i{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{using}\isamarkupfalse%
+\ cardSuc{\isacharunderscore}{\kern0pt}UNION\ assms\ \isacommand{unfolding}\isamarkupfalse%
+\ cinfinite{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ blast%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=BNF_Cardinal_Arithmetic.tex%:%
+%:%11=8%:%
+%:%27=10%:%
+%:%28=10%:%
+%:%29=11%:%
+%:%30=12%:%
+%:%35=12%:%
+%:%38=13%:%
+%:%39=14%:%
+%:%40=14%:%
+%:%47=15%:%
+%:%48=15%:%
+%:%53=15%:%
+%:%56=16%:%
+%:%57=17%:%
+%:%58=17%:%
+%:%59=18%:%
+%:%60=19%:%
+%:%67=20%:%
+%:%68=20%:%
+%:%69=21%:%
+%:%70=21%:%
+%:%71=21%:%
+%:%72=22%:%
+%:%73=22%:%
+%:%74=22%:%
+%:%75=22%:%
+%:%76=23%:%
+%:%77=23%:%
+%:%78=23%:%
+%:%79=23%:%
+%:%80=23%:%
+%:%81=23%:%
+%:%82=24%:%
+%:%83=24%:%
+%:%84=24%:%
+%:%85=25%:%
+%:%86=25%:%
+%:%87=25%:%
+%:%88=26%:%
+%:%89=26%:%
+%:%90=26%:%
+%:%91=26%:%
+%:%92=27%:%
+%:%98=27%:%
+%:%101=28%:%
+%:%102=29%:%
+%:%103=29%:%
+%:%110=30%:%
+%:%111=30%:%
+%:%116=30%:%
+%:%119=31%:%
+%:%120=32%:%
+%:%121=32%:%
+%:%128=33%:%
+%:%129=33%:%
+%:%134=33%:%
+%:%137=34%:%
+%:%138=35%:%
+%:%139=35%:%
+%:%146=36%:%
+%:%147=36%:%
+%:%152=36%:%
+%:%155=37%:%
+%:%156=38%:%
+%:%157=38%:%
+%:%164=39%:%
+%:%165=39%:%
+%:%166=39%:%
+%:%180=42%:%
+%:%190=44%:%
+%:%191=44%:%
+%:%192=45%:%
+%:%193=46%:%
+%:%194=47%:%
+%:%195=47%:%
+%:%196=48%:%
+%:%203=49%:%
+%:%204=49%:%
+%:%205=49%:%
+%:%210=49%:%
+%:%213=50%:%
+%:%214=51%:%
+%:%215=51%:%
+%:%216=52%:%
+%:%223=53%:%
+%:%224=53%:%
+%:%225=53%:%
+%:%230=53%:%
+%:%233=54%:%
+%:%234=55%:%
+%:%235=56%:%
+%:%236=56%:%
+%:%237=57%:%
+%:%238=58%:%
+%:%239=59%:%
+%:%240=60%:%
+%:%241=60%:%
+%:%244=61%:%
+%:%248=61%:%
+%:%249=61%:%
+%:%250=61%:%
+%:%255=61%:%
+%:%258=62%:%
+%:%259=63%:%
+%:%260=63%:%
+%:%261=64%:%
+%:%268=65%:%
+%:%269=65%:%
+%:%270=65%:%
+%:%275=65%:%
+%:%278=66%:%
+%:%279=67%:%
+%:%280=67%:%
+%:%281=68%:%
+%:%288=69%:%
+%:%289=69%:%
+%:%290=70%:%
+%:%291=70%:%
+%:%296=70%:%
+%:%299=71%:%
+%:%300=72%:%
+%:%301=72%:%
+%:%302=73%:%
+%:%309=74%:%
+%:%310=74%:%
+%:%311=75%:%
+%:%312=75%:%
+%:%313=76%:%
+%:%314=76%:%
+%:%315=77%:%
+%:%316=77%:%
+%:%317=78%:%
+%:%318=78%:%
+%:%319=79%:%
+%:%320=79%:%
+%:%321=80%:%
+%:%322=80%:%
+%:%323=81%:%
+%:%338=83%:%
+%:%348=85%:%
+%:%349=85%:%
+%:%350=86%:%
+%:%351=87%:%
+%:%352=88%:%
+%:%353=88%:%
+%:%354=89%:%
+%:%355=90%:%
+%:%356=91%:%
+%:%357=91%:%
+%:%358=92%:%
+%:%359=93%:%
+%:%360=94%:%
+%:%361=94%:%
+%:%362=95%:%
+%:%363=96%:%
+%:%364=97%:%
+%:%365=97%:%
+%:%368=98%:%
+%:%372=98%:%
+%:%373=98%:%
+%:%374=99%:%
+%:%375=99%:%
+%:%380=99%:%
+%:%383=100%:%
+%:%384=101%:%
+%:%385=101%:%
+%:%386=102%:%
+%:%387=103%:%
+%:%388=103%:%
+%:%395=104%:%
+%:%396=104%:%
+%:%397=104%:%
+%:%402=104%:%
+%:%405=105%:%
+%:%406=106%:%
+%:%407=106%:%
+%:%408=107%:%
+%:%409=108%:%
+%:%416=109%:%
+%:%417=109%:%
+%:%418=110%:%
+%:%419=110%:%
+%:%420=110%:%
+%:%421=110%:%
+%:%422=111%:%
+%:%423=111%:%
+%:%424=111%:%
+%:%425=112%:%
+%:%426=112%:%
+%:%427=112%:%
+%:%428=112%:%
+%:%429=112%:%
+%:%430=113%:%
+%:%431=113%:%
+%:%432=113%:%
+%:%433=113%:%
+%:%434=114%:%
+%:%440=114%:%
+%:%443=115%:%
+%:%444=116%:%
+%:%445=116%:%
+%:%452=117%:%
+%:%453=117%:%
+%:%454=117%:%
+%:%459=117%:%
+%:%462=118%:%
+%:%463=119%:%
+%:%464=119%:%
+%:%471=120%:%
+%:%472=120%:%
+%:%477=120%:%
+%:%480=121%:%
+%:%481=122%:%
+%:%482=122%:%
+%:%489=123%:%
+%:%490=123%:%
+%:%491=123%:%
+%:%492=124%:%
+%:%493=124%:%
+%:%498=124%:%
+%:%501=125%:%
+%:%502=126%:%
+%:%503=126%:%
+%:%510=127%:%
+%:%511=127%:%
+%:%512=127%:%
+%:%526=130%:%
+%:%536=132%:%
+%:%537=132%:%
+%:%538=133%:%
+%:%539=134%:%
+%:%540=135%:%
+%:%541=135%:%
+%:%544=136%:%
+%:%548=136%:%
+%:%549=136%:%
+%:%550=136%:%
+%:%555=136%:%
+%:%558=137%:%
+%:%559=138%:%
+%:%560=138%:%
+%:%561=139%:%
+%:%568=140%:%
+%:%569=140%:%
+%:%570=140%:%
+%:%575=140%:%
+%:%578=141%:%
+%:%579=142%:%
+%:%580=142%:%
+%:%581=143%:%
+%:%588=144%:%
+%:%589=144%:%
+%:%590=144%:%
+%:%591=145%:%
+%:%592=145%:%
+%:%597=145%:%
+%:%600=146%:%
+%:%601=147%:%
+%:%602=147%:%
+%:%603=148%:%
+%:%604=149%:%
+%:%611=150%:%
+%:%612=150%:%
+%:%613=151%:%
+%:%614=151%:%
+%:%615=151%:%
+%:%616=151%:%
+%:%617=152%:%
+%:%618=152%:%
+%:%619=152%:%
+%:%620=152%:%
+%:%621=153%:%
+%:%627=153%:%
+%:%630=154%:%
+%:%631=155%:%
+%:%632=155%:%
+%:%633=156%:%
+%:%640=157%:%
+%:%641=157%:%
+%:%642=157%:%
+%:%647=157%:%
+%:%650=158%:%
+%:%651=159%:%
+%:%652=159%:%
+%:%653=160%:%
+%:%660=161%:%
+%:%661=161%:%
+%:%662=161%:%
+%:%667=161%:%
+%:%670=162%:%
+%:%671=163%:%
+%:%672=163%:%
+%:%673=164%:%
+%:%680=165%:%
+%:%681=165%:%
+%:%682=165%:%
+%:%687=165%:%
+%:%690=166%:%
+%:%691=167%:%
+%:%692=167%:%
+%:%693=168%:%
+%:%700=169%:%
+%:%701=169%:%
+%:%706=169%:%
+%:%709=170%:%
+%:%710=171%:%
+%:%711=171%:%
+%:%718=172%:%
+%:%719=172%:%
+%:%724=172%:%
+%:%727=173%:%
+%:%728=174%:%
+%:%729=174%:%
+%:%736=175%:%
+%:%737=175%:%
+%:%742=175%:%
+%:%745=176%:%
+%:%746=177%:%
+%:%747=177%:%
+%:%754=178%:%
+%:%755=178%:%
+%:%760=178%:%
+%:%763=179%:%
+%:%764=180%:%
+%:%765=180%:%
+%:%772=181%:%
+%:%773=181%:%
+%:%778=181%:%
+%:%781=182%:%
+%:%782=183%:%
+%:%783=183%:%
+%:%790=184%:%
+%:%791=184%:%
+%:%796=184%:%
+%:%799=185%:%
+%:%800=186%:%
+%:%801=186%:%
+%:%808=187%:%
+%:%809=187%:%
+%:%814=187%:%
+%:%817=188%:%
+%:%818=189%:%
+%:%819=189%:%
+%:%826=190%:%
+%:%827=190%:%
+%:%832=190%:%
+%:%835=191%:%
+%:%836=192%:%
+%:%837=192%:%
+%:%844=193%:%
+%:%845=193%:%
+%:%850=193%:%
+%:%853=194%:%
+%:%854=195%:%
+%:%855=195%:%
+%:%862=196%:%
+%:%863=196%:%
+%:%868=196%:%
+%:%871=197%:%
+%:%872=198%:%
+%:%873=198%:%
+%:%880=199%:%
+%:%881=199%:%
+%:%886=199%:%
+%:%889=200%:%
+%:%890=201%:%
+%:%891=201%:%
+%:%894=202%:%
+%:%898=202%:%
+%:%899=202%:%
+%:%900=202%:%
+%:%901=202%:%
+%:%906=202%:%
+%:%909=203%:%
+%:%910=204%:%
+%:%911=204%:%
+%:%918=205%:%
+%:%919=205%:%
+%:%920=206%:%
+%:%921=206%:%
+%:%922=207%:%
+%:%923=207%:%
+%:%924=208%:%
+%:%925=208%:%
+%:%926=208%:%
+%:%927=209%:%
+%:%928=209%:%
+%:%929=210%:%
+%:%930=210%:%
+%:%931=210%:%
+%:%932=211%:%
+%:%933=211%:%
+%:%934=212%:%
+%:%935=212%:%
+%:%936=212%:%
+%:%937=213%:%
+%:%938=213%:%
+%:%939=214%:%
+%:%940=214%:%
+%:%941=214%:%
+%:%942=215%:%
+%:%943=215%:%
+%:%944=216%:%
+%:%945=216%:%
+%:%946=216%:%
+%:%947=216%:%
+%:%948=217%:%
+%:%954=217%:%
+%:%957=218%:%
+%:%958=219%:%
+%:%959=219%:%
+%:%966=220%:%
+%:%967=220%:%
+%:%972=220%:%
+%:%975=221%:%
+%:%976=222%:%
+%:%977=222%:%
+%:%984=223%:%
+%:%985=223%:%
+%:%986=223%:%
+%:%1000=226%:%
+%:%1010=228%:%
+%:%1011=228%:%
+%:%1012=229%:%
+%:%1013=230%:%
+%:%1014=231%:%
+%:%1015=231%:%
+%:%1022=232%:%
+%:%1023=232%:%
+%:%1024=232%:%
+%:%1029=232%:%
+%:%1032=233%:%
+%:%1033=234%:%
+%:%1034=234%:%
+%:%1037=235%:%
+%:%1041=235%:%
+%:%1042=235%:%
+%:%1043=235%:%
+%:%1048=235%:%
+%:%1051=236%:%
+%:%1052=237%:%
+%:%1053=237%:%
+%:%1060=238%:%
+%:%1061=238%:%
+%:%1062=238%:%
+%:%1063=238%:%
+%:%1068=238%:%
+%:%1071=239%:%
+%:%1072=240%:%
+%:%1073=240%:%
+%:%1080=241%:%
+%:%1081=241%:%
+%:%1082=241%:%
+%:%1096=244%:%
+%:%1106=246%:%
+%:%1107=246%:%
+%:%1108=247%:%
+%:%1109=248%:%
+%:%1110=249%:%
+%:%1111=249%:%
+%:%1118=250%:%
+%:%1119=250%:%
+%:%1120=250%:%
+%:%1125=250%:%
+%:%1128=251%:%
+%:%1129=252%:%
+%:%1130=252%:%
+%:%1137=253%:%
+%:%1138=253%:%
+%:%1139=254%:%
+%:%1140=254%:%
+%:%1141=254%:%
+%:%1142=254%:%
+%:%1147=254%:%
+%:%1150=255%:%
+%:%1151=256%:%
+%:%1152=256%:%
+%:%1159=257%:%
+%:%1160=257%:%
+%:%1174=260%:%
+%:%1184=262%:%
+%:%1185=262%:%
+%:%1186=263%:%
+%:%1187=264%:%
+%:%1188=265%:%
+%:%1189=266%:%
+%:%1190=266%:%
+%:%1191=267%:%
+%:%1192=268%:%
+%:%1193=269%:%
+%:%1194=270%:%
+%:%1195=270%:%
+%:%1196=271%:%
+%:%1197=272%:%
+%:%1198=273%:%
+%:%1199=273%:%
+%:%1206=274%:%
+%:%1207=274%:%
+%:%1221=281%:%
+%:%1231=283%:%
+%:%1232=283%:%
+%:%1233=284%:%
+%:%1234=285%:%
+%:%1235=286%:%
+%:%1236=286%:%
+%:%1237=287%:%
+%:%1238=288%:%
+%:%1245=289%:%
+%:%1246=289%:%
+%:%1247=290%:%
+%:%1248=290%:%
+%:%1249=290%:%
+%:%1250=290%:%
+%:%1251=291%:%
+%:%1252=291%:%
+%:%1253=291%:%
+%:%1254=292%:%
+%:%1260=292%:%
+%:%1263=293%:%
+%:%1264=294%:%
+%:%1265=294%:%
+%:%1272=295%:%
+%:%1273=295%:%
+%:%1278=295%:%
+%:%1281=296%:%
+%:%1282=297%:%
+%:%1283=297%:%
+%:%1290=298%:%
+%:%1291=298%:%
+%:%1296=298%:%
+%:%1299=299%:%
+%:%1300=300%:%
+%:%1301=300%:%
+%:%1308=301%:%
+%:%1309=301%:%
+%:%1314=301%:%
+%:%1317=302%:%
+%:%1318=303%:%
+%:%1319=303%:%
+%:%1326=304%:%
+%:%1327=304%:%
+%:%1332=304%:%
+%:%1335=305%:%
+%:%1336=306%:%
+%:%1337=306%:%
+%:%1344=307%:%
+%:%1345=307%:%
+%:%1346=307%:%
+%:%1351=307%:%
+%:%1354=308%:%
+%:%1355=309%:%
+%:%1356=309%:%
+%:%1363=310%:%
+%:%1364=310%:%
+%:%1369=310%:%
+%:%1372=311%:%
+%:%1373=312%:%
+%:%1374=312%:%
+%:%1381=313%:%
+%:%1382=313%:%
+%:%1387=313%:%
+%:%1390=314%:%
+%:%1391=315%:%
+%:%1392=315%:%
+%:%1399=316%:%
+%:%1400=316%:%
+%:%1405=316%:%
+%:%1408=317%:%
+%:%1409=318%:%
+%:%1410=318%:%
+%:%1417=319%:%
+%:%1418=319%:%
+%:%1419=319%:%
+%:%1424=319%:%
+%:%1427=320%:%
+%:%1428=321%:%
+%:%1429=321%:%
+%:%1436=322%:%
+%:%1437=322%:%
+%:%1438=322%:%
+%:%1443=322%:%
+%:%1446=323%:%
+%:%1447=324%:%
+%:%1448=324%:%
+%:%1455=325%:%
+%:%1456=325%:%
+%:%1457=325%:%
+%:%1462=325%:%
+%:%1465=326%:%
+%:%1466=327%:%
+%:%1467=327%:%
+%:%1474=328%:%
+%:%1475=328%:%
+%:%1480=328%:%
+%:%1483=329%:%
+%:%1484=330%:%
+%:%1485=330%:%
+%:%1486=331%:%
+%:%1493=332%:%
+%:%1494=332%:%
+%:%1499=332%:%
+%:%1502=333%:%
+%:%1503=334%:%
+%:%1504=334%:%
+%:%1505=335%:%
+%:%1506=336%:%
+%:%1513=337%:%
+%:%1514=337%:%
+%:%1515=338%:%
+%:%1516=338%:%
+%:%1517=338%:%
+%:%1518=338%:%
+%:%1519=339%:%
+%:%1520=339%:%
+%:%1521=339%:%
+%:%1522=339%:%
+%:%1523=340%:%
+%:%1524=340%:%
+%:%1525=340%:%
+%:%1526=341%:%
+%:%1527=341%:%
+%:%1528=341%:%
+%:%1529=341%:%
+%:%1530=342%:%
+%:%1531=342%:%
+%:%1532=343%:%
+%:%1533=343%:%
+%:%1534=343%:%
+%:%1535=343%:%
+%:%1536=344%:%
+%:%1542=344%:%
+%:%1545=345%:%
+%:%1546=346%:%
+%:%1547=346%:%
+%:%1554=347%:%
+%:%1555=347%:%
+%:%1556=347%:%
+%:%1561=347%:%
+%:%1564=348%:%
+%:%1565=349%:%
+%:%1566=349%:%
+%:%1573=350%:%
+%:%1574=350%:%
+%:%1575=350%:%
+%:%1576=351%:%
+%:%1581=351%:%
+%:%1584=352%:%
+%:%1585=353%:%
+%:%1586=353%:%
+%:%1587=354%:%
+%:%1588=355%:%
+%:%1589=356%:%
+%:%1596=357%:%
+%:%1597=357%:%
+%:%1602=357%:%
+%:%1605=358%:%
+%:%1606=359%:%
+%:%1607=359%:%
+%:%1614=360%:%
+%:%1615=360%:%
+%:%1629=363%:%
+%:%1639=365%:%
+%:%1640=365%:%
+%:%1641=366%:%
+%:%1642=367%:%
+%:%1643=368%:%
+%:%1644=368%:%
+%:%1651=369%:%
+%:%1652=369%:%
+%:%1653=369%:%
+%:%1658=369%:%
+%:%1661=370%:%
+%:%1662=371%:%
+%:%1663=371%:%
+%:%1664=372%:%
+%:%1665=373%:%
+%:%1666=374%:%
+%:%1673=375%:%
+%:%1674=375%:%
+%:%1675=376%:%
+%:%1676=376%:%
+%:%1677=377%:%
+%:%1678=377%:%
+%:%1679=377%:%
+%:%1680=377%:%
+%:%1681=378%:%
+%:%1682=378%:%
+%:%1683=378%:%
+%:%1684=379%:%
+%:%1685=379%:%
+%:%1686=380%:%
+%:%1687=380%:%
+%:%1688=381%:%
+%:%1689=381%:%
+%:%1690=381%:%
+%:%1691=382%:%
+%:%1692=382%:%
+%:%1693=382%:%
+%:%1694=382%:%
+%:%1695=383%:%
+%:%1696=383%:%
+%:%1697=384%:%
+%:%1698=384%:%
+%:%1699=385%:%
+%:%1700=385%:%
+%:%1701=386%:%
+%:%1702=386%:%
+%:%1703=386%:%
+%:%1704=386%:%
+%:%1705=387%:%
+%:%1706=387%:%
+%:%1707=387%:%
+%:%1708=388%:%
+%:%1709=388%:%
+%:%1710=389%:%
+%:%1711=389%:%
+%:%1712=389%:%
+%:%1713=389%:%
+%:%1714=390%:%
+%:%1715=390%:%
+%:%1716=391%:%
+%:%1717=391%:%
+%:%1718=391%:%
+%:%1719=391%:%
+%:%1720=392%:%
+%:%1721=392%:%
+%:%1722=392%:%
+%:%1723=393%:%
+%:%1724=393%:%
+%:%1725=393%:%
+%:%1726=394%:%
+%:%1727=394%:%
+%:%1728=395%:%
+%:%1729=395%:%
+%:%1730=396%:%
+%:%1731=396%:%
+%:%1732=397%:%
+%:%1733=397%:%
+%:%1734=398%:%
+%:%1735=398%:%
+%:%1736=399%:%
+%:%1737=399%:%
+%:%1738=399%:%
+%:%1739=400%:%
+%:%1740=400%:%
+%:%1741=401%:%
+%:%1742=401%:%
+%:%1743=401%:%
+%:%1744=401%:%
+%:%1745=402%:%
+%:%1746=402%:%
+%:%1747=403%:%
+%:%1748=403%:%
+%:%1749=403%:%
+%:%1750=403%:%
+%:%1751=404%:%
+%:%1752=404%:%
+%:%1753=405%:%
+%:%1754=405%:%
+%:%1755=405%:%
+%:%1756=405%:%
+%:%1757=406%:%
+%:%1758=406%:%
+%:%1759=406%:%
+%:%1760=407%:%
+%:%1761=407%:%
+%:%1762=407%:%
+%:%1763=408%:%
+%:%1764=408%:%
+%:%1765=409%:%
+%:%1766=409%:%
+%:%1767=409%:%
+%:%1768=409%:%
+%:%1769=410%:%
+%:%1775=410%:%
+%:%1778=411%:%
+%:%1779=412%:%
+%:%1780=412%:%
+%:%1781=413%:%
+%:%1782=414%:%
+%:%1783=415%:%
+%:%1786=416%:%
+%:%1790=416%:%
+%:%1791=416%:%
+%:%1796=416%:%
+%:%1799=417%:%
+%:%1800=418%:%
+%:%1801=418%:%
+%:%1802=419%:%
+%:%1803=420%:%
+%:%1810=421%:%
+%:%1811=421%:%
+%:%1812=421%:%
+%:%1817=421%:%
+%:%1820=422%:%
+%:%1821=423%:%
+%:%1822=423%:%
+%:%1823=424%:%
+%:%1824=425%:%
+%:%1825=426%:%
+%:%1832=427%:%
+%:%1833=427%:%
+%:%1834=427%:%
+%:%1839=427%:%
+%:%1842=428%:%
+%:%1843=429%:%
+%:%1844=429%:%
+%:%1845=430%:%
+%:%1846=431%:%
+%:%1847=432%:%
+%:%1854=433%:%
+%:%1855=433%:%
+%:%1856=433%:%
+%:%1861=433%:%
+%:%1864=434%:%
+%:%1865=435%:%
+%:%1866=435%:%
+%:%1867=436%:%
+%:%1868=437%:%
+%:%1875=438%:%
+%:%1876=438%:%
+%:%1877=438%:%
+%:%1882=438%:%
+%:%1885=439%:%
+%:%1886=440%:%
+%:%1887=440%:%
+%:%1888=441%:%
+%:%1889=442%:%
+%:%1890=443%:%
+%:%1891=444%:%
+%:%1898=445%:%
+%:%1899=445%:%
+%:%1900=446%:%
+%:%1901=446%:%
+%:%1902=447%:%
+%:%1903=447%:%
+%:%1904=447%:%
+%:%1905=448%:%
+%:%1906=448%:%
+%:%1907=448%:%
+%:%1908=448%:%
+%:%1909=449%:%
+%:%1910=449%:%
+%:%1911=450%:%
+%:%1912=451%:%
+%:%1913=451%:%
+%:%1914=451%:%
+%:%1915=452%:%
+%:%1916=452%:%
+%:%1917=452%:%
+%:%1918=452%:%
+%:%1919=453%:%
+%:%1920=453%:%
+%:%1921=453%:%
+%:%1922=454%:%
+%:%1928=454%:%
+%:%1931=455%:%
+%:%1932=456%:%
+%:%1933=456%:%
+%:%1934=457%:%
+%:%1935=458%:%
+%:%1942=459%:%
+%:%1943=459%:%
+%:%1948=459%:%
+%:%1951=460%:%
+%:%1952=461%:%
+%:%1953=461%:%
+%:%1954=462%:%
+%:%1955=463%:%
+%:%1962=464%:%
+%:%1963=464%:%
+%:%1968=464%:%
+%:%1971=465%:%
+%:%1972=466%:%
+%:%1973=466%:%
+%:%1974=467%:%
+%:%1975=468%:%
+%:%1982=469%:%
+%:%1983=469%:%
+%:%1984=470%:%
+%:%1985=470%:%
+%:%1986=471%:%
+%:%1987=471%:%
+%:%1988=472%:%
+%:%1989=473%:%
+%:%1990=473%:%
+%:%1991=474%:%
+%:%1992=474%:%
+%:%1993=474%:%
+%:%1994=474%:%
+%:%1995=475%:%
+%:%1996=475%:%
+%:%1997=475%:%
+%:%1998=475%:%
+%:%1999=476%:%
+%:%2005=476%:%
+%:%2008=477%:%
+%:%2009=478%:%
+%:%2010=478%:%
+%:%2011=479%:%
+%:%2012=480%:%
+%:%2019=481%:%
+%:%2020=481%:%
+%:%2021=482%:%
+%:%2022=482%:%
+%:%2023=483%:%
+%:%2024=483%:%
+%:%2025=484%:%
+%:%2026=484%:%
+%:%2027=484%:%
+%:%2028=485%:%
+%:%2029=485%:%
+%:%2030=485%:%
+%:%2031=486%:%
+%:%2032=486%:%
+%:%2033=486%:%
+%:%2034=486%:%
+%:%2035=487%:%
+%:%2036=487%:%
+%:%2037=487%:%
+%:%2038=487%:%
+%:%2039=488%:%
+%:%2045=488%:%
+%:%2048=489%:%
+%:%2049=490%:%
+%:%2050=490%:%
+%:%2057=491%:%
+%:%2058=491%:%
+%:%2059=492%:%
+%:%2060=492%:%
+%:%2065=492%:%
+%:%2068=493%:%
+%:%2069=494%:%
+%:%2070=494%:%
+%:%2077=495%:%
+%:%2078=495%:%
+%:%2079=495%:%
+%:%2084=495%:%
+%:%2087=496%:%
+%:%2088=497%:%
+%:%2089=497%:%
+%:%2090=498%:%
+%:%2091=499%:%
+%:%2092=500%:%
+%:%2099=501%:%
+%:%2100=501%:%
+%:%2101=502%:%
+%:%2102=502%:%
+%:%2103=502%:%
+%:%2104=502%:%
+%:%2105=503%:%
+%:%2106=503%:%
+%:%2107=503%:%
+%:%2108=504%:%
+%:%2109=504%:%
+%:%2110=505%:%
+%:%2111=505%:%
+%:%2112=505%:%
+%:%2113=505%:%
+%:%2114=506%:%
+%:%2115=506%:%
+%:%2116=506%:%
+%:%2117=506%:%
+%:%2118=507%:%
+%:%2124=507%:%
+%:%2127=508%:%
+%:%2128=509%:%
+%:%2129=509%:%
+%:%2136=510%:%
+%:%2137=510%:%
+%:%2142=510%:%
+%:%2145=511%:%
+%:%2146=512%:%
+%:%2147=512%:%
+%:%2148=513%:%
+%:%2149=514%:%
+%:%2156=515%:%
+%:%2157=515%:%
+%:%2158=516%:%
+%:%2159=516%:%
+%:%2160=516%:%
+%:%2161=516%:%
+%:%2162=517%:%
+%:%2163=517%:%
+%:%2164=517%:%
+%:%2165=518%:%
+%:%2166=518%:%
+%:%2167=518%:%
+%:%2168=519%:%
+%:%2169=519%:%
+%:%2170=519%:%
+%:%2171=519%:%
+%:%2172=520%:%
+%:%2178=520%:%
+%:%2181=521%:%
+%:%2182=522%:%
+%:%2183=522%:%
+%:%2184=523%:%
+%:%2185=524%:%
+%:%2192=525%:%
+%:%2193=525%:%
+%:%2194=526%:%
+%:%2195=526%:%
+%:%2196=526%:%
+%:%2197=526%:%
+%:%2198=527%:%
+%:%2199=527%:%
+%:%2200=528%:%
+%:%2201=528%:%
+%:%2202=529%:%
+%:%2203=529%:%
+%:%2204=530%:%
+%:%2205=530%:%
+%:%2206=531%:%
+%:%2207=531%:%
+%:%2208=532%:%
+%:%2209=532%:%
+%:%2210=533%:%
+%:%2211=533%:%
+%:%2212=534%:%
+%:%2213=534%:%
+%:%2214=535%:%
+%:%2215=535%:%
+%:%2216=536%:%
+%:%2217=536%:%
+%:%2218=537%:%
+%:%2219=537%:%
+%:%2220=538%:%
+%:%2221=538%:%
+%:%2222=539%:%
+%:%2223=539%:%
+%:%2224=540%:%
+%:%2225=540%:%
+%:%2226=541%:%
+%:%2227=541%:%
+%:%2228=542%:%
+%:%2229=542%:%
+%:%2230=543%:%
+%:%2231=543%:%
+%:%2232=544%:%
+%:%2238=544%:%
+%:%2241=545%:%
+%:%2242=546%:%
+%:%2243=546%:%
+%:%2244=547%:%
+%:%2245=548%:%
+%:%2252=549%:%
+%:%2253=549%:%
+%:%2254=550%:%
+%:%2255=550%:%
+%:%2256=550%:%
+%:%2257=550%:%
+%:%2258=551%:%
+%:%2259=551%:%
+%:%2260=552%:%
+%:%2261=552%:%
+%:%2262=552%:%
+%:%2263=553%:%
+%:%2264=553%:%
+%:%2265=554%:%
+%:%2266=554%:%
+%:%2267=555%:%
+%:%2268=555%:%
+%:%2269=556%:%
+%:%2270=556%:%
+%:%2271=557%:%
+%:%2272=557%:%
+%:%2273=558%:%
+%:%2274=558%:%
+%:%2275=559%:%
+%:%2276=559%:%
+%:%2277=560%:%
+%:%2278=560%:%
+%:%2279=561%:%
+%:%2280=561%:%
+%:%2281=562%:%
+%:%2287=562%:%
+%:%2290=563%:%
+%:%2291=564%:%
+%:%2292=564%:%
+%:%2299=565%:%
+%:%2300=565%:%
+%:%2305=565%:%
+%:%2308=566%:%
+%:%2309=567%:%
+%:%2310=567%:%
+%:%2311=568%:%
+%:%2318=569%:%
+%:%2319=569%:%
+%:%2324=569%:%
+%:%2327=570%:%
+%:%2328=571%:%
+%:%2329=571%:%
+%:%2336=572%:%
+%:%2337=572%:%
+%:%2338=572%:%
+%:%2339=573%:%
+%:%2340=573%:%
+%:%2345=573%:%
+%:%2348=574%:%
+%:%2349=575%:%
+%:%2350=575%:%
+%:%2357=576%:%
+%:%2358=576%:%
+%:%2363=576%:%
+%:%2366=577%:%
+%:%2367=578%:%
+%:%2368=578%:%
+%:%2369=579%:%
+%:%2370=580%:%
+%:%2377=581%:%
+%:%2378=581%:%
+%:%2383=581%:%
+%:%2386=582%:%
+%:%2387=583%:%
+%:%2388=583%:%
+%:%2395=584%:%
+%:%2396=584%:%
+%:%2401=584%:%
+%:%2404=585%:%
+%:%2405=586%:%
+%:%2406=586%:%
+%:%2413=587%:%
+%:%2414=587%:%
+%:%2419=587%:%
+%:%2422=588%:%
+%:%2423=589%:%
+%:%2424=589%:%
+%:%2425=590%:%
+%:%2426=591%:%
+%:%2433=592%:%
+%:%2434=592%:%
+%:%2435=593%:%
+%:%2436=593%:%
+%:%2437=593%:%
+%:%2438=594%:%
+%:%2439=594%:%
+%:%2440=594%:%
+%:%2441=594%:%
+%:%2442=595%:%
+%:%2443=595%:%
+%:%2444=595%:%
+%:%2445=595%:%
+%:%2446=596%:%
+%:%2447=596%:%
+%:%2448=597%:%
+%:%2454=597%:%
+%:%2457=598%:%
+%:%2458=599%:%
+%:%2459=599%:%
+%:%2460=600%:%
+%:%2461=601%:%
+%:%2468=602%:%
+%:%2469=602%:%
+%:%2470=603%:%
+%:%2471=603%:%
+%:%2472=603%:%
+%:%2473=604%:%
+%:%2474=604%:%
+%:%2475=604%:%
+%:%2476=604%:%
+%:%2477=605%:%
+%:%2478=605%:%
+%:%2479=605%:%
+%:%2480=605%:%
+%:%2481=606%:%
+%:%2482=606%:%
+%:%2483=607%:%
+%:%2489=607%:%
+%:%2492=608%:%
+%:%2493=609%:%
+%:%2494=609%:%
+%:%2495=610%:%
+%:%2502=611%:%
+%:%2503=611%:%
+%:%2504=612%:%
+%:%2505=612%:%
+%:%2506=613%:%
+%:%2507=613%:%
+%:%2508=614%:%
+%:%2509=614%:%
+%:%2510=615%:%
+%:%2511=615%:%
+%:%2512=616%:%
+%:%2513=616%:%
+%:%2514=617%:%
+%:%2515=617%:%
+%:%2516=618%:%
+%:%2517=618%:%
+%:%2518=619%:%
+%:%2519=619%:%
+%:%2520=619%:%
+%:%2521=619%:%
+%:%2522=619%:%
+%:%2523=620%:%
+%:%2529=620%:%
+%:%2532=621%:%
+%:%2533=622%:%
+%:%2534=622%:%
+%:%2541=623%:%
+%:%2542=623%:%
+%:%2543=624%:%
+%:%2548=624%:%
+%:%2551=625%:%
+%:%2552=626%:%
+%:%2553=626%:%
+%:%2556=627%:%
+%:%2560=627%:%
+%:%2561=627%:%
+%:%2562=627%:%
+%:%2567=627%:%
+%:%2570=628%:%
+%:%2571=629%:%
+%:%2572=629%:%
+%:%2573=630%:%
+%:%2574=631%:%
+%:%2581=632%:%
+%:%2582=632%:%
+%:%2583=633%:%
+%:%2584=633%:%
+%:%2585=634%:%
+%:%2586=634%:%
+%:%2587=635%:%
+%:%2588=635%:%
+%:%2589=635%:%
+%:%2590=636%:%
+%:%2591=636%:%
+%:%2592=637%:%
+%:%2593=637%:%
+%:%2594=637%:%
+%:%2595=638%:%
+%:%2596=638%:%
+%:%2597=639%:%
+%:%2598=639%:%
+%:%2599=639%:%
+%:%2600=640%:%
+%:%2601=640%:%
+%:%2602=641%:%
+%:%2603=641%:%
+%:%2604=641%:%
+%:%2605=642%:%
+%:%2606=642%:%
+%:%2607=643%:%
+%:%2608=643%:%
+%:%2609=643%:%
+%:%2610=643%:%
+%:%2611=644%:%
+%:%2617=644%:%
+%:%2620=645%:%
+%:%2621=646%:%
+%:%2622=646%:%
+%:%2623=647%:%
+%:%2624=648%:%
+%:%2631=649%:%
+%:%2632=649%:%
+%:%2633=650%:%
+%:%2634=650%:%
+%:%2635=650%:%
+%:%2636=650%:%
+%:%2637=650%:%
+%:%2638=651%:%
+%:%2639=651%:%
+%:%2640=652%:%
+%:%2641=652%:%
+%:%2642=653%:%
+%:%2643=653%:%
+%:%2644=653%:%
+%:%2645=654%:%
+%:%2646=654%:%
+%:%2647=655%:%
+%:%2648=655%:%
+%:%2649=655%:%
+%:%2650=655%:%
+%:%2651=656%:%
+%:%2652=656%:%
+%:%2653=656%:%
+%:%2654=657%:%
+%:%2655=657%:%
+%:%2656=658%:%
+%:%2657=658%:%
+%:%2658=658%:%
+%:%2659=659%:%
+%:%2660=659%:%
+%:%2661=659%:%
+%:%2662=660%:%
+%:%2663=660%:%
+%:%2664=661%:%
+%:%2665=661%:%
+%:%2666=661%:%
+%:%2667=662%:%
+%:%2668=662%:%
+%:%2669=662%:%
+%:%2670=663%:%
+%:%2671=663%:%
+%:%2672=663%:%
+%:%2673=663%:%
+%:%2674=664%:%
+%:%2680=664%:%
+%:%2683=665%:%
+%:%2684=666%:%
+%:%2685=666%:%
+%:%2686=667%:%
+%:%2687=668%:%
+%:%2694=669%:%
+%:%2695=669%:%
+%:%2696=670%:%
+%:%2697=670%:%
+%:%2698=671%:%
+%:%2699=671%:%
+%:%2700=671%:%
+%:%2701=672%:%
+%:%2702=672%:%
+%:%2703=672%:%
+%:%2704=672%:%
+%:%2705=673%:%
+%:%2706=673%:%
+%:%2707=673%:%
+%:%2708=673%:%
+%:%2709=673%:%
+%:%2710=674%:%
+%:%2711=674%:%
+%:%2712=674%:%
+%:%2713=674%:%
+%:%2714=675%:%
+%:%2715=675%:%
+%:%2716=676%:%
+%:%2717=676%:%
+%:%2718=677%:%
+%:%2719=677%:%
+%:%2720=677%:%
+%:%2721=677%:%
+%:%2722=677%:%
+%:%2723=678%:%
+%:%2724=678%:%
+%:%2725=678%:%
+%:%2726=679%:%
+%:%2727=679%:%
+%:%2728=679%:%
+%:%2729=680%:%
+%:%2730=680%:%
+%:%2731=680%:%
+%:%2732=680%:%
+%:%2733=681%:%
+%:%2734=681%:%
+%:%2735=682%:%
+%:%2736=682%:%
+%:%2737=682%:%
+%:%2738=682%:%
+%:%2739=683%:%
+%:%2745=683%:%
+%:%2748=684%:%
+%:%2749=685%:%
+%:%2750=686%:%
+%:%2751=687%:%
+%:%2752=687%:%
+%:%2759=688%:%
+%:%2760=688%:%
+%:%2765=688%:%
+%:%2768=689%:%
+%:%2769=690%:%
+%:%2770=690%:%
+%:%2771=691%:%
+%:%2772=692%:%
+%:%2779=693%:%
+%:%2780=693%:%
+%:%2781=693%:%
+%:%2782=693%:%
+%:%2787=693%:%
+%:%2792=694%:%
+%:%2797=695%:%

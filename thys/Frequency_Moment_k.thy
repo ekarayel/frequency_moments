@@ -303,7 +303,7 @@ lemma fk_alg_aux_1:
   fixes k :: nat
   fixes \<epsilon> :: rat
   assumes "\<delta> > 0"
-  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  assumes "set as \<subseteq> {0..<n}"
   assumes "as \<noteq> []"
   defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
   defines "s\<^sub>1 \<equiv> nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -335,7 +335,6 @@ next
     apply simp
     by (subst map_bind_pmf, simp add:t1)
 qed
-
 
 lemma power_diff_sum:
   assumes "k > 0"
@@ -398,7 +397,7 @@ lemma Holder_inequality_sum:
 
 lemma fk_estimate:
   assumes "as \<noteq> []"
-  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  assumes "set as \<subseteq> {0..<n}"
   assumes "k \<ge> 1"
   shows "real (length as) * real_of_rat (F (2*k-1) as) \<le> real n powr (1 - 1 / real k) * (real_of_rat (F k as))^2"
   (is "?lhs \<le> ?rhs")
@@ -456,8 +455,7 @@ proof (cases "k \<ge> 2")
     by blast
 
   have b1: "card (set as) \<le> n"
-    apply (rule card_mono[where B="{k. k < n}", simplified])
-    by (rule subsetI, simp add: assms(2))
+    by (rule card_mono[where B="{0..<n}", simplified], rule assms(2))
 
   have "real (length as) = abs (sum (\<lambda>x. real (count_list as x)) (set as))"
     apply (subst of_nat_sum[symmetric])
@@ -504,8 +502,7 @@ next
   case False
   have "n > 0" 
     apply (cases "n=0") 
-    using assms(1) assms(2) equals0I apply (simp, blast)
-    by simp
+    using assms(1) assms(2) equals0I by (simp, blast)
   moreover have "k = 1" using assms False by linarith
   ultimately show ?thesis
     apply (simp add:power2_eq_square)
@@ -540,7 +537,7 @@ qed
 lemma fk_alg_core_var:
   assumes "as \<noteq> []"
   assumes "k \<ge> 1"
-  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  assumes "set as \<subseteq> {0..<n}"
   shows "prob_space.variance (measure_pmf (pmf_of_set {(u, v). v < count_list as u}))
         (\<lambda>a. real (length as) * real (Suc (snd a) ^ k - snd a ^ k))
          \<le> (real_of_rat (F k as))\<^sup>2 * real k * real n powr (1 - 1 / real k)"
@@ -633,13 +630,13 @@ theorem fk_alg_sketch:
   fixes \<epsilon> :: rat
   assumes "k \<ge> 1"
   assumes "\<delta> > 0"
-  assumes "\<And>x. x \<in> set xs \<Longrightarrow> x < n"
-  assumes "xs \<noteq> []"
-  defines "sketch \<equiv> fold (\<lambda>x state. state \<bind> fk_update x) xs (fk_init k \<delta> \<epsilon> n)"
+  assumes "set as \<subseteq> {0..<n}"
+  assumes "as \<noteq> []"
+  defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
   defines "s\<^sub>1 \<equiv> nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
   defines "s\<^sub>2 \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
-  shows "sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length xs, x)) 
-    (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list xs u}))" 
+  shows "sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x)) 
+    (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list as u}))" 
   apply (simp add:sketch_def)
   using fk_alg_aux_1[OF assms(2) assms(3) assms(4), where k="k" and \<epsilon>="\<epsilon>"]
   apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
@@ -652,7 +649,7 @@ lemma fk_alg_correct:
   assumes "k \<ge> 1"
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
-  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  assumes "set as \<subseteq> {0..<n}"
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n) \<bind> fk_result"
   shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - F k as\<bar> \<le> \<delta> * F k as) \<ge> 1 - of_rat \<epsilon>"
 proof (cases "as = []")
@@ -708,7 +705,7 @@ next
 
   have a:"fold (\<lambda>x state. state \<bind> fk_update x) as (fk_init k \<delta> \<epsilon> n) = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x)) 
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list as u}))"
-    apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) False], simp)
+    apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) False])
     by (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
 
   have fk_result_exp: "fk_result = (\<lambda>(x,y,z,u,v). fk_result (x,y,z,u,v))" 
@@ -890,7 +887,7 @@ theorem fk_exact_space_usage:
   assumes "k \<ge> 1"
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
-  assumes "\<And>a. a \<in> set as \<Longrightarrow> a < n"
+  assumes "set as \<subseteq> {0..<n}"
   assumes "as \<noteq> []"
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
   shows "AE \<omega> in M. bit_count (encode_state \<omega>) \<le> fk_space_usage (k, n, length as, \<epsilon>, \<delta>)" (is "AE \<omega> in M. (_  \<le> ?rhs)")
@@ -901,7 +898,7 @@ proof -
   have a:"M = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x))
     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list as u}))"
     apply (subst M_def)
-    apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) assms(5)], simp)
+    apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) assms(5)])
     by (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
 
   have "set as \<noteq> {}" using assms by blast
@@ -917,7 +914,7 @@ proof -
       using b0 by (simp add:PiE_iff case_prod_beta, fastforce)
     hence b1:"\<And>x. x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> fst x \<le> n-Suc 0" using assms(4)
       apply (simp add:count_list_gr_1[simplified, symmetric]) 
-      by (metis Suc_pred less_Suc_eq_le n_nonzero)
+      by (metis Suc_pred atLeastLessThan_iff less_Suc_eq_le n_nonzero subsetD)
     have b2: "\<And>x. x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> snd x \<le> length as - Suc 0"
       using count_le_length b0 apply (simp add:PiE_iff case_prod_beta) 
       using dual_order.strict_trans1 by fastforce
@@ -928,7 +925,7 @@ proof -
       ereal (2 * log 2 (real k + 1) + 1) + (
       ereal (2 * log 2 (real (length as) + 1) + 1) + (
        (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 ((n-1)+1) + 1) + ereal (2 * log 2 ((length as-1)+1) + 1)) + 1))+ 1))))"
-      apply (simp add:encode_state_def dependent_bit_count prod_bit_count PiE_iff comp_def encode_extensional_def
+      apply (simp add:encode_state_def dependent_bit_count prod_bit_count PiE_iff comp_def fun\<^sub>S_def
           del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps plus_ereal.simps sum_list_ereal times_ereal.simps)
       apply (rule add_mono, simp add: nat_bit_count[simplified])
       apply (rule add_mono, simp add: nat_bit_count[simplified])

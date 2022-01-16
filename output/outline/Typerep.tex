@@ -1,0 +1,263 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Typerep}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{Reflecting Pure types into HOL%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Typerep\isanewline
+\isakeyword{imports}\ String\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ typerep\ {\isacharequal}{\kern0pt}\ Typerep\ String{\isachardot}{\kern0pt}literal\ {\isachardoublequoteopen}typerep\ list{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{class}\isamarkupfalse%
+\ typerep\ {\isacharequal}{\kern0pt}\isanewline
+\ \ \isakeyword{fixes}\ typerep\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ itself\ {\isasymRightarrow}\ typerep{\isachardoublequoteclose}\isanewline
+\isakeyword{begin}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ typerep{\isacharunderscore}{\kern0pt}of\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ typerep{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+\ \ {\isacharbrackleft}{\kern0pt}simp{\isacharbrackright}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}typerep{\isacharunderscore}{\kern0pt}of\ x\ {\isacharequal}{\kern0pt}\ typerep\ TYPE{\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{end}\isamarkupfalse%
+\isanewline
+\isanewline
+\isacommand{syntax}\isamarkupfalse%
+\isanewline
+\ \ {\isachardoublequoteopen}{\isacharunderscore}{\kern0pt}TYPEREP{\isachardoublequoteclose}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}type\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ logic{\isachardoublequoteclose}\ \ {\isacharparenleft}{\kern0pt}{\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isadigit{1}}TYPEREP{\isacharslash}{\kern0pt}{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharprime}{\kern0pt}{\isacharparenleft}{\kern0pt}{\isacharunderscore}{\kern0pt}{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\isanewline
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+%
+\isatagML
+\isacommand{parse{\isacharunderscore}{\kern0pt}translation}\isamarkupfalse%
+\ {\isacartoucheopen}\isanewline
+\ \ let\isanewline
+\ \ \ \ fun\ typerep{\isacharunderscore}{\kern0pt}tr\ {\isacharparenleft}{\kern0pt}{\isacharasterisk}{\kern0pt}{\isachardoublequote}{\kern0pt}{\isacharunderscore}{\kern0pt}TYPEREP{\isachardoublequote}{\kern0pt}{\isacharasterisk}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharbrackleft}{\kern0pt}ty{\isacharbrackright}{\kern0pt}\ {\isacharequal}{\kern0pt}\isanewline
+\ \ \ \ \ \ \ \ \ \ Syntax{\isachardot}{\kern0pt}const\ \isactrlconstUNDERSCOREsyntax {\isasymopen}typerep{\isasymclose}\ {\isachardollar}{\kern0pt}\isanewline
+\ \ \ \ \ \ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}Syntax{\isachardot}{\kern0pt}const\ \isactrlsyntaxUNDERSCOREconst {\isasymopen}{\isacharunderscore}{\kern0pt}constrain{\isasymclose}\ {\isachardollar}{\kern0pt}\ Syntax{\isachardot}{\kern0pt}const\ \isactrlconstUNDERSCOREsyntax {\isasymopen}Pure{\isachardot}{\kern0pt}type{\isasymclose}\ {\isachardollar}{\kern0pt}\isanewline
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}Syntax{\isachardot}{\kern0pt}const\ \isactrltypeUNDERSCOREsyntax {\isasymopen}itself{\isasymclose}\ {\isachardollar}{\kern0pt}\ ty{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \ \ {\isacharbar}{\kern0pt}\ typerep{\isacharunderscore}{\kern0pt}tr\ {\isacharparenleft}{\kern0pt}{\isacharasterisk}{\kern0pt}{\isachardoublequote}{\kern0pt}{\isacharunderscore}{\kern0pt}TYPEREP{\isachardoublequote}{\kern0pt}{\isacharasterisk}{\kern0pt}{\isacharparenright}{\kern0pt}\ ts\ {\isacharequal}{\kern0pt}\ raise\ TERM\ {\isacharparenleft}{\kern0pt}{\isachardoublequote}{\kern0pt}typerep{\isacharunderscore}{\kern0pt}tr{\isachardoublequote}{\kern0pt}{\isacharcomma}{\kern0pt}\ ts{\isacharparenright}{\kern0pt}{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ in\ {\isacharbrackleft}{\kern0pt}{\isacharparenleft}{\kern0pt}\isactrlsyntaxUNDERSCOREconst {\isasymopen}{\isacharunderscore}{\kern0pt}TYPEREP{\isasymclose}{\isacharcomma}{\kern0pt}\ K\ typerep{\isacharunderscore}{\kern0pt}tr{\isacharparenright}{\kern0pt}{\isacharbrackright}{\kern0pt}\ end\isanewline
+{\isacartoucheclose}\isanewline
+\isanewline
+\isacommand{typed{\isacharunderscore}{\kern0pt}print{\isacharunderscore}{\kern0pt}translation}\isamarkupfalse%
+\ {\isacartoucheopen}\isanewline
+\ \ let\isanewline
+\ \ \ \ fun\ typerep{\isacharunderscore}{\kern0pt}tr{\isacharprime}{\kern0pt}\ ctxt\ {\isacharparenleft}{\kern0pt}{\isacharasterisk}{\kern0pt}{\isachardoublequote}{\kern0pt}typerep{\isachardoublequote}{\kern0pt}{\isacharasterisk}{\kern0pt}{\isacharparenright}{\kern0pt}\ \isactrlType {\isasymopen}fun\ \isactrlType {\isasymopen}itself\ T{\isasymclose}\ {\isacharunderscore}{\kern0pt}{\isasymclose}\isanewline
+\ \ \ \ \ \ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}Const\ {\isacharparenleft}{\kern0pt}\isactrlconstUNDERSCOREsyntax {\isasymopen}Pure{\isachardot}{\kern0pt}type{\isasymclose}{\isacharcomma}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ ts{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\isanewline
+\ \ \ \ \ \ \ \ \ \ Term{\isachardot}{\kern0pt}list{\isacharunderscore}{\kern0pt}comb\isanewline
+\ \ \ \ \ \ \ \ \ \ \ \ {\isacharparenleft}{\kern0pt}Syntax{\isachardot}{\kern0pt}const\ \isactrlsyntaxUNDERSCOREconst {\isasymopen}{\isacharunderscore}{\kern0pt}TYPEREP{\isasymclose}\ {\isachardollar}{\kern0pt}\ Syntax{\isacharunderscore}{\kern0pt}Phases{\isachardot}{\kern0pt}term{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}typ\ ctxt\ T{\isacharcomma}{\kern0pt}\ ts{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \ \ {\isacharbar}{\kern0pt}\ typerep{\isacharunderscore}{\kern0pt}tr{\isacharprime}{\kern0pt}\ {\isacharunderscore}{\kern0pt}\ T\ ts\ {\isacharequal}{\kern0pt}\ raise\ Match{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ in\ {\isacharbrackleft}{\kern0pt}{\isacharparenleft}{\kern0pt}\isactrlconstUNDERSCOREsyntax {\isasymopen}typerep{\isasymclose}{\isacharcomma}{\kern0pt}\ typerep{\isacharunderscore}{\kern0pt}tr{\isacharprime}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharbrackright}{\kern0pt}\ end\isanewline
+{\isacartoucheclose}\isanewline
+\isanewline
+\isacommand{setup}\isamarkupfalse%
+\ {\isacartoucheopen}\isanewline
+let\isanewline
+\isanewline
+fun\ add{\isacharunderscore}{\kern0pt}typerep\ tyco\ thy\ {\isacharequal}{\kern0pt}\isanewline
+\ \ let\isanewline
+\ \ \ \ val\ sorts\ {\isacharequal}{\kern0pt}\ replicate\ {\isacharparenleft}{\kern0pt}Sign{\isachardot}{\kern0pt}arity{\isacharunderscore}{\kern0pt}number\ thy\ tyco{\isacharparenright}{\kern0pt}\ \isactrlsort {\isasymopen}typerep{\isasymclose}{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ \ \ val\ vs\ {\isacharequal}{\kern0pt}\ Name{\isachardot}{\kern0pt}invent{\isacharunderscore}{\kern0pt}names\ Name{\isachardot}{\kern0pt}context\ {\isachardoublequote}{\kern0pt}{\isacharprime}{\kern0pt}a{\isachardoublequote}{\kern0pt}\ sorts{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ \ \ val\ ty\ {\isacharequal}{\kern0pt}\ Type\ {\isacharparenleft}{\kern0pt}tyco{\isacharcomma}{\kern0pt}\ map\ TFree\ vs{\isacharparenright}{\kern0pt}{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ \ \ val\ lhs\ {\isacharequal}{\kern0pt}\ \isactrlConst {\isasymopen}typerep\ ty{\isasymclose}\ {\isachardollar}{\kern0pt}\ Free\ {\isacharparenleft}{\kern0pt}{\isachardoublequote}{\kern0pt}T{\isachardoublequote}{\kern0pt}{\isacharcomma}{\kern0pt}\ Term{\isachardot}{\kern0pt}itselfT\ ty{\isacharparenright}{\kern0pt}{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ \ \ val\ rhs\ {\isacharequal}{\kern0pt}\ \isactrlConst {\isasymopen}Typerep{\isasymclose}\ {\isachardollar}{\kern0pt}\ HOLogic{\isachardot}{\kern0pt}mk{\isacharunderscore}{\kern0pt}literal\ tyco\isanewline
+\ \ \ \ \ \ {\isachardollar}{\kern0pt}\ HOLogic{\isachardot}{\kern0pt}mk{\isacharunderscore}{\kern0pt}list\ \isactrlType {\isasymopen}typerep{\isasymclose}\ {\isacharparenleft}{\kern0pt}map\ {\isacharparenleft}{\kern0pt}HOLogic{\isachardot}{\kern0pt}mk{\isacharunderscore}{\kern0pt}typerep\ o\ TFree{\isacharparenright}{\kern0pt}\ vs{\isacharparenright}{\kern0pt}{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ \ \ val\ eq\ {\isacharequal}{\kern0pt}\ HOLogic{\isachardot}{\kern0pt}mk{\isacharunderscore}{\kern0pt}Trueprop\ {\isacharparenleft}{\kern0pt}HOLogic{\isachardot}{\kern0pt}mk{\isacharunderscore}{\kern0pt}eq\ {\isacharparenleft}{\kern0pt}lhs{\isacharcomma}{\kern0pt}\ rhs{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isacharsemicolon}{\kern0pt}\isanewline
+\ \ in\isanewline
+\ \ \ \ thy\isanewline
+\ \ \ \ {\isacharbar}{\kern0pt}{\isachargreater}{\kern0pt}\ Class{\isachardot}{\kern0pt}instantiation\ {\isacharparenleft}{\kern0pt}{\isacharbrackleft}{\kern0pt}tyco{\isacharbrackright}{\kern0pt}{\isacharcomma}{\kern0pt}\ vs{\isacharcomma}{\kern0pt}\ \isactrlsort {\isasymopen}typerep{\isasymclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ {\isacharbar}{\kern0pt}{\isachargreater}{\kern0pt}\ {\isacharbackquote}{\kern0pt}{\isacharparenleft}{\kern0pt}fn\ lthy\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ Syntax{\isachardot}{\kern0pt}check{\isacharunderscore}{\kern0pt}term\ lthy\ eq{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ {\isacharbar}{\kern0pt}{\isacharminus}{\kern0pt}{\isachargreater}{\kern0pt}\ {\isacharparenleft}{\kern0pt}fn\ eq\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ Specification{\isachardot}{\kern0pt}definition\ NONE\ {\isacharbrackleft}{\kern0pt}{\isacharbrackright}{\kern0pt}\ {\isacharbrackleft}{\kern0pt}{\isacharbrackright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}Binding{\isachardot}{\kern0pt}empty{\isacharunderscore}{\kern0pt}atts{\isacharcomma}{\kern0pt}\ eq{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ {\isacharbar}{\kern0pt}{\isachargreater}{\kern0pt}\ snd\isanewline
+\ \ \ \ {\isacharbar}{\kern0pt}{\isachargreater}{\kern0pt}\ Class{\isachardot}{\kern0pt}prove{\isacharunderscore}{\kern0pt}instantiation{\isacharunderscore}{\kern0pt}exit\ {\isacharparenleft}{\kern0pt}fn\ ctxt\ {\isacharequal}{\kern0pt}{\isachargreater}{\kern0pt}\ Class{\isachardot}{\kern0pt}intro{\isacharunderscore}{\kern0pt}classes{\isacharunderscore}{\kern0pt}tac\ ctxt\ {\isacharbrackleft}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ end{\isacharsemicolon}{\kern0pt}\isanewline
+\isanewline
+fun\ ensure{\isacharunderscore}{\kern0pt}typerep\ tyco\ thy\ {\isacharequal}{\kern0pt}\isanewline
+\ \ if\ not\ {\isacharparenleft}{\kern0pt}Sorts{\isachardot}{\kern0pt}has{\isacharunderscore}{\kern0pt}instance\ {\isacharparenleft}{\kern0pt}Sign{\isachardot}{\kern0pt}classes{\isacharunderscore}{\kern0pt}of\ thy{\isacharparenright}{\kern0pt}\ tyco\ \isactrlsort {\isasymopen}typerep{\isasymclose}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ andalso\ Sorts{\isachardot}{\kern0pt}has{\isacharunderscore}{\kern0pt}instance\ {\isacharparenleft}{\kern0pt}Sign{\isachardot}{\kern0pt}classes{\isacharunderscore}{\kern0pt}of\ thy{\isacharparenright}{\kern0pt}\ tyco\ \isactrlsort {\isasymopen}type{\isasymclose}\isanewline
+\ \ then\ add{\isacharunderscore}{\kern0pt}typerep\ tyco\ thy\ else\ thy{\isacharsemicolon}{\kern0pt}\isanewline
+\isanewline
+in\isanewline
+\isanewline
+add{\isacharunderscore}{\kern0pt}typerep\ \isactrltypeUNDERSCOREname {\isasymopen}fun{\isasymclose}\isanewline
+{\isacharhash}{\kern0pt}{\isachargreater}{\kern0pt}\ Typedef{\isachardot}{\kern0pt}interpretation\ {\isacharparenleft}{\kern0pt}Local{\isacharunderscore}{\kern0pt}Theory{\isachardot}{\kern0pt}background{\isacharunderscore}{\kern0pt}theory\ o\ ensure{\isacharunderscore}{\kern0pt}typerep{\isacharparenright}{\kern0pt}\isanewline
+{\isacharhash}{\kern0pt}{\isachargreater}{\kern0pt}\ Code{\isachardot}{\kern0pt}type{\isacharunderscore}{\kern0pt}interpretation\ ensure{\isacharunderscore}{\kern0pt}typerep\isanewline
+\isanewline
+end\isanewline
+{\isacartoucheclose}%
+\endisatagML
+{\isafoldML}%
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharbrackleft}{\kern0pt}code{\isacharbrackright}{\kern0pt}{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}HOL{\isachardot}{\kern0pt}equal\ {\isacharparenleft}{\kern0pt}Typerep\ tyco{\isadigit{1}}\ tys{\isadigit{1}}{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}Typerep\ tyco{\isadigit{2}}\ tys{\isadigit{2}}{\isacharparenright}{\kern0pt}\ {\isasymlongleftrightarrow}\ HOL{\isachardot}{\kern0pt}equal\ tyco{\isadigit{1}}\ tyco{\isadigit{2}}\isanewline
+\ \ \ \ \ {\isasymand}\ list{\isacharunderscore}{\kern0pt}all{\isadigit{2}}\ HOL{\isachardot}{\kern0pt}equal\ tys{\isadigit{1}}\ tys{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}auto\ simp\ add{\isacharcolon}{\kern0pt}\ eq{\isacharunderscore}{\kern0pt}equal\ {\isacharbrackleft}{\kern0pt}symmetric{\isacharbrackright}{\kern0pt}\ list{\isacharunderscore}{\kern0pt}all{\isadigit{2}}{\isacharunderscore}{\kern0pt}eq\ {\isacharbrackleft}{\kern0pt}symmetric{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharbrackleft}{\kern0pt}code\ nbe{\isacharbrackright}{\kern0pt}{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}HOL{\isachardot}{\kern0pt}equal\ {\isacharparenleft}{\kern0pt}x\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ typerep{\isacharparenright}{\kern0pt}\ x\ {\isasymlongleftrightarrow}\ True{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}fact\ equal{\isacharunderscore}{\kern0pt}refl{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{code{\isacharunderscore}{\kern0pt}printing}\isamarkupfalse%
+\isanewline
+\ \ \isakeyword{type{\isacharunderscore}{\kern0pt}constructor}\ typerep\ {\isasymrightharpoonup}\ {\isacharparenleft}{\kern0pt}Eval{\isacharparenright}{\kern0pt}\ {\isachardoublequoteopen}Term{\isachardot}{\kern0pt}typ{\isachardoublequoteclose}\isanewline
+{\isacharbar}{\kern0pt}\ \isakeyword{constant}\ Typerep\ {\isasymrightharpoonup}\ {\isacharparenleft}{\kern0pt}Eval{\isacharparenright}{\kern0pt}\ {\isachardoublequoteopen}Term{\isachardot}{\kern0pt}Type{\isacharslash}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isacharunderscore}{\kern0pt}{\isacharcomma}{\kern0pt}\ {\isacharunderscore}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{code{\isacharunderscore}{\kern0pt}reserved}\isamarkupfalse%
+\ Eval\ Term\isanewline
+\isanewline
+\isacommand{hide{\isacharunderscore}{\kern0pt}const}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}\isakeyword{open}{\isacharparenright}{\kern0pt}\ typerep\ Typerep\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=Typerep.tex%:%
+%:%11=3%:%
+%:%27=5%:%
+%:%28=5%:%
+%:%29=6%:%
+%:%30=7%:%
+%:%35=7%:%
+%:%38=8%:%
+%:%39=9%:%
+%:%40=9%:%
+%:%41=10%:%
+%:%42=11%:%
+%:%43=11%:%
+%:%44=12%:%
+%:%45=13%:%
+%:%46=14%:%
+%:%47=15%:%
+%:%48=15%:%
+%:%49=16%:%
+%:%50=17%:%
+%:%51=18%:%
+%:%52=18%:%
+%:%53=19%:%
+%:%54=20%:%
+%:%55=20%:%
+%:%56=21%:%
+%:%59=22%:%
+%:%64=23%:%
+%:%65=23%:%
+%:%73=31%:%
+%:%74=32%:%
+%:%75=33%:%
+%:%76=33%:%
+%:%84=41%:%
+%:%85=42%:%
+%:%86=43%:%
+%:%87=43%:%
+%:%125=76%:%
+%:%128=77%:%
+%:%129=78%:%
+%:%130=78%:%
+%:%131=79%:%
+%:%132=80%:%
+%:%135=81%:%
+%:%139=81%:%
+%:%140=81%:%
+%:%145=81%:%
+%:%148=82%:%
+%:%149=83%:%
+%:%150=83%:%
+%:%151=84%:%
+%:%154=85%:%
+%:%158=85%:%
+%:%159=85%:%
+%:%164=85%:%
+%:%167=86%:%
+%:%168=87%:%
+%:%169=87%:%
+%:%170=88%:%
+%:%171=89%:%
+%:%172=90%:%
+%:%173=91%:%
+%:%174=91%:%
+%:%175=92%:%
+%:%176=93%:%
+%:%177=93%:%
+%:%180=94%:%
+%:%185=95%:%

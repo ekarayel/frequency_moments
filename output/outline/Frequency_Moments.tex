@@ -1,0 +1,146 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Frequency{\isacharunderscore}{\kern0pt}Moments}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{Frequency Moments%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Frequency{\isacharunderscore}{\kern0pt}Moments\isanewline
+\ \ \isakeyword{imports}\ Main\ HOL{\isachardot}{\kern0pt}List\ HOL{\isachardot}{\kern0pt}Rat\ List{\isacharunderscore}{\kern0pt}Ext\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\begin{isamarkuptext}%
+This section contains a definition of the frequency moments of a stream.%
+\end{isamarkuptext}\isamarkuptrue%
+\isacommand{definition}\isamarkupfalse%
+\ F\ \isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}F\ k\ xs\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymSum}\ x\ {\isasymin}\ set\ xs{\isachardot}{\kern0pt}\ {\isacharparenleft}{\kern0pt}rat{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}nat\ {\isacharparenleft}{\kern0pt}count{\isacharunderscore}{\kern0pt}list\ xs\ x{\isacharparenright}{\kern0pt}{\isacharcircum}{\kern0pt}k{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ F{\isacharunderscore}{\kern0pt}gr{\isacharunderscore}{\kern0pt}{\isadigit{0}}{\isacharcolon}{\kern0pt}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}as\ {\isasymnoteq}\ {\isacharbrackleft}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}F\ k\ as\ {\isachargreater}{\kern0pt}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}{\kern0pt}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}rat{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}nat\ {\isadigit{1}}\ {\isasymle}\ rat{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}nat\ {\isacharparenleft}{\kern0pt}card\ {\isacharparenleft}{\kern0pt}set\ as{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ of{\isacharunderscore}{\kern0pt}nat{\isacharunderscore}{\kern0pt}mono{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ assms\ card{\isacharunderscore}{\kern0pt}{\isadigit{0}}{\isacharunderscore}{\kern0pt}eq{\isacharbrackleft}{\kern0pt}\isakeyword{where}\ A{\isacharequal}{\kern0pt}{\isachardoublequoteopen}set\ as{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}\ \isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}metis\ List{\isachardot}{\kern0pt}finite{\isacharunderscore}{\kern0pt}set\ One{\isacharunderscore}{\kern0pt}nat{\isacharunderscore}{\kern0pt}def\ Suc{\isacharunderscore}{\kern0pt}leI\ neq{\isadigit{0}}{\isacharunderscore}{\kern0pt}conv\ set{\isacharunderscore}{\kern0pt}empty{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}\ {\isasymle}\ F\ k\ as{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}F{\isacharunderscore}{\kern0pt}def{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ sum{\isacharunderscore}{\kern0pt}mono{\isacharbrackleft}{\kern0pt}\isakeyword{where}\ K{\isacharequal}{\kern0pt}{\isachardoublequoteopen}set\ as{\isachardoublequoteclose}\ \isakeyword{and}\ f{\isacharequal}{\kern0pt}{\isachardoublequoteopen}{\isasymlambda}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}rat{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}{\isacharcomma}{\kern0pt}\ simplified{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}metis\ \ count{\isacharunderscore}{\kern0pt}list{\isacharunderscore}{\kern0pt}gr{\isacharunderscore}{\kern0pt}{\isadigit{1}}\ \ of{\isacharunderscore}{\kern0pt}nat{\isacharunderscore}{\kern0pt}{\isadigit{1}}\ of{\isacharunderscore}{\kern0pt}nat{\isacharunderscore}{\kern0pt}power{\isacharunderscore}{\kern0pt}le{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}nat{\isacharunderscore}{\kern0pt}cancel{\isacharunderscore}{\kern0pt}iff\ one{\isacharunderscore}{\kern0pt}le{\isacharunderscore}{\kern0pt}power{\isacharparenright}{\kern0pt}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ \ {\isachardoublequoteopen}F\ k\ as\ {\isachargreater}{\kern0pt}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ simp\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=Frequency_Moments.tex%:%
+%:%11=1%:%
+%:%27=3%:%
+%:%28=3%:%
+%:%29=4%:%
+%:%30=5%:%
+%:%39=7%:%
+%:%41=9%:%
+%:%42=9%:%
+%:%43=10%:%
+%:%44=11%:%
+%:%45=12%:%
+%:%46=12%:%
+%:%47=13%:%
+%:%48=14%:%
+%:%55=15%:%
+%:%56=15%:%
+%:%57=16%:%
+%:%58=16%:%
+%:%59=17%:%
+%:%60=17%:%
+%:%61=18%:%
+%:%62=18%:%
+%:%63=19%:%
+%:%64=19%:%
+%:%65=20%:%
+%:%66=20%:%
+%:%67=20%:%
+%:%68=21%:%
+%:%69=21%:%
+%:%70=22%:%
+%:%71=22%:%
+%:%72=23%:%
+%:%73=23%:%
+%:%74=24%:%
+%:%75=24%:%
+%:%76=24%:%
+%:%77=24%:%
+%:%78=25%:%
+%:%84=25%:%
+%:%89=26%:%
+%:%94=27%:%

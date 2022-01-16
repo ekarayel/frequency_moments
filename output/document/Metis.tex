@@ -1,0 +1,300 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Metis}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{Metis Proof Method%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Metis\isanewline
+\isakeyword{imports}\ ATP\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+%
+\isatagML
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}{\isachartilde}{\kern0pt}{\isachartilde}{\kern0pt}{\isacharslash}{\kern0pt}src{\isacharslash}{\kern0pt}Tools{\isacharslash}{\kern0pt}Metis{\isacharslash}{\kern0pt}metis{\isachardot}{\kern0pt}ML{\isacartoucheclose}%
+\endisatagML
+{\isafoldML}%
+%
+\isadelimML
+%
+\endisadelimML
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Literal selection and lambda-lifting helpers%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+\isacommand{definition}\isamarkupfalse%
+\ select\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}select\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymlambda}x{\isachardot}{\kern0pt}\ x{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ not{\isacharunderscore}{\kern0pt}atomize{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isasymnot}\ A\ {\isasymLongrightarrow}\ False{\isacharparenright}{\kern0pt}\ {\isasymequiv}\ Trueprop\ A{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}cut{\isacharunderscore}{\kern0pt}tac\ atomize{\isacharunderscore}{\kern0pt}not\ {\isacharbrackleft}{\kern0pt}of\ {\isachardoublequoteopen}{\isasymnot}\ A{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ simp%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ atomize{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}select{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}A\ {\isasymLongrightarrow}\ select\ False{\isacharparenright}{\kern0pt}\ {\isasymequiv}\ Trueprop\ {\isacharparenleft}{\kern0pt}{\isasymnot}\ A{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ select{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ atomize{\isacharunderscore}{\kern0pt}not{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ not{\isacharunderscore}{\kern0pt}atomize{\isacharunderscore}{\kern0pt}select{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isasymnot}\ A\ {\isasymLongrightarrow}\ select\ False{\isacharparenright}{\kern0pt}\ {\isasymequiv}\ Trueprop\ A{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ select{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}rule\ not{\isacharunderscore}{\kern0pt}atomize{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ select{\isacharunderscore}{\kern0pt}FalseI{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}False\ {\isasymLongrightarrow}\ select\ False{\isachardoublequoteclose}%
+\isadelimproof
+\ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ simp%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ lambda\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}lambda\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymlambda}x{\isachardot}{\kern0pt}\ x{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ eq{\isacharunderscore}{\kern0pt}lambdaI{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}x\ {\isasymequiv}\ y\ {\isasymLongrightarrow}\ x\ {\isasymequiv}\ lambda\ y{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ lambda{\isacharunderscore}{\kern0pt}def\ \isacommand{by}\isamarkupfalse%
+\ assumption%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsubsection{Metis package%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimML
+%
+\endisadelimML
+%
+\isatagML
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Metis{\isacharslash}{\kern0pt}metis{\isacharunderscore}{\kern0pt}generate{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Metis{\isacharslash}{\kern0pt}metis{\isacharunderscore}{\kern0pt}reconstruct{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Metis{\isacharslash}{\kern0pt}metis{\isacharunderscore}{\kern0pt}tactic{\isachardot}{\kern0pt}ML{\isacartoucheclose}%
+\endisatagML
+{\isafoldML}%
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+\isanewline
+\isacommand{hide{\isacharunderscore}{\kern0pt}const}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}\isakeyword{open}{\isacharparenright}{\kern0pt}\ select\ fFalse\ fTrue\ fNot\ fComp\ fconj\ fdisj\ fimplies\ fAll\ fEx\ fequal\ lambda\isanewline
+\isacommand{hide{\isacharunderscore}{\kern0pt}fact}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}\isakeyword{open}{\isacharparenright}{\kern0pt}\ select{\isacharunderscore}{\kern0pt}def\ not{\isacharunderscore}{\kern0pt}atomize\ atomize{\isacharunderscore}{\kern0pt}not{\isacharunderscore}{\kern0pt}select\ not{\isacharunderscore}{\kern0pt}atomize{\isacharunderscore}{\kern0pt}select\ select{\isacharunderscore}{\kern0pt}FalseI\isanewline
+\ \ fFalse{\isacharunderscore}{\kern0pt}def\ fTrue{\isacharunderscore}{\kern0pt}def\ fNot{\isacharunderscore}{\kern0pt}def\ fconj{\isacharunderscore}{\kern0pt}def\ fdisj{\isacharunderscore}{\kern0pt}def\ fimplies{\isacharunderscore}{\kern0pt}def\ fAll{\isacharunderscore}{\kern0pt}def\ fEx{\isacharunderscore}{\kern0pt}def\ fequal{\isacharunderscore}{\kern0pt}def\isanewline
+\ \ fTrue{\isacharunderscore}{\kern0pt}ne{\isacharunderscore}{\kern0pt}fFalse\ fNot{\isacharunderscore}{\kern0pt}table\ fconj{\isacharunderscore}{\kern0pt}table\ fdisj{\isacharunderscore}{\kern0pt}table\ fimplies{\isacharunderscore}{\kern0pt}table\ fAll{\isacharunderscore}{\kern0pt}table\ fEx{\isacharunderscore}{\kern0pt}table\isanewline
+\ \ fequal{\isacharunderscore}{\kern0pt}table\ fAll{\isacharunderscore}{\kern0pt}table\ fEx{\isacharunderscore}{\kern0pt}table\ fNot{\isacharunderscore}{\kern0pt}law\ fComp{\isacharunderscore}{\kern0pt}law\ fconj{\isacharunderscore}{\kern0pt}laws\ fdisj{\isacharunderscore}{\kern0pt}laws\ fimplies{\isacharunderscore}{\kern0pt}laws\isanewline
+\ \ fequal{\isacharunderscore}{\kern0pt}laws\ fAll{\isacharunderscore}{\kern0pt}law\ fEx{\isacharunderscore}{\kern0pt}law\ lambda{\isacharunderscore}{\kern0pt}def\ eq{\isacharunderscore}{\kern0pt}lambdaI\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=Metis.tex%:%
+%:%11=7%:%
+%:%27=9%:%
+%:%28=9%:%
+%:%29=10%:%
+%:%30=11%:%
+%:%35=11%:%
+%:%40=12%:%
+%:%45=13%:%
+%:%46=13%:%
+%:%60=16%:%
+%:%70=18%:%
+%:%71=18%:%
+%:%72=19%:%
+%:%73=20%:%
+%:%74=21%:%
+%:%75=21%:%
+%:%82=22%:%
+%:%83=22%:%
+%:%88=22%:%
+%:%91=23%:%
+%:%92=24%:%
+%:%93=24%:%
+%:%100=25%:%
+%:%101=25%:%
+%:%102=25%:%
+%:%107=25%:%
+%:%110=26%:%
+%:%111=27%:%
+%:%112=27%:%
+%:%119=28%:%
+%:%120=28%:%
+%:%121=28%:%
+%:%126=28%:%
+%:%129=29%:%
+%:%130=30%:%
+%:%131=30%:%
+%:%133=30%:%
+%:%137=30%:%
+%:%138=30%:%
+%:%145=30%:%
+%:%146=31%:%
+%:%147=32%:%
+%:%148=32%:%
+%:%149=33%:%
+%:%150=34%:%
+%:%151=35%:%
+%:%152=35%:%
+%:%159=36%:%
+%:%160=36%:%
+%:%161=36%:%
+%:%175=39%:%
+%:%191=41%:%
+%:%192=41%:%
+%:%193=42%:%
+%:%194=42%:%
+%:%195=43%:%
+%:%196=43%:%
+%:%201=43%:%
+%:%204=44%:%
+%:%205=45%:%
+%:%206=45%:%
+%:%207=46%:%
+%:%208=46%:%
+%:%209=47%:%
+%:%210=48%:%
+%:%211=49%:%
+%:%212=50%:%
+%:%215=51%:%
+%:%220=52%:%

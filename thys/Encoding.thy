@@ -106,7 +106,7 @@ proof -
   thus ?thesis by (simp add:is_encoding_def)
 qed
 
-fun bit_count where
+fun bit_count :: "bool list option \<Rightarrow> ereal" where
   "bit_count None = \<infinity>" |
   "bit_count (Some x) = ereal (length x)"
 
@@ -364,8 +364,8 @@ lemma encoding_compose:
 
 text \<open>Encoding for extensional maps defined on an enumerable set.\<close>
 
-definition encode_extensional :: "'a list \<Rightarrow> 'b encoding \<Rightarrow> ('a \<Rightarrow> 'b) encoding"  (infixr "\<rightarrow>\<^sub>S" 65)  where
-  "encode_extensional xs e f = (
+definition fun\<^sub>S :: "'a list \<Rightarrow> 'b encoding \<Rightarrow> ('a \<Rightarrow> 'b) encoding"  (infixr "\<rightarrow>\<^sub>S" 65)  where
+  "fun\<^sub>S xs e f = (
     if f \<in> extensional (set xs) then 
       list\<^sub>S e (map f xs)
     else
@@ -374,7 +374,7 @@ definition encode_extensional :: "'a list \<Rightarrow> 'b encoding \<Rightarrow
 lemma encode_extensional:
   assumes "is_encoding e"
   shows "is_encoding (\<lambda>x. (xs \<rightarrow>\<^sub>S e) x)"
-  apply (simp add:encode_extensional_def)
+  apply (simp add:fun\<^sub>S_def)
   apply (rule encoding_compose[where f="list\<^sub>S e"])
    apply (metis list_encoding assms)
   apply (rule inj_onI, simp)
@@ -384,7 +384,7 @@ lemma extensional_bit_count:
   assumes "f \<in> extensional (set xs)"
   shows "bit_count ((xs \<rightarrow>\<^sub>S e) f) = (\<Sum>x \<leftarrow> xs. bit_count (e (f x)) + 1) + 1"
   using assms 
-  by (simp add:encode_extensional_def list_bit_count comp_def)
+  by (simp add:fun\<^sub>S_def list_bit_count comp_def)
 
 text \<open>Encoding for ordered sets.\<close>
 

@@ -1,0 +1,231 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Ctr{\isacharunderscore}{\kern0pt}Sugar}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isatagdocument
+%
+\isamarkupsection{Wrapping Existing Freely Generated Type's Constructors%
+}
+\isamarkuptrue%
+%
+\endisatagdocument
+{\isafolddocument}%
+%
+\isadelimdocument
+%
+\endisadelimdocument
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Ctr{\isacharunderscore}{\kern0pt}Sugar\isanewline
+\isakeyword{imports}\ HOL\isanewline
+\isakeyword{keywords}\isanewline
+\ \ {\isachardoublequoteopen}print{\isacharunderscore}{\kern0pt}case{\isacharunderscore}{\kern0pt}translations{\isachardoublequoteclose}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ diag\ \isakeyword{and}\isanewline
+\ \ {\isachardoublequoteopen}free{\isacharunderscore}{\kern0pt}constructors{\isachardoublequoteclose}\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ thy{\isacharunderscore}{\kern0pt}goal\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isacommand{consts}\isamarkupfalse%
+\isanewline
+\ \ case{\isacharunderscore}{\kern0pt}guard\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}bool\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isacharparenright}{\kern0pt}\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\isanewline
+\ \ case{\isacharunderscore}{\kern0pt}nil\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\isanewline
+\ \ case{\isacharunderscore}{\kern0pt}cons\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isacharparenright}{\kern0pt}\ {\isasymRightarrow}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isacharparenright}{\kern0pt}\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\isanewline
+\ \ case{\isacharunderscore}{\kern0pt}elem\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\isanewline
+\ \ case{\isacharunderscore}{\kern0pt}abs\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}c\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isacharparenright}{\kern0pt}\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}b{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{declare}\isamarkupfalse%
+\ {\isacharbrackleft}{\kern0pt}{\isacharbrackleft}{\kern0pt}coercion{\isacharunderscore}{\kern0pt}args\ case{\isacharunderscore}{\kern0pt}guard\ {\isacharminus}{\kern0pt}\ {\isacharplus}{\kern0pt}\ {\isacharminus}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}\isanewline
+\isacommand{declare}\isamarkupfalse%
+\ {\isacharbrackleft}{\kern0pt}{\isacharbrackleft}{\kern0pt}coercion{\isacharunderscore}{\kern0pt}args\ case{\isacharunderscore}{\kern0pt}cons\ {\isacharminus}{\kern0pt}\ {\isacharminus}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}\isanewline
+\isacommand{declare}\isamarkupfalse%
+\ {\isacharbrackleft}{\kern0pt}{\isacharbrackleft}{\kern0pt}coercion{\isacharunderscore}{\kern0pt}args\ case{\isacharunderscore}{\kern0pt}abs\ {\isacharminus}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}\isanewline
+\isacommand{declare}\isamarkupfalse%
+\ {\isacharbrackleft}{\kern0pt}{\isacharbrackleft}{\kern0pt}coercion{\isacharunderscore}{\kern0pt}args\ case{\isacharunderscore}{\kern0pt}elem\ {\isacharminus}{\kern0pt}\ {\isacharplus}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharbrackright}{\kern0pt}\isanewline
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+%
+\isatagML
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Ctr{\isacharunderscore}{\kern0pt}Sugar{\isacharslash}{\kern0pt}case{\isacharunderscore}{\kern0pt}translation{\isachardot}{\kern0pt}ML{\isacartoucheclose}%
+\endisatagML
+{\isafoldML}%
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ iffI{\isacharunderscore}{\kern0pt}np{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymlbrakk}x\ {\isasymLongrightarrow}\ {\isasymnot}\ y{\isacharsemicolon}{\kern0pt}\ {\isasymnot}\ x\ {\isasymLongrightarrow}\ y{\isasymrbrakk}\ {\isasymLongrightarrow}\ {\isasymnot}\ x\ {\isasymlongleftrightarrow}\ y{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}{\kern0pt}erule\ iffI{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}erule\ contrapos{\isacharunderscore}{\kern0pt}pn{\isacharparenright}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{lemma}\isamarkupfalse%
+\ iff{\isacharunderscore}{\kern0pt}contradict{\isacharcolon}{\kern0pt}\isanewline
+\ \ {\isachardoublequoteopen}{\isasymnot}\ P\ {\isasymLongrightarrow}\ P\ {\isasymlongleftrightarrow}\ Q\ {\isasymLongrightarrow}\ Q\ {\isasymLongrightarrow}\ R{\isachardoublequoteclose}\isanewline
+\ \ {\isachardoublequoteopen}{\isasymnot}\ Q\ {\isasymLongrightarrow}\ P\ {\isasymlongleftrightarrow}\ Q\ {\isasymLongrightarrow}\ P\ {\isasymLongrightarrow}\ R{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{by}\isamarkupfalse%
+\ blast{\isacharplus}{\kern0pt}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+%
+\isadelimML
+\isanewline
+%
+\endisadelimML
+%
+\isatagML
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Ctr{\isacharunderscore}{\kern0pt}Sugar{\isacharslash}{\kern0pt}ctr{\isacharunderscore}{\kern0pt}sugar{\isacharunderscore}{\kern0pt}util{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Ctr{\isacharunderscore}{\kern0pt}Sugar{\isacharslash}{\kern0pt}ctr{\isacharunderscore}{\kern0pt}sugar{\isacharunderscore}{\kern0pt}tactics{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Ctr{\isacharunderscore}{\kern0pt}Sugar{\isacharslash}{\kern0pt}ctr{\isacharunderscore}{\kern0pt}sugar{\isacharunderscore}{\kern0pt}code{\isachardot}{\kern0pt}ML{\isacartoucheclose}\isanewline
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}Ctr{\isacharunderscore}{\kern0pt}Sugar{\isacharslash}{\kern0pt}ctr{\isacharunderscore}{\kern0pt}sugar{\isachardot}{\kern0pt}ML{\isacartoucheclose}%
+\endisatagML
+{\isafoldML}%
+%
+\isadelimML
+%
+\endisadelimML
+%
+\begin{isamarkuptext}%
+Coinduction method that avoids some boilerplate compared with coinduct.%
+\end{isamarkuptext}\isamarkuptrue%
+%
+\isadelimML
+%
+\endisadelimML
+%
+\isatagML
+\isacommand{ML{\isacharunderscore}{\kern0pt}file}\isamarkupfalse%
+\ {\isacartoucheopen}Tools{\isacharslash}{\kern0pt}coinduction{\isachardot}{\kern0pt}ML{\isacartoucheclose}%
+\endisatagML
+{\isafoldML}%
+%
+\isadelimML
+%
+\endisadelimML
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\end{isabellebody}%
+\endinput
+%:%file=Ctr_Sugar.tex%:%
+%:%11=9%:%
+%:%27=11%:%
+%:%28=11%:%
+%:%29=12%:%
+%:%30=13%:%
+%:%31=14%:%
+%:%32=15%:%
+%:%33=16%:%
+%:%38=16%:%
+%:%41=17%:%
+%:%42=18%:%
+%:%43=18%:%
+%:%44=19%:%
+%:%45=20%:%
+%:%46=21%:%
+%:%47=22%:%
+%:%48=23%:%
+%:%49=24%:%
+%:%50=25%:%
+%:%51=25%:%
+%:%52=26%:%
+%:%53=26%:%
+%:%54=27%:%
+%:%55=27%:%
+%:%56=28%:%
+%:%57=28%:%
+%:%60=29%:%
+%:%65=30%:%
+%:%66=30%:%
+%:%71=30%:%
+%:%74=31%:%
+%:%75=32%:%
+%:%76=32%:%
+%:%79=33%:%
+%:%83=33%:%
+%:%84=33%:%
+%:%89=33%:%
+%:%92=34%:%
+%:%93=35%:%
+%:%94=35%:%
+%:%95=36%:%
+%:%96=37%:%
+%:%99=38%:%
+%:%103=38%:%
+%:%104=38%:%
+%:%109=38%:%
+%:%114=39%:%
+%:%119=40%:%
+%:%120=40%:%
+%:%121=41%:%
+%:%122=41%:%
+%:%123=42%:%
+%:%124=42%:%
+%:%125=43%:%
+%:%126=43%:%
+%:%135=45%:%
+%:%143=47%:%
+%:%144=47%:%
+%:%151=47%:%
+%:%154=48%:%
+%:%159=49%:%
