@@ -31,9 +31,8 @@ fun f2_update :: "nat \<Rightarrow> f2_state \<Rightarrow> f2_state pmf" where
 
 fun f2_result :: "f2_state \<Rightarrow> rat pmf" where
   "f2_result (s\<^sub>1, s\<^sub>2, p, h, sketch) = 
-    return_pmf (median (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. 
-      (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . (rat_of_int (sketch (i\<^sub>1, i\<^sub>2)))\<^sup>2) / (((rat_of_nat p)\<^sup>2-1) * rat_of_nat s\<^sub>1)) s\<^sub>2
-    )"
+    return_pmf (median s\<^sub>2 (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}. 
+      (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . (rat_of_int (sketch (i\<^sub>1, i\<^sub>2)))\<^sup>2) / (((rat_of_nat p)\<^sup>2-1) * rat_of_nat s\<^sub>1)))"
 
 lemma f2_hash_exp:
   assumes "Factorial_Ring.prime p"
@@ -388,11 +387,10 @@ proof -
   have f2_result_conv: "f2_result = (\<lambda>x. f2_result (s\<^sub>1_from x, s\<^sub>2_from x, p_from x, h_from x, sketch_from x))"
     by (simp add:split_f2_space[symmetric] del:f2_result.simps)
 
-  define f where "f = (\<lambda>x. median
+  define f where "f = (\<lambda>x. median s\<^sub>2
            (\<lambda>i\<in>{0..<s\<^sub>2}.
                (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. (rat_of_int (sum_list (map (f2_hash p (x (i\<^sub>1, i))) as)))\<^sup>2) /
-               (((rat_of_nat p)\<^sup>2 - 1) * rat_of_nat s\<^sub>1))
-           s\<^sub>2)"
+               (((rat_of_nat p)\<^sup>2 - 1) * rat_of_nat s\<^sub>1)))"
 
   define f3 where 
     "f3 = (\<lambda>x (i\<^sub>1::nat) (i\<^sub>2::nat). (real_of_int (sum_list (map (f2_hash p (x (i\<^sub>1, i\<^sub>2))) as)))\<^sup>2)"
@@ -466,7 +464,7 @@ proof -
       by simp
   qed
 
-  define f' where "f' = (\<lambda>x. median (f2 x) s\<^sub>2)"
+  define f' where "f' = (\<lambda>x. median s\<^sub>2 (f2 x))"
   have real_f: "\<And>x. real_of_rat (f x) = f' x"
     using s2_nonzero apply (simp add:f'_def f2_def f3_def f_def median_rat median_restrict cong:restrict_cong)
     by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
@@ -563,7 +561,7 @@ fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow
     2 * log 2 (4 + 2 * real n) +
     s\<^sub>1 * s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1 )))"
 
-definition encode_state where
+definition encode_state :: "f2_state \<Rightarrow> bool list option" where
   "encode_state = 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 

@@ -197,6 +197,36 @@ proof -
   finally show ?thesis by simp
 qed
 
+lemma pmf_mono_2:
+  assumes "\<And>\<omega>. \<omega> \<in> set_pmf M \<Longrightarrow> P \<omega> \<Longrightarrow> Q \<omega>"
+  shows "\<P>(\<omega> in measure_pmf M. P \<omega>) \<le> \<P>(\<omega> in measure_pmf M. Q \<omega>)"
+  apply (rule pmf_mono_1)
+  using assms by simp
+
+lemma pmf_add:
+  assumes  "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q \<or> x \<in> R"
+  shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q + measure (measure_pmf \<Omega>) R"
+proof -
+  have "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) (Q \<union> R)"
+    apply (rule pmf_mono_1)
+    using assms by blast
+  also have "... \<le> measure (measure_pmf \<Omega>) Q + measure (measure_pmf \<Omega>) R"
+    by (rule measure_subadditive, simp+)
+  finally show ?thesis by simp
+qed
+
+lemma pmf_add_2:
+  assumes "\<P>(\<omega> in measure_pmf \<Omega>. P \<omega>) \<le> r1"
+  assumes "\<P>(\<omega> in measure_pmf \<Omega>. Q \<omega>) \<le> r2"
+  shows "\<P>(\<omega> in measure_pmf \<Omega>. P \<omega> \<or> Q \<omega>) \<le> r1 + r2"
+proof -
+  have "\<P>(\<omega> in measure_pmf \<Omega>. P \<omega> \<or> Q \<omega>) \<le> \<P>(\<omega> in measure_pmf \<Omega>. P \<omega>) + \<P>(\<omega> in measure_pmf \<Omega>. Q \<omega>)"
+    by (rule pmf_add, simp)
+  also have "... \<le> r1 + r2"
+    by (rule add_mono [OF assms])
+  finally show ?thesis by simp
+qed
+
 definition (in prob_space) covariance where 
   "covariance f g = expectation (\<lambda>\<omega>. (f \<omega> - expectation f) * (g \<omega> - expectation g))"
 

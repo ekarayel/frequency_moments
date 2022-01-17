@@ -339,12 +339,12 @@ method.%
 \isanewline
 \isacommand{definition}\isamarkupfalse%
 \ median\ \isakeyword{where}\isanewline
-\ \ {\isachardoublequoteopen}median\ f\ n\ {\isacharequal}{\kern0pt}\ \ sort\ {\isacharparenleft}{\kern0pt}map\ f\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharbang}{\kern0pt}\ {\isacharparenleft}{\kern0pt}n\ div\ {\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ {\isachardoublequoteopen}median\ n\ f\ {\isacharequal}{\kern0pt}\ \ sort\ {\isacharparenleft}{\kern0pt}map\ f\ {\isacharbrackleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isacharbrackright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isacharbang}{\kern0pt}\ {\isacharparenleft}{\kern0pt}n\ div\ {\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \isanewline
 \isacommand{lemma}\isamarkupfalse%
 \ median{\isacharunderscore}{\kern0pt}alt{\isacharunderscore}{\kern0pt}def{\isacharcolon}{\kern0pt}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}n\ {\isachargreater}{\kern0pt}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ f\ n\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}sort{\isacharunderscore}{\kern0pt}map\ f\ n{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}n\ div\ {\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ n\ f\ {\isacharequal}{\kern0pt}\ {\isacharparenleft}{\kern0pt}sort{\isacharunderscore}{\kern0pt}map\ f\ n{\isacharparenright}{\kern0pt}\ {\isacharparenleft}{\kern0pt}n\ div\ {\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 %
 \isadelimproof
 \ \ %
@@ -800,7 +800,7 @@ method.%
 \ median{\isacharunderscore}{\kern0pt}est{\isacharcolon}{\kern0pt}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}interval\ I{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isadigit{2}}{\isacharasterisk}{\kern0pt}card\ {\isacharbraceleft}{\kern0pt}k{\isachardot}{\kern0pt}\ k\ {\isacharless}{\kern0pt}\ n\ {\isasymand}\ f\ k\ {\isasymin}\ I{\isacharbraceright}{\kern0pt}\ {\isachargreater}{\kern0pt}\ n{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ f\ n\ {\isasymin}\ I{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ n\ f\ {\isasymin}\ I{\isachardoublequoteclose}\isanewline
 %
 \isadelimproof
 %
@@ -846,7 +846,7 @@ method.%
 \ \ \isakeyword{fixes}\ X\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}{\kern0pt}a\ {\isasymRightarrow}\ {\isacharparenleft}{\kern0pt}{\isacharprime}{\kern0pt}b\ {\isacharcolon}{\kern0pt}{\isacharcolon}{\kern0pt}\ {\isacharbraceleft}{\kern0pt}linorder{\isacharcomma}{\kern0pt}\ topological{\isacharunderscore}{\kern0pt}space{\isacharcomma}{\kern0pt}\ linorder{\isacharunderscore}{\kern0pt}topology{\isacharcomma}{\kern0pt}\ second{\isacharunderscore}{\kern0pt}countable{\isacharunderscore}{\kern0pt}topology{\isacharbraceright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}n\ {\isasymge}\ {\isadigit{1}}{\isachardoublequoteclose}\ \isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}{\kern0pt}\ i\ {\isacharless}{\kern0pt}\ n\ {\isasymLongrightarrow}\ X\ i\ {\isasymin}\ measurable\ M\ borel{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isasymlambda}x{\isachardot}{\kern0pt}\ median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ x{\isacharparenright}{\kern0pt}\ n{\isacharparenright}{\kern0pt}\ {\isasymin}\ measurable\ M\ borel{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\kern0pt}{\isasymlambda}x{\isachardot}{\kern0pt}\ median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ x{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isasymin}\ measurable\ M\ borel{\isachardoublequoteclose}\isanewline
 %
 \isadelimproof
 %
@@ -993,7 +993,7 @@ method.%
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}indep{\isacharunderscore}{\kern0pt}vars\ {\isacharparenleft}{\kern0pt}{\isasymlambda}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}\ borel{\isacharparenright}{\kern0pt}\ X\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}n\ {\isasymge}\ {\isacharminus}{\kern0pt}\ ln\ {\isasymepsilon}\ {\isacharslash}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isadigit{2}}\ {\isacharasterisk}{\kern0pt}\ {\isasymalpha}\isactrlsup {\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}{\kern0pt}\ i\ {\isacharless}{\kern0pt}\ n\ {\isasymLongrightarrow}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}\ {\isasymin}\ I{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isadigit{1}}{\isacharslash}{\kern0pt}{\isadigit{2}}{\isacharplus}{\kern0pt}{\isasymalpha}{\isachardoublequoteclose}\ \isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ n\ {\isasymin}\ I{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isadigit{1}}{\isacharminus}{\kern0pt}{\isasymepsilon}{\isachardoublequoteclose}\ {\isacharparenleft}{\kern0pt}\isakeyword{is}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ {\isacharquery}{\kern0pt}lhs\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isacharquery}{\kern0pt}C{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymin}\ I{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isadigit{1}}{\isacharminus}{\kern0pt}{\isasymepsilon}{\isachardoublequoteclose}\ {\isacharparenleft}{\kern0pt}\isakeyword{is}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ {\isacharquery}{\kern0pt}lhs\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isacharquery}{\kern0pt}C{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isanewline
 %
 \isadelimproof
 %
@@ -1106,7 +1106,7 @@ method.%
 \ {\isacharparenleft}{\kern0pt}simp\ add{\isacharcolon}{\kern0pt}prob{\isacharunderscore}{\kern0pt}space{\isacharunderscore}{\kern0pt}axioms\ indep{\isacharunderscore}{\kern0pt}interval{\isacharunderscore}{\kern0pt}bounded{\isacharunderscore}{\kern0pt}random{\isacharunderscore}{\kern0pt}variables{\isacharunderscore}{\kern0pt}axioms{\isacharunderscore}{\kern0pt}def\ Y{\isacharunderscore}{\kern0pt}def\ Y{\isacharunderscore}{\kern0pt}indep{\isacharparenright}{\kern0pt}\isanewline
 \isanewline
 \ \ \isacommand{have}\isamarkupfalse%
-\ c{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymAnd}{\isasymomega}{\isachardot}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymSum}i\ {\isacharequal}{\kern0pt}\ {\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isachardot}{\kern0pt}\ Y\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isachargreater}{\kern0pt}\ n{\isacharslash}{\kern0pt}{\isadigit{2}}\ {\isasymLongrightarrow}\ median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ n\ {\isasymin}\ I{\isachardoublequoteclose}\isanewline
+\ c{\isacharcolon}{\kern0pt}\ {\isachardoublequoteopen}{\isasymAnd}{\isasymomega}{\isachardot}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isasymSum}i\ {\isacharequal}{\kern0pt}\ {\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isachardot}{\kern0pt}\ Y\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isachargreater}{\kern0pt}\ n{\isacharslash}{\kern0pt}{\isadigit{2}}\ {\isasymLongrightarrow}\ median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymin}\ I{\isachardoublequoteclose}\isanewline
 \ \ \isacommand{proof}\isamarkupfalse%
 \ {\isacharminus}{\kern0pt}\isanewline
 \ \ \ \ \isacommand{fix}\isamarkupfalse%
@@ -1131,7 +1131,7 @@ method.%
 \ {\isachardoublequoteopen}{\isadigit{2}}\ {\isacharasterisk}{\kern0pt}\ card\ {\isacharbraceleft}{\kern0pt}i{\isachardot}{\kern0pt}\ i\ {\isacharless}{\kern0pt}\ n\ {\isasymand}\ X\ i\ {\isasymomega}\ {\isasymin}\ I{\isacharbraceright}{\kern0pt}\ {\isachargreater}{\kern0pt}\ n{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
 \ simp\isanewline
 \ \ \ \ \isacommand{thus}\isamarkupfalse%
-\ {\isachardoublequoteopen}median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ n\ {\isasymin}\ I{\isachardoublequoteclose}\isanewline
+\ {\isachardoublequoteopen}median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymin}\ I{\isachardoublequoteclose}\isanewline
 \ \ \ \ \ \ \isacommand{using}\isamarkupfalse%
 \ median{\isacharunderscore}{\kern0pt}est{\isacharbrackleft}{\kern0pt}OF\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharparenright}{\kern0pt}{\isacharbrackright}{\kern0pt}\ \isacommand{by}\isamarkupfalse%
 \ simp\isanewline
@@ -1189,7 +1189,7 @@ method.%
 \ {\isacharparenleft}{\kern0pt}rule\ order{\isacharunderscore}{\kern0pt}antisym{\isacharcomma}{\kern0pt}\ rule\ subsetI{\isacharcomma}{\kern0pt}\ simp\ add{\isacharcolon}{\kern0pt}not{\isacharunderscore}{\kern0pt}le{\isacharcomma}{\kern0pt}\ rule\ subsetI{\isacharcomma}{\kern0pt}\ simp\ add{\isacharcolon}{\kern0pt}not{\isacharunderscore}{\kern0pt}le{\isacharparenright}{\kern0pt}\isanewline
 \ \ \isacommand{also}\isamarkupfalse%
 \ \isacommand{have}\isamarkupfalse%
-\ {\isachardoublequoteopen}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}\ {\isasymle}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ n\ {\isasymin}\ I{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ {\isachardoublequoteopen}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}\ {\isasymle}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymin}\ I{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isacommand{apply}\isamarkupfalse%
 \ {\isacharparenleft}{\kern0pt}rule\ finite{\isacharunderscore}{\kern0pt}measure{\isacharunderscore}{\kern0pt}mono{\isacharparenright}{\kern0pt}\isanewline
 \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
@@ -1227,7 +1227,7 @@ method.%
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}indep{\isacharunderscore}{\kern0pt}vars\ {\isacharparenleft}{\kern0pt}{\isasymlambda}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}\ borel{\isacharparenright}{\kern0pt}\ X\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}n\ {\isasymge}\ {\isacharminus}{\kern0pt}\ ln\ {\isasymepsilon}\ {\isacharslash}{\kern0pt}\ {\isacharparenleft}{\kern0pt}{\isadigit{2}}\ {\isacharasterisk}{\kern0pt}\ {\isasymalpha}\isactrlsup {\isadigit{2}}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}{\kern0pt}\ i\ {\isacharless}{\kern0pt}\ n\ {\isasymLongrightarrow}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}a{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}b{\isacharbraceright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isadigit{1}}{\isacharslash}{\kern0pt}{\isadigit{2}}{\isacharplus}{\kern0pt}{\isasymalpha}{\isachardoublequoteclose}\ \isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ n\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}a{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}b{\isacharbraceright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isadigit{1}}{\isacharminus}{\kern0pt}{\isasymepsilon}{\isachardoublequoteclose}\ {\isacharparenleft}{\kern0pt}\isakeyword{is}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ {\isacharquery}{\kern0pt}lhs\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isacharquery}{\kern0pt}C{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}a{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}b{\isacharbraceright}{\kern0pt}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isadigit{1}}{\isacharminus}{\kern0pt}{\isasymepsilon}{\isachardoublequoteclose}\ {\isacharparenleft}{\kern0pt}\isakeyword{is}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ {\isacharquery}{\kern0pt}lhs\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isacharquery}{\kern0pt}C{\isachardoublequoteclose}{\isacharparenright}{\kern0pt}\ \isanewline
 %
 \isadelimproof
 \ \ %
@@ -1254,7 +1254,7 @@ method.%
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}indep{\isacharunderscore}{\kern0pt}vars\ {\isacharparenleft}{\kern0pt}{\isasymlambda}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}\ borel{\isacharparenright}{\kern0pt}\ X\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isacharbraceright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}n\ {\isasymge}\ {\isacharminus}{\kern0pt}{\isadigit{1}}{\isadigit{8}}\ {\isacharasterisk}{\kern0pt}\ ln\ {\isasymepsilon}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}{\kern0pt}\ i\ {\isacharless}{\kern0pt}\ n\ {\isasymLongrightarrow}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ abs\ {\isacharparenleft}{\kern0pt}X\ i\ {\isasymomega}\ {\isacharminus}{\kern0pt}\ {\isasymmu}{\isacharparenright}{\kern0pt}\ {\isachargreater}{\kern0pt}\ {\isasymdelta}{\isacharparenright}{\kern0pt}\ {\isasymle}\ {\isadigit{1}}{\isacharslash}{\kern0pt}{\isadigit{3}}{\isachardoublequoteclose}\ \isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ abs\ {\isacharparenleft}{\kern0pt}median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ n\ {\isacharminus}{\kern0pt}\ {\isasymmu}{\isacharparenright}{\kern0pt}\ {\isasymle}\ {\isasymdelta}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isadigit{1}}{\isacharminus}{\kern0pt}{\isasymepsilon}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ abs\ {\isacharparenleft}{\kern0pt}median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isacharminus}{\kern0pt}\ {\isasymmu}{\isacharparenright}{\kern0pt}\ {\isasymle}\ {\isasymdelta}{\isacharparenright}{\kern0pt}\ {\isasymge}\ {\isadigit{1}}{\isacharminus}{\kern0pt}{\isasymepsilon}{\isachardoublequoteclose}\isanewline
 %
 \isadelimproof
 %
@@ -1292,7 +1292,7 @@ method.%
 \ simp\isanewline
 \ \ \isanewline
 \ \ \isacommand{have}\isamarkupfalse%
-\ {\isachardoublequoteopen}{\isadigit{1}}{\isacharminus}{\kern0pt}{\isasymepsilon}\ {\isasymle}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ n\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}{\isasymmu}{\isacharminus}{\kern0pt}{\isasymdelta}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isasymmu}{\isacharplus}{\kern0pt}{\isasymdelta}{\isacharbraceright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ {\isachardoublequoteopen}{\isadigit{1}}{\isacharminus}{\kern0pt}{\isasymepsilon}\ {\isasymle}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}{\isasymmu}{\isacharminus}{\kern0pt}{\isasymdelta}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isasymmu}{\isacharplus}{\kern0pt}{\isasymdelta}{\isacharbraceright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isacommand{apply}\isamarkupfalse%
 \ {\isacharparenleft}{\kern0pt}rule\ median{\isacharunderscore}{\kern0pt}bound{\isacharunderscore}{\kern0pt}{\isadigit{1}}{\isacharbrackleft}{\kern0pt}OF\ {\isacharunderscore}{\kern0pt}\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharparenright}{\kern0pt}\ assms{\isacharparenleft}{\kern0pt}{\isadigit{2}}{\isacharparenright}{\kern0pt}{\isacharcomma}{\kern0pt}\ \isakeyword{where}\ {\isasymalpha}{\isacharequal}{\kern0pt}{\isachardoublequoteopen}{\isadigit{1}}{\isacharslash}{\kern0pt}{\isadigit{6}}{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}{\isacharcomma}{\kern0pt}\ simp{\isacharparenright}{\kern0pt}\ \isanewline
 \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
@@ -1305,7 +1305,7 @@ method.%
 \ simp\isanewline
 \ \ \isacommand{also}\isamarkupfalse%
 \ \isacommand{have}\isamarkupfalse%
-\ {\isachardoublequoteopen}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}\ {\isacharequal}{\kern0pt}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ abs\ {\isacharparenleft}{\kern0pt}median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ n\ {\isacharminus}{\kern0pt}\ {\isasymmu}{\isacharparenright}{\kern0pt}\ {\isasymle}\ {\isasymdelta}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
+\ {\isachardoublequoteopen}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}\ {\isacharequal}{\kern0pt}\ {\isasymP}{\isacharparenleft}{\kern0pt}{\isasymomega}\ in\ M{\isachardot}{\kern0pt}\ abs\ {\isacharparenleft}{\kern0pt}median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ X\ i\ {\isasymomega}{\isacharparenright}{\kern0pt}\ {\isacharminus}{\kern0pt}\ {\isasymmu}{\isacharparenright}{\kern0pt}\ {\isasymle}\ {\isasymdelta}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isacommand{apply}\isamarkupfalse%
 \ {\isacharparenleft}{\kern0pt}rule\ arg{\isacharunderscore}{\kern0pt}cong{\isadigit{2}}{\isacharbrackleft}{\kern0pt}\isakeyword{where}\ f{\isacharequal}{\kern0pt}{\isachardoublequoteopen}measure{\isachardoublequoteclose}{\isacharbrackright}{\kern0pt}{\isacharcomma}{\kern0pt}\ simp{\isacharparenright}{\kern0pt}\isanewline
 \ \ \ \ \isacommand{apply}\isamarkupfalse%
@@ -1381,7 +1381,7 @@ method.%
 \isacommand{lemma}\isamarkupfalse%
 \ median{\isacharunderscore}{\kern0pt}cong{\isacharcolon}{\kern0pt}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}{\kern0pt}\ i\ {\isacharless}{\kern0pt}\ n\ {\isasymLongrightarrow}\ f\ i\ {\isacharequal}{\kern0pt}\ g\ i{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ f\ n\ {\isacharequal}{\kern0pt}\ median\ g\ n{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ n\ f\ {\isacharequal}{\kern0pt}\ median\ n\ g{\isachardoublequoteclose}\isanewline
 %
 \isadelimproof
 \ \ %
@@ -1409,7 +1409,7 @@ method.%
 \isacommand{lemma}\isamarkupfalse%
 \ median{\isacharunderscore}{\kern0pt}restrict{\isacharcolon}{\kern0pt}\ \isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}n\ {\isachargreater}{\kern0pt}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isacharbraceright}{\kern0pt}{\isachardot}{\kern0pt}f\ i{\isacharparenright}{\kern0pt}\ n\ {\isacharequal}{\kern0pt}\ median\ f\ n{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}n{\isacharbraceright}{\kern0pt}{\isachardot}{\kern0pt}f\ i{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ median\ n\ f{\isachardoublequoteclose}\isanewline
 %
 \isadelimproof
 \ \ %
@@ -1429,7 +1429,7 @@ method.%
 \isacommand{lemma}\isamarkupfalse%
 \ median{\isacharunderscore}{\kern0pt}rat{\isacharcolon}{\kern0pt}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}n\ {\isachargreater}{\kern0pt}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}real{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}rat\ {\isacharparenleft}{\kern0pt}median\ f\ n{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ real{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}rat\ {\isacharparenleft}{\kern0pt}f\ i{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}\ n{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}real{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}rat\ {\isacharparenleft}{\kern0pt}median\ n\ f{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ median\ n\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i{\isachardot}{\kern0pt}\ real{\isacharunderscore}{\kern0pt}of{\isacharunderscore}{\kern0pt}rat\ {\isacharparenleft}{\kern0pt}f\ i{\isacharparenright}{\kern0pt}{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 %
 \isadelimproof
 %
@@ -1469,7 +1469,7 @@ method.%
 \isacommand{lemma}\isamarkupfalse%
 \ median{\isacharunderscore}{\kern0pt}const{\isacharcolon}{\kern0pt}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}k\ {\isachargreater}{\kern0pt}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}k{\isacharbraceright}{\kern0pt}{\isachardot}{\kern0pt}\ a{\isacharparenright}{\kern0pt}\ k\ {\isacharequal}{\kern0pt}\ a{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}median\ k\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}k{\isacharbraceright}{\kern0pt}{\isachardot}{\kern0pt}\ a{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ a{\isachardoublequoteclose}\isanewline
 %
 \isadelimproof
 %
@@ -1487,7 +1487,7 @@ method.%
 \ \ \ \ \isacommand{by}\isamarkupfalse%
 \ {\isacharparenleft}{\kern0pt}subst\ sorted{\isacharunderscore}{\kern0pt}sort{\isacharunderscore}{\kern0pt}id{\isacharbrackleft}{\kern0pt}OF\ b{\isacharbrackright}{\kern0pt}{\isacharcomma}{\kern0pt}\ simp{\isacharparenright}{\kern0pt}\isanewline
 \ \ \isacommand{have}\isamarkupfalse%
-\ {\isachardoublequoteopen}median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}k{\isacharbraceright}{\kern0pt}{\isachardot}{\kern0pt}\ a{\isacharparenright}{\kern0pt}\ k\ {\isacharequal}{\kern0pt}\ median\ {\isacharparenleft}{\kern0pt}{\isasymlambda}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}\ a{\isacharparenright}{\kern0pt}\ k{\isachardoublequoteclose}\isanewline
+\ {\isachardoublequoteopen}median\ k\ {\isacharparenleft}{\kern0pt}{\isasymlambda}i\ {\isasymin}\ {\isacharbraceleft}{\kern0pt}{\isadigit{0}}{\isachardot}{\kern0pt}{\isachardot}{\kern0pt}{\isacharless}{\kern0pt}k{\isacharbraceright}{\kern0pt}{\isachardot}{\kern0pt}\ a{\isacharparenright}{\kern0pt}\ {\isacharequal}{\kern0pt}\ median\ k\ {\isacharparenleft}{\kern0pt}{\isasymlambda}{\isacharunderscore}{\kern0pt}{\isachardot}{\kern0pt}\ a{\isacharparenright}{\kern0pt}{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isacommand{by}\isamarkupfalse%
 \ {\isacharparenleft}{\kern0pt}subst\ median{\isacharunderscore}{\kern0pt}restrict{\isacharbrackleft}{\kern0pt}OF\ assms{\isacharparenleft}{\kern0pt}{\isadigit{1}}{\isacharparenright}{\kern0pt}{\isacharbrackright}{\kern0pt}{\isacharcomma}{\kern0pt}\ simp{\isacharparenright}{\kern0pt}\isanewline
 \ \ \isacommand{also}\isamarkupfalse%

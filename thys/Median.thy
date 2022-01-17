@@ -121,11 +121,11 @@ proof -
 qed
 
 definition median where
-  "median f n =  sort (map f [0..<n]) ! (n div 2)"
+  "median n f =  sort (map f [0..<n]) ! (n div 2)"
 
 lemma median_alt_def:
   assumes "n > 0"
-  shows "median f n = (sort_map f n) (n div 2)"
+  shows "median n f = (sort_map f n) (n div 2)"
   using assms
   by (simp add:median_def sort_map_eq_sort[symmetric] del:sort_map.simps)
 
@@ -297,7 +297,7 @@ qed
 lemma median_est:
   assumes "interval I"
   assumes "2*card {k. k < n \<and> f k \<in> I} > n"
-  shows "median f n \<in> I"
+  shows "median n f \<in> I"
 proof -
   have a:"{k. k < n \<and> f k \<in> I} = {i. i < n \<and> map f [0..<n] ! i \<in> I}"
     apply (rule order_antisym)
@@ -316,7 +316,7 @@ lemma median_measurable:
   fixes X :: "nat \<Rightarrow> 'a \<Rightarrow> ('b :: {linorder, topological_space, linorder_topology, second_countable_topology})"
   assumes "n \<ge> 1" 
   assumes "\<And>i. i < n \<Longrightarrow> X i \<in> measurable M borel"
-  shows "(\<lambda>x. median (\<lambda>i. X i x) n) \<in> measurable M borel"
+  shows "(\<lambda>x. median n (\<lambda>i. X i x)) \<in> measurable M borel"
 proof -
   have n_ge_0:"n > 0" using assms by simp
   define is_swap where "is_swap = (\<lambda>(ts :: ((nat \<Rightarrow> 'b) \<Rightarrow> nat \<Rightarrow> 'b)). \<exists>i < n. \<exists>j < n. ts = sort_primitive i j)"
@@ -380,7 +380,7 @@ lemma (in prob_space) median_bound:
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> - ln \<epsilon> / (2 * \<alpha>\<^sup>2)"
   assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> I) \<ge> 1/2+\<alpha>" 
-  shows "\<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> I) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
+  shows "\<P>(\<omega> in M. median n (\<lambda>i. X i \<omega>) \<in> I) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
 proof -
   define Y :: "nat \<Rightarrow> 'a \<Rightarrow> real" where "Y = (\<lambda>i. indicator I \<circ> (X i))"
 
@@ -426,7 +426,7 @@ proof -
     apply (simp add:Hoeffding_ineq_def indep_interval_bounded_random_variables_def)
     by (simp add:prob_space_axioms indep_interval_bounded_random_variables_axioms_def Y_def Y_indep)
 
-  have c: "\<And>\<omega>. (\<Sum>i = 0..<n. Y i \<omega>) > n/2 \<Longrightarrow> median (\<lambda>i. X i \<omega>) n \<in> I"
+  have c: "\<And>\<omega>. (\<Sum>i = 0..<n. Y i \<omega>) > n/2 \<Longrightarrow> median n (\<lambda>i. X i \<omega>) \<in> I"
   proof -
     fix \<omega>
     assume "(\<Sum>i = 0..<n. Y i \<omega>) > n/2"
@@ -437,7 +437,7 @@ proof -
       apply (rule arg_cong[where f="card"])
       by (rule order_antisym, rule subsetI, simp, rule subsetI, simp)
     finally have "2 * card {i. i < n \<and> X i \<omega> \<in> I} > n" by simp
-    thus "median (\<lambda>i. X i \<omega>) n \<in> I"
+    thus "median n (\<lambda>i. X i \<omega>) \<in> I"
       using median_est[OF assms(1)] by simp
   qed
 
@@ -461,7 +461,7 @@ proof -
     using Y_indep apply (simp add:indep_vars_def)
     apply (rule arg_cong2[where f="measure"], simp)
     by (rule order_antisym, rule subsetI, simp add:not_le, rule subsetI, simp add:not_le)
-  also have "... \<le> \<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> I)"
+  also have "... \<le> \<P>(\<omega> in M. median n (\<lambda>i. X i \<omega>) \<in> I)"
     apply (rule finite_measure_mono)
      apply (rule subsetI) using c apply simp 
     using interval_borel[OF assms(1)] apply measurable
@@ -478,7 +478,7 @@ lemma (in prob_space) median_bound_1:
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> - ln \<epsilon> / (2 * \<alpha>\<^sup>2)"
   assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> {a..b}) \<ge> 1/2+\<alpha>" 
-  shows "\<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> {a..b}) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
+  shows "\<P>(\<omega> in M. median n (\<lambda>i. X i \<omega>) \<in> {a..b}) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
   apply (rule median_bound[OF _ assms(1) assms(2) assms(3) assms(4) assms(5)])
   by (simp add:interval_def)+
 
@@ -489,7 +489,7 @@ lemma (in prob_space) median_bound_2:
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> -18 * ln \<epsilon>"
   assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. abs (X i \<omega> - \<mu>) > \<delta>) \<le> 1/3" 
-  shows "\<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<le> \<delta>) \<ge> 1-\<epsilon>"
+  shows "\<P>(\<omega> in M. abs (median n (\<lambda>i. X i \<omega>) - \<mu>) \<le> \<delta>) \<ge> 1-\<epsilon>"
 proof -
   have b:"\<And>i. i < n \<Longrightarrow> space M - {\<omega> \<in> space M. X i \<omega> \<in> {\<mu> - \<delta>..\<mu> + \<delta>}} =  {\<omega> \<in> space M. abs (X i \<omega> - \<mu>) > \<delta>}"
     apply (rule order_antisym)
@@ -505,12 +505,12 @@ proof -
 
   hence a:"\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> {\<mu>- \<delta>..\<mu>+\<delta>}) \<ge> 2/3" by simp
   
-  have "1-\<epsilon> \<le> \<P>(\<omega> in M. median (\<lambda>i. X i \<omega>) n \<in> {\<mu>-\<delta>..\<mu>+\<delta>})"
+  have "1-\<epsilon> \<le> \<P>(\<omega> in M. median n (\<lambda>i. X i \<omega>) \<in> {\<mu>-\<delta>..\<mu>+\<delta>})"
     apply (rule median_bound_1[OF _ assms(1) assms(2), where \<alpha>="1/6"], simp) 
      apply (simp add:power2_eq_square)
     using assms(3) apply simp
     using a by simp
-  also have "... = \<P>(\<omega> in M. abs (median (\<lambda>i. X i \<omega>) n - \<mu>) \<le> \<delta>)"
+  also have "... = \<P>(\<omega> in M. abs (median n (\<lambda>i. X i \<omega>) - \<mu>) \<le> \<delta>)"
     apply (rule arg_cong2[where f="measure"], simp)
     apply (rule order_antisym)
     apply (rule subsetI, simp, linarith)
@@ -535,7 +535,7 @@ lemma map_sort:
 
 lemma median_cong:
   assumes "\<And>i. i < n \<Longrightarrow> f i = g i"
-  shows "median f n = median g n"
+  shows "median n f = median n g"
   apply (cases "n = 0", simp add:median_def)
   apply (simp add:median_def)
   apply (rule arg_cong2[where f="(!)"])
@@ -544,12 +544,12 @@ lemma median_cong:
 
 lemma median_restrict: 
   assumes "n > 0"
-  shows "median (\<lambda>i \<in> {0..<n}.f i) n = median f n"
+  shows "median n (\<lambda>i \<in> {0..<n}.f i) = median n f"
   by (rule median_cong, simp)
 
 lemma median_rat:
   assumes "n > 0"
-  shows "real_of_rat (median f n) = median (\<lambda>i. real_of_rat (f i)) n"
+  shows "real_of_rat (median n f) = median n (\<lambda>i. real_of_rat (f i))"
 proof -
   have a:"map (\<lambda>i. real_of_rat (f i)) [0..<n] = 
     map real_of_rat (map (\<lambda>i. f i) [0..<n])"
@@ -564,13 +564,13 @@ qed
 
 lemma median_const:
   assumes "k > 0"
-  shows "median (\<lambda>i \<in> {0..<k}. a) k = a"
+  shows "median k (\<lambda>i \<in> {0..<k}. a) = a"
 proof -
   have b: "sorted (map (\<lambda>_. a) [0..<k])" 
     by (subst sorted_wrt_map, simp)
   have a: "sort (map (\<lambda>_. a) [0..<k]) = map (\<lambda>_. a) [0..<k]"
     by (subst sorted_sort_id[OF b], simp)
-  have "median (\<lambda>i \<in> {0..<k}. a) k = median (\<lambda>_. a) k"
+  have "median k (\<lambda>i \<in> {0..<k}. a) = median k (\<lambda>_. a)"
     by (subst median_restrict[OF assms(1)], simp)
   also have "... = a"
     apply (simp add:median_def a)

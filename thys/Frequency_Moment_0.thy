@@ -31,10 +31,10 @@ fun f0_update :: "nat \<Rightarrow> f0_state \<Rightarrow> f0_state pmf" where
       least t (insert (float_of (truncate_down r (hash p x (h i)))) (sketch i)))"
 
 fun f0_result :: "f0_state \<Rightarrow> rat pmf" where
-  "f0_result (s, t, p, r, h, sketch) = return_pmf (median (\<lambda>i \<in> {0..<s}.
+  "f0_result (s, t, p, r, h, sketch) = return_pmf (median s (\<lambda>i \<in> {0..<s}.
       (if card (sketch i) < t then of_nat (card (sketch i)) else
         rat_of_nat t* rat_of_nat p / rat_of_float  (Max (sketch i)))
-    ) s)"
+    ))"
 
 definition f0_sketch where 
   "f0_sketch p r t h xs = least t ((\<lambda>x. float_of (truncate_down r (hash p x h))) ` (set xs))"
@@ -73,64 +73,6 @@ next
     by (subst least_insert, simp, simp)
 qed
 
-lemma (in prob_space) prob_sub_additive:
-  assumes "Collect P \<in> sets M"
-  assumes "Collect Q \<in> sets M"
-  shows "\<P>(\<omega> in M. P \<omega> \<or> Q \<omega>) \<le> \<P>(\<omega> in M. P \<omega>) + \<P>(\<omega> in M. Q \<omega>)"
-proof -
-  have "\<P>(\<omega> in M. P \<omega> \<or> Q \<omega>) = measure M ({\<omega> \<in> space M. P \<omega>} \<union> {\<omega> \<in> space M. Q \<omega>})"
-    apply (rule arg_cong2[where f="measure"], simp)
-    by (subst set_eq_iff, rule allI, blast)
-  also have "... \<le> measure M {\<omega> \<in> space M. P \<omega>} + measure M {\<omega> \<in> space M. Q \<omega>}"
-    apply (rule measure_subadditive)
-    apply (metis (no_types, lifting) Collect_cong mem_Collect_eq sets.sets_into_space subsetD assms(1))
-    apply (metis (no_types, lifting) Collect_cong mem_Collect_eq sets.sets_into_space subsetD assms(2))
-    by simp+
-  finally show ?thesis by simp
-qed
-
-lemma (in prob_space) prob_sub_additiveI:
-  assumes "Collect P \<in> sets M"
-  assumes "Collect Q \<in> sets M"
-  assumes "\<P>(\<omega> in M. P \<omega>) \<le> r1"
-  assumes "\<P>(\<omega> in M. Q \<omega>) \<le> r2"
-  shows "\<P>(\<omega> in M. P \<omega> \<or> Q \<omega>) \<le> r1 + r2"
-proof -
-  have "\<P>(\<omega> in M. P \<omega> \<or> Q \<omega>) \<le> \<P>(\<omega> in M. P \<omega>) + \<P>(\<omega> in M. Q \<omega>)"
-    by (rule  prob_sub_additive[OF assms(1) assms(2)])
-  also have "... \<le> r1 + r2"
-    by (rule add_mono, metis assms(3), metis assms(4))
-  finally show ?thesis by simp
-qed
-
-lemma (in prob_space) prob_mono:
-  assumes "Collect Q \<in> sets M"
-  assumes "\<And>\<omega>. \<omega> \<in> space M \<Longrightarrow> P \<omega> \<Longrightarrow> Q \<omega>"
-  shows "\<P>(\<omega> in M. P \<omega>) \<le> \<P>(\<omega> in M. Q \<omega>)"
-  apply (rule finite_measure.finite_measure_mono)
-    apply simp
-  apply (rule subsetI, simp add:assms(2))
-  by (metis (no_types, lifting) assms(1)  Collect_cong mem_Collect_eq sets.sets_into_space subsetD)
-
-lemma in_events_pmf: "A \<in> measure_pmf.events \<Omega>"
-  by simp
-
-lemma pmf_add:
-  assumes  "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q \<or> x \<in> R"
-  shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q + measure (measure_pmf \<Omega>) R"
-proof -
-  have "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) (Q \<union> R)"
-    apply (rule pmf_mono_1)
-    using assms by blast
-  also have "... \<le> measure (measure_pmf \<Omega>) Q + measure (measure_pmf \<Omega>) R"
-    by (rule measure_subadditive, simp+)
-  finally show ?thesis by simp
-qed
-
-lemma pmf_mono:
-  assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> Q"
-  shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q"
-  apply (rule pmf_mono_1) using assms by auto
 
 lemma abs_ge_iff: "((x::real) \<le> abs y) = (x \<le> y \<or> x \<le> -y)"
   by linarith
@@ -290,7 +232,7 @@ proof -
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 
       \<P>(\<omega> in \<Omega>. (\<forall>u \<in> UNIV. hash p (if u then x else y) \<omega> = (if u then (fst i) else (snd i)))))" 
       apply (rule sum_mono)
-      apply (rule pmf_mono)
+      apply (rule pmf_mono_1)
       by (simp add:case_prod_beta)
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and>
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 1/(real p)\<^sup>2)"
@@ -370,7 +312,7 @@ proof -
     measure \<Omega> (\<Union> i \<in> {(x,y) \<in> M \<times> M. x < y}. {\<omega>. 
     degree \<omega> \<ge> 1 \<and> truncate_down r (hash p (fst i) \<omega>) \<le> c \<and>
     truncate_down r (hash p (fst i) \<omega>) = truncate_down r (hash p (snd i) \<omega>)})"
-    apply (rule pmf_mono)
+    apply (rule pmf_mono_1)
     apply (simp) 
     by (metis linorder_neqE_nat)
   also have "... \<le> (\<Sum> i \<in> {(x,y) \<in> M \<times> M. x < y}. measure \<Omega> 
@@ -726,9 +668,9 @@ proof -
     have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. f a \<omega> \<ge> t) \<le> 
       \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. abs (real (f a \<omega>) - prob_space.expectation (measure_pmf \<Omega>\<^sub>1) (\<lambda>\<omega>. real (f a \<omega>))) 
       \<ge> 3 * sqrt (m *(real_of_int a+1)/p))"
-    proof (rule prob_space.prob_mono[OF prob_space_measure_pmf in_events_pmf])
+    proof (rule pmf_mono_2)
       fix \<omega>
-      assume "\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1)"
+      assume "\<omega> \<in> set_pmf \<Omega>\<^sub>1"
       assume t_le: "t \<le> f a \<omega>"
       have "real m * (of_int a + 1) / p = real m * (of_int a) / p + real m / p"
         by (simp add:algebra_simps add_divide_distrib)
@@ -819,9 +761,9 @@ proof -
       have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. f b \<omega> < t) \<le> 
         \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. abs (real (f b \<omega>) - prob_space.expectation (measure_pmf \<Omega>\<^sub>1) (\<lambda>\<omega>. real (f b \<omega>))) 
         \<ge> 3 * sqrt (m *(real_of_int b+1)/p))"
-      proof (rule prob_space.prob_mono[OF prob_space_measure_pmf in_events_pmf])
+      proof (rule pmf_mono_2)
         fix \<omega>
-        assume "\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1)"
+        assume "\<omega> \<in> set_pmf \<Omega>\<^sub>1"
         have aux: "(real t + 3 * sqrt (real t / (1 - \<delta>') + 1)) * (1 - \<delta>') =
            real t - \<delta>' * t + 3 * ((1-\<delta>') * sqrt( real t / (1-\<delta>') + 1))"
           by (simp add:algebra_simps)
@@ -987,9 +929,9 @@ proof -
     have "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>1.
         real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>) \<le> 
       \<P>(\<omega> in measure_pmf \<Omega>\<^sub>1. f a \<omega> \<ge> t \<or> f b \<omega> < t \<or> \<not>(has_no_collision \<omega>))"
-    proof (rule prob_space.prob_mono[OF prob_space_measure_pmf in_events_pmf], rule ccontr)
+    proof (rule pmf_mono_2, rule ccontr)
       fix \<omega>
-      assume "\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1)"
+      assume "\<omega> \<in> set_pmf \<Omega>\<^sub>1"
       assume est: "real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>"
       assume "\<not>( t \<le> f a \<omega> \<or> f b \<omega> < t \<or> \<not> has_no_collision \<omega>)"
       hence lb: "f a \<omega> < t" and ub: "f b \<omega> \<ge> t" and no_col: "has_no_collision \<omega>" by simp+
@@ -1127,10 +1069,8 @@ proof -
         using est by linarith
     qed
     also have "... \<le> 1/9 + (1/9 + 1/9)"
-      apply (rule prob_space.prob_sub_additiveI, simp add:prob_space_measure_pmf, simp, simp)
-       apply (rule case_1)
-      apply (rule prob_space.prob_sub_additiveI, simp add:prob_space_measure_pmf, simp, simp)
-      by (rule case_2, rule case_3)
+      apply (rule pmf_add_2, rule case_1)
+      by (rule pmf_add_2, rule case_2, rule case_3)
     also have "... = 1/3" by simp
     finally show ?thesis by simp
   next
@@ -1201,7 +1141,7 @@ proof -
   qed
 
   have f0_result_elim: "\<And>x. f0_result (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as) =
-    return_pmf (median (\<lambda>i. g (f0_sketch p r t (x i) as)) s)"
+    return_pmf (median s (\<lambda>i. g (f0_sketch p r t (x i) as)))"
     apply (simp add:g_def)
     apply (rule median_cong)
     by simp
@@ -1227,7 +1167,7 @@ proof -
     by (simp add:real_g_2)
  
   have "1-real_of_rat \<epsilon> \<le> \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.
-      \<bar>median (\<lambda>i. g' (h (\<omega> i))) s - real_of_rat (F 0 as)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (F 0 as))"
+      \<bar>median s (\<lambda>i. g' (h (\<omega> i))) - real_of_rat (F 0 as)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (F 0 as))"
     apply (rule prob_space.median_bound_2, simp add:prob_space_measure_pmf)
        using assms apply simp 
       apply (subst \<Omega>\<^sub>0_def)
@@ -1238,14 +1178,14 @@ proof -
     apply (subst prob_prod_pmf_slice, simp, simp)
     using b by (simp add:\<Omega>\<^sub>1_def) 
   also have "... = \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. 
-      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) as)) s - F 0 as\<bar> \<le>  \<delta> * F 0 as)"
+      \<bar>median s (\<lambda>i. g (f0_sketch p r t (\<omega> i) as)) - F 0 as\<bar> \<le>  \<delta> * F 0 as)"
     apply (rule arg_cong2[where f="measure"], simp)
     apply (rule Collect_cong, simp, subst real_g[symmetric])
     apply (subst of_rat_mult[symmetric], subst median_rat[OF s_ge_0, symmetric])
     apply (subst of_rat_diff[symmetric], simp)
     using of_rat_less_eq by blast
   finally have a:"\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.  
-      \<bar>median (\<lambda>i. g (f0_sketch p r t (\<omega> i) as)) s - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1-real_of_rat \<epsilon>"
+      \<bar>median s (\<lambda>i. g (f0_sketch p r t (\<omega> i) as)) - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1-real_of_rat \<epsilon>"
     by blast
 
   show ?thesis
@@ -1272,7 +1212,7 @@ fun f0_space_usage :: "(nat \<times> rat \<times> rat) \<Rightarrow> real" where
     real s * (12 + 4 * log 2 (10 + real n) +
     real t * (11 + 4 * r + 2 * log 2 (log 2 (real n + 9)))))"
 
-definition encode_state where
+definition encode_state :: "f0_state \<Rightarrow> bool list option" where
   "encode_state = 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s. 
     N\<^sub>S \<times>\<^sub>S (
