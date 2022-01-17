@@ -16,15 +16,15 @@ session FrequencyMoments = HOL +
     List_Ext
     Median
     Multiset_Ext
-    OrderStatistics
+    K_Smallest
     Partitions
-    PolynomialCounting
+    Interpolation_Polynomial_Counts
     Primes_Ext
     Probability_Ext
     Product_PMF_Ext
     Set_Ext
-    UniversalHashFamilyOfPrime
-    UniversalHashFamily
+    Universal_Hash_Families_Nat
+    Universal_Hash_Families
   document_files
     "root.tex"
     "root.bib"

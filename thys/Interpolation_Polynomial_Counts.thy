@@ -1,6 +1,6 @@
-section \<open>Counting Polynomials\<close>
+section \<open>Interpolation Polynomial Counts\<close>
 
-theory PolynomialCounting
+theory Interpolation_Polynomial_Counts
   imports Main"HOL-Algebra.Polynomial_Divisibility" "HOL-Algebra.Polynomials" "HOL-Library.FuncSet"
     Set_Ext 
 begin

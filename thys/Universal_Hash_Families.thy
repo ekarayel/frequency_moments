@@ -1,7 +1,7 @@
 section \<open>Universal Hash Families\<close>
 
-theory UniversalHashFamily
-  imports Main PolynomialCounting Product_PMF_Ext
+theory Universal_Hash_Families
+  imports Main Interpolation_Polynomial_Counts Product_PMF_Ext
 begin
 
 text \<open>A k-universal hash family $\mathcal H$ is probability space, whose elements are hash functions 

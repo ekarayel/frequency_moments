@@ -3,8 +3,8 @@ section \<open>Universal Hash Family for $\{0..<p\}$\<close>
 text \<open>Specialization of universal hash families from arbitrary finite 
   fields to $\{0..<p\}$.\<close>
 
-theory UniversalHashFamilyOfPrime
-  imports Field UniversalHashFamily Probability_Ext Encoding
+theory Universal_Hash_Families_Nat
+  imports Field Universal_Hash_Families Probability_Ext Encoding
 begin
 
 lemma fin_bounded_degree_polynomials:
@@ -28,7 +28,7 @@ lemma card_bounded_degree_polynomials:
   by (subst zfact_card, metis assms, simp)
 
 fun hash :: "nat \<Rightarrow> nat \<Rightarrow> int set list \<Rightarrow> nat"
-  where "hash p x f = the_inv_into {0..<p} (zfact_embed p) (UniversalHashFamily.hash (ZFact p) (zfact_embed p x) f)"
+  where "hash p x f = the_inv_into {0..<p} (zfact_embed p) (Universal_Hash_Families.hash (ZFact p) (zfact_embed p x) f)"
 
 declare hash.simps [simp del]
 
@@ -38,8 +38,8 @@ lemma hash_range:
   assumes "x < p"
   shows "hash p x \<omega> < p"
 proof -
-  have "UniversalHashFamily.hash (ZFact (int p)) (zfact_embed p x) \<omega> \<in> carrier (ZFact (int p))"
-    apply (rule UniversalHashFamily.hash_range[OF _ assms(2)])
+  have "Universal_Hash_Families.hash (ZFact (int p)) (zfact_embed p x) \<omega> \<in> carrier (ZFact (int p))"
+    apply (rule Universal_Hash_Families.hash_range[OF _ assms(2)])
      apply (metis ZFact_is_cring cring_def)
     by (metis zfact_embed_ran[OF assms(1)] assms(3) atLeast0LessThan image_eqI lessThan_iff)
   thus ?thesis
@@ -60,13 +60,13 @@ proof -
   have ring_p: "ring (ZFact (int p))"
     by (metis ZFact_is_cring cring_def)
 
-  have "inj_on (the_inv_into {0..<p} (zfact_embed p) \<circ> (\<lambda>x.  (UniversalHashFamily.hash (ZFact (int p)) x \<omega>)) \<circ> (zfact_embed p)) {0..<p}"
+  have "inj_on (the_inv_into {0..<p} (zfact_embed p) \<circ> (\<lambda>x.  (Universal_Hash_Families.hash (ZFact (int p)) x \<omega>)) \<circ> (zfact_embed p)) {0..<p}"
     apply (rule comp_inj_on[OF zfact_embed_inj[OF p_ge_0]])
     apply (subst zfact_embed_ran[OF p_ge_0])
     apply (rule comp_inj_on)
-     apply (rule UniversalHashFamily.hash_inj_if_degree_1[OF _ assms(2) assms(3)])
+     apply (rule Universal_Hash_Families.hash_inj_if_degree_1[OF _ assms(2) assms(3)])
      apply (metis zfact_prime_is_field[OF assms(1)] zfact_finite[OF p_ge_0])
-    apply (rule inj_on_subset[OF _ UniversalHashFamily.hash_range_2[OF ring_p assms(2)]])
+    apply (rule inj_on_subset[OF _ Universal_Hash_Families.hash_range_2[OF ring_p assms(2)]])
     apply (subst zfact_embed_ran[OF p_ge_0, symmetric])
     by (rule inj_on_the_inv_into[OF zfact_embed_inj[OF p_ge_0]])
 
@@ -110,7 +110,7 @@ proof -
     (\<forall>x \<in> K. hash p x \<omega> = (y x))) = \<P>(\<omega> in measure_pmf \<Omega>. (\<forall>x \<in> K. hash p x \<omega> = (y x)))"
     by (simp add: \<Omega>_def)
   also have "... =
-    \<P>(\<omega> in measure_pmf \<Omega>. (\<forall>x \<in> zfact_embed p ` K. UniversalHashFamily.hash (ZFact (int p)) x \<omega> = y' x))"
+    \<P>(\<omega> in measure_pmf \<Omega>. (\<forall>x \<in> zfact_embed p ` K. Universal_Hash_Families.hash (ZFact (int p)) x \<omega> = y' x))"
     apply (rule pmf_eq)
     apply (simp add:y'_def hash.simps \<Omega>_def)
     apply (subst (asm) set_pmf_of_set, metis ne_bounded_degree_polynomials, 
@@ -124,7 +124,7 @@ proof -
      apply (simp, rule impI)
      apply (subst f_the_inv_into_f[OF zfact_embed_inj[OF p_ge_0]])
       apply (subst zfact_embed_ran[OF p_ge_0])
-      apply (rule UniversalHashFamily.hash_range[OF ring_zfact, where n="n"], simp)
+      apply (rule Universal_Hash_Families.hash_range[OF ring_zfact, where n="n"], simp)
       apply (meson K_embed image_subset_iff)
      apply simp
     apply (simp, rule impI)
@@ -134,7 +134,7 @@ proof -
   also have "... =
     1 / real (card (carrier (ZFact (int p))))^(card (zfact_embed p ` K))"
     apply (simp only: \<Omega>_def)
-    apply (rule UniversalHashFamily.hash_prob[where K="zfact_embed p ` K" and F="ZFact (int p)" and n="n" and y="y'"])
+    apply (rule Universal_Hash_Families.hash_prob[where K="zfact_embed p ` K" and F="ZFact (int p)" and n="n" and y="y'"])
        apply (metis zfact_prime_is_field[OF assms(1)] zfact_finite[OF p_ge_0])
       apply (metis zfact_embed_ran[OF p_ge_0] assms(2) image_mono)
      apply (rule order_trans[OF card_image_le], rule finite_subset[OF assms(2)], simp, metis assms(4))

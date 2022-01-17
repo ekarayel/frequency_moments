@@ -2,7 +2,7 @@ section \<open>Frequency Moment $2$\<close>
 
 theory Frequency_Moment_2
   imports Main Median Partitions Primes_Ext Encoding List_Ext 
-    UniversalHashFamilyOfPrime Frequency_Moments Landau_Ext
+    Universal_Hash_Families_Nat Frequency_Moments Landau_Ext
 begin
 
 text \<open>This section contains a formalization of the algorithm for the second frequency moment.
