@@ -259,8 +259,7 @@ next
   case (snoc x xs)
   obtain t1 t2 where t_def: 
     "(t1,t2) = fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update'' x c)) xs (0, return_pmf (0,0))"
-    using surj_pair 
-    by (smt (z3))
+    by (metis (no_types, lifting) surj_pair)
   have a:"fk_update' x s\<^sub>1 s\<^sub>2 (length xs) = (\<lambda>a. fk_update' x s\<^sub>1 s\<^sub>2 (length xs) a)" 
     by auto
   have c:"\<And>c. fk_update'' x c = (\<lambda>a. fk_update'' x c (fst a,snd a))" 
