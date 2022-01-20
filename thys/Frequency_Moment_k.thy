@@ -859,17 +859,17 @@ fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat)
     2 * log 2 (real m + 1) +
     s\<^sub>1 * s\<^sub>2 * (3 + 2 * log 2 (real n+1) + 2 * log 2 (real m+1)))"
 
-definition encode_state :: "fk_state \<Rightarrow> bool list option" where
-  "encode_state = 
+definition encode_fk_state :: "fk_state \<Rightarrow> bool list option" where
+  "encode_fk_state = 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
     N\<^sub>S \<times>\<^sub>S  
     N\<^sub>S \<times>\<^sub>S  
     (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (N\<^sub>S \<times>\<^sub>S N\<^sub>S))))"
 
-lemma "inj_on encode_state (dom encode_state)"
+lemma "inj_on encode_fk_state (dom encode_fk_state)"
   apply (rule encoding_imp_inj)
-  apply (simp add:encode_state_def)
+  apply (simp add:encode_fk_state_def)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule prod_encoding, metis nat_encoding)
@@ -882,7 +882,7 @@ theorem fk_exact_space_usage:
   assumes "\<delta> > 0"
   assumes "set as \<subseteq> {0..<n}"
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
-  shows "AE \<omega> in M. bit_count (encode_state \<omega>) \<le> fk_space_usage (k, n, length as, \<epsilon>, \<delta>)" (is "AE \<omega> in M. (_  \<le> ?rhs)")
+  shows "AE \<omega> in M. bit_count (encode_fk_state \<omega>) \<le> fk_space_usage (k, n, length as, \<epsilon>, \<delta>)" (is "AE \<omega> in M. (_  \<le> ?rhs)")
 proof (cases "as = []")
   case True
   have a:"M = fk_init k \<delta> \<epsilon> n"
@@ -932,7 +932,7 @@ proof (cases "as = []")
     \<le> ereal (fk_space_usage (k, n, length as, \<epsilon>, \<delta>))"
     by (simp add:add.assoc del:fk_space_usage.simps N\<^sub>S.simps)
   thus ?thesis 
-    by (simp add: a Let_def s\<^sub>1_def s\<^sub>2_def encode_state_def  AE_measure_pmf_iff dependent_bit_count prod_bit_count
+    by (simp add: a Let_def s\<^sub>1_def s\<^sub>2_def encode_fk_state_def  AE_measure_pmf_iff dependent_bit_count prod_bit_count
         del:fk_space_usage.simps N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps) 
 next
   case False
@@ -950,7 +950,7 @@ next
   have length_xs_gr_0: "length as > 0" using False by blast
 
   have b:"\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E {(u, v). v < count_list as u} \<Longrightarrow>
-       bit_count (encode_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> ?rhs"
+       bit_count (encode_fk_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> ?rhs"
   proof -
     fix y
     assume b0:"y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E {(u, v). v < count_list as u}"
@@ -962,13 +962,13 @@ next
       using count_le_length b0 apply (simp add:PiE_iff case_prod_beta) 
       using dual_order.strict_trans1 by fastforce
     have b3: "y \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})" using b0 PiE_iff by blast
-    hence "bit_count (encode_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> 
+    hence "bit_count (encode_fk_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> 
       ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + (
       ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ( 
       ereal (2 * log 2 (real k + 1) + 1) + (
       ereal (2 * log 2 (real (length as) + 1) + 1) + (
        (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 ((n)+1) + 1) + ereal (2 * log 2 ((length as)+1) + 1)) + 1))+ 1))))"
-      apply (simp add:encode_state_def dependent_bit_count prod_bit_count PiE_iff comp_def fun\<^sub>S_def
+      apply (simp add:encode_fk_state_def dependent_bit_count prod_bit_count PiE_iff comp_def fun\<^sub>S_def
           del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps plus_ereal.simps sum_list_ereal times_ereal.simps)
       apply (rule add_mono, simp add: nat_bit_count[simplified])
       apply (rule add_mono, simp add: nat_bit_count[simplified])
@@ -982,7 +982,7 @@ next
     also have "... \<le> ?rhs"
       using n_nonzero length_xs_gr_0 apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric,simplified])
       by (simp add:algebra_simps)
-    finally show "bit_count (encode_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> ?rhs"
+    finally show "bit_count (encode_fk_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> ?rhs"
       by blast
   qed
     

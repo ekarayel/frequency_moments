@@ -11,7 +11,7 @@ The only difference is that the algorithm is adapted to work with prime field of
 greatly reduces the implementation complexity.\<close>
 
 fun f2_hash where
-  "f2_hash p h k = (if hash p k h \<in> {k. 2*k < p} then int p - 1 else - int p - 1)"
+  "f2_hash p h k = (if even (hash p k h) then int p - 1 else - int p - 1)"
 
 type_synonym f2_state = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
 
@@ -57,40 +57,59 @@ proof -
 
   have zero_le_4: "0 < (4::nat)" by simp
 
-  have "card ({k. 2 * k < p} \<inter> {0..<p}) = card ({0..t})"
-    apply (subst Int_absorb2, rule subsetI, simp)
+  have "card ({k. even k} \<inter> {0..<p}) = card ((\<lambda>x. 2*x) ` {0..t})"
     apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym, rule subsetI, simp add:t_def) 
-    by (rule subsetI, simp add:t_def)
-  also have "... = t+1"
-    by simp
-  also have "... = (real p + 1)/2"
-    by (simp add:t_def)
-  finally have c_1: "card ({k. 2 * k < p} \<inter> {0..<p}) = (real p+1)/2" by simp
+    apply (rule order_antisym)
+    apply (rule subsetI)
+     apply (simp add:t_def)
+     apply (metis evenE Suc_1 atLeastAtMost_iff image_eqI less_Suc_eq_le mult_less_cancel1 not_less zero_less_Suc)
+    by (rule image_subsetI, simp add:t_def)
+  also have "... = card {0..t}" 
+    apply (rule card_image)
+    by (simp add: inj_on_mult)
+  also have "... =  t+1" by simp
+  finally have c_11: "card ({k. even k} \<inter> {0..<p}) = t+1" by simp
+  hence c_1: "card ({k. even k} \<inter> {0..<p}) * 2 = (p+1)" by (simp add:t_def)
 
-  have "card ({k. p \<le> 2 * k} \<inter> {0..<p}) = card {t+1..<p}"
+  have "p = card {0..<p}" by simp
+  also have "... = card (({k. odd k} \<inter> {0..<p}) \<union> ({k. even k} \<inter> {0..<p}))" 
     apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym, rule subsetI, simp add:t_def) 
-    by (rule subsetI, simp add:t_def)
-  also have "... = p - (t+1)" by simp
-  also have "... = (real p-1)/2"
+    by (rule order_antisym, rule subsetI, simp, rule subsetI, simp, blast)
+  also have "... = card ({k. odd k} \<inter> {0..<p}) +  card ({k. even k} \<inter> {0..<p})"
+    by (rule card_Un_disjoint, simp, simp, blast)
+  also have "... = card ({k. odd k} \<inter> {0..<p}) + t+1"
+    by (simp add:c_11)
+  finally have "p = card ({k. odd k} \<inter> {0..<p}) + t+1"
+    by simp
+  hence c_2: "card ({k. odd k} \<inter> {0..<p}) * 2 = (p-1)" 
     by (simp add:t_def)
-  finally have c_2: "card ({k. p \<le> 2 * k} \<inter> {0..<p}) = (real p-1)/2" by simp
+
+  have d_1: " \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> Collect even) = (real p + 1)/(2*real p)"
+    apply (subst \<Omega>_def, subst \<Omega>_def)
+    apply (subst hash_prob_range[OF assms(1) assms(2) zero_le_4])
+    apply (subst frac_eq_eq, simp add:g, simp add:g)
+    apply (simp)
+    using c_1 by linarith
+  have d_2: " \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> Collect odd) = (real p - 1)/(2*real p)"
+    apply (subst \<Omega>_def, subst \<Omega>_def)
+    apply (subst hash_prob_range[OF assms(1) assms(2) zero_le_4])
+    apply (subst frac_eq_eq, simp add:g, simp add:g)
+    apply (simp)
+    using c_2 by linarith
 
   have "integral\<^sup>L \<Omega> (\<lambda>x. real_of_int (f2_hash p x k) ^ m) =
-    integral\<^sup>L \<Omega> (\<lambda>\<omega>. indicator {\<omega>. 2 * hash p k \<omega> < p} \<omega> * (real p - 1)^m + 
-      indicator {\<omega>. 2 * hash p k \<omega> \<ge> p} \<omega> * (-real p - 1)^m)" 
+    integral\<^sup>L \<Omega> (\<lambda>\<omega>. indicator {\<omega>. even (hash p k \<omega>)} \<omega> * (real p - 1)^m + 
+      indicator {\<omega>. odd (hash p k \<omega>)} \<omega> * (-real p - 1)^m)" 
     by (rule Bochner_Integration.integral_cong, simp, simp)
   also have "... = 
-     \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> {k. 2 * k < p})  * (real p - 1) ^ m  + 
-     \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> {k. 2 * k \<ge> p})  * (-real p - 1) ^ m "
+     \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> Collect even)  * (real p - 1) ^ m  + 
+     \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> Collect odd)  * (-real p - 1) ^ m "
     apply (subst Bochner_Integration.integral_add)
     apply (rule integrable_measure_pmf_finite[OF b])
     apply (rule integrable_measure_pmf_finite[OF b])
     by simp
   also have "... = (real p + 1) * (real p - 1) ^ m / (2 * real p) + (real p - 1) * (- real p - 1) ^ m / (2 * real p)"
-    apply (simp only:\<Omega>_def hash_prob_range[OF assms(1) assms(2) zero_le_4] c_1 c_2)
-    by simp
+    by (subst d_1, subst d_2, simp)
   also have "... =  
     ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)"
     by (simp add:add_divide_distrib ac_simps)
@@ -561,17 +580,17 @@ fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow
     2 * log 2 (4 + 2 * real n) +
     s\<^sub>1 * s\<^sub>2 * (13 + 8 * log 2 (4 + 2 * real n) + 2 * log 2 (real m * (4 + 2 * real n) + 1 )))"
 
-definition encode_state :: "f2_state \<Rightarrow> bool list option" where
-  "encode_state = 
+definition encode_f2_state :: "f2_state \<Rightarrow> bool list option" where
+  "encode_f2_state = 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
     (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (list\<^sub>S (zfact\<^sub>S p))) \<times>\<^sub>S
     (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S))))"
 
-lemma "inj_on encode_state (dom encode_state)"
+lemma "inj_on encode_f2_state (dom encode_f2_state)"
   apply (rule encoding_imp_inj)
-  apply (simp add:encode_state_def)
+  apply (simp add:encode_f2_state_def)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
@@ -583,7 +602,7 @@ theorem f2_exact_space_usage:
   assumes "\<delta> > 0"
   assumes "set as \<subseteq> {0..<n}"
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
-  shows "AE \<omega> in M. bit_count (encode_state \<omega>) \<le> f2_space_usage (n, length as, \<epsilon>, \<delta>)"
+  shows "AE \<omega> in M. bit_count (encode_f2_state \<omega>) \<le> f2_space_usage (n, length as, \<epsilon>, \<delta>)"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
@@ -601,7 +620,7 @@ proof -
     by (metis One_nat_def find_prime_above_upper_bound Suc_1 add_Suc_right linear not_less_eq_eq numeral_3_eq_3)
 
   have a: "\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
-       bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
+       bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
       sum_list (map (f2_hash p (y i)) as)))
        \<le> ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
   proof -
@@ -652,7 +671,7 @@ proof -
         by (simp add: mult.commute)
     qed
     
-    have "bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}.
+    have "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}.
       sum_list (map (f2_hash p (y i)) as)))
        \<le> ereal (2 * (log 2 (real s\<^sub>1 + 1)) + 1) 
        + (ereal (2 * (log 2 (real s\<^sub>2 + 1)) + 1)
@@ -660,7 +679,7 @@ proof -
        + ((ereal (real s\<^sub>1 * real s\<^sub>2) * (10 + 8 * log 2 (4 + 2 * real n)) + 1) 
        + (ereal (real s\<^sub>1 * real s\<^sub>2) * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1) ) + 1))))"
       using a_2
-      apply (simp add: encode_state_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] 
+      apply (simp add: encode_f2_state_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] 
         dependent_bit_count prod_bit_count fun\<^sub>S_def
           del:encode_dependent_sum.simps encode_prod.simps N\<^sub>S.simps plus_ereal.simps of_nat_add)
       apply (rule add_mono, rule nat_bit_count)
@@ -674,7 +693,7 @@ proof -
       by (simp add:algebra_simps)
     also have "... = ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
       by (simp add:distrib_left[symmetric] s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
-    finally show "bit_count (encode_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}.
+    finally show "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}.
       sum_list (map (f2_hash p (y i)) as)))
        \<le> ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))" by blast
   qed

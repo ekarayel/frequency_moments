@@ -1212,8 +1212,8 @@ fun f0_space_usage :: "(nat \<times> rat \<times> rat) \<Rightarrow> real" where
     real s * (12 + 4 * log 2 (10 + real n) +
     real t * (11 + 4 * r + 2 * log 2 (log 2 (real n + 9)))))"
 
-definition encode_state :: "f0_state \<Rightarrow> bool list option" where
-  "encode_state = 
+definition encode_f0_state :: "f0_state \<Rightarrow> bool list option" where
+  "encode_f0_state = 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s. 
     N\<^sub>S \<times>\<^sub>S (
     N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
@@ -1221,9 +1221,9 @@ definition encode_state :: "f0_state \<Rightarrow> bool list option" where
     ([0..<s] \<rightarrow>\<^sub>S (list\<^sub>S (zfact\<^sub>S p))) \<times>\<^sub>S
     ([0..<s] \<rightarrow>\<^sub>S (set\<^sub>S F\<^sub>S))))))"
 
-lemma "inj_on encode_state (dom encode_state)"
+lemma "inj_on encode_f0_state (dom encode_f0_state)"
   apply (rule encoding_imp_inj)
-  apply (simp add: encode_state_def)
+  apply (simp add: encode_f0_state_def)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule prod_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
@@ -1241,7 +1241,7 @@ theorem f0_exact_space_usage:
   assumes "\<delta> \<in> {0<..<1}"
   assumes "set as \<subseteq> {0..<n}"
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
-  shows "AE \<omega> in M. bit_count (encode_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
+  shows "AE \<omega> in M. bit_count (encode_f0_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
 proof -
   define s where "s = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define t where "t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -1317,7 +1317,7 @@ proof -
 
   have b: 
     "\<And>x. x \<in> ({0..<s} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 2) \<Longrightarrow>
-        bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) \<le> 
+        bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) \<le> 
         f0_space_usage (n, \<epsilon>, \<delta>)"
   proof -
     fix x
@@ -1353,11 +1353,11 @@ proof -
       by (rule finite_subset[OF least_subset], simp)
     hence b_5: "\<And>y. y \<in> (\<lambda>z. f0_sketch p r t (x z) as) ` {0..<s} \<Longrightarrow> finite y" by force
 
-    have "bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) =
+    have "bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) =
       bit_count (N\<^sub>S s) + bit_count (N\<^sub>S t) +  bit_count (N\<^sub>S p) + bit_count (N\<^sub>S r) +
       bit_count (list\<^sub>S (list\<^sub>S (zfact\<^sub>S p)) (map x [0..<s])) +
       bit_count (list\<^sub>S (set\<^sub>S F\<^sub>S) (map (\<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as) [0..<s]))"
-      apply (simp add:b_2 encode_state_def dependent_bit_count prod_bit_count
+      apply (simp add:b_2 encode_f0_state_def dependent_bit_count prod_bit_count
         s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] fun\<^sub>S_def
         del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
       by (simp add:ac_simps del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
@@ -1395,13 +1395,13 @@ proof -
       apply (subst log_mult, simp, simp, simp)
       apply (simp add:s_def[symmetric] r_def[symmetric] t_def[symmetric])
       by (simp add:algebra_simps)
-    finally show "bit_count (encode_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) \<le> 
+    finally show "bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) \<le> 
         f0_space_usage (n, \<epsilon>, \<delta>)" by simp
   qed
   
   have a:"\<And>y. y \<in> (\<lambda>x. (s, t, p, r, x, \<lambda>i\<in>{0..<s}. f0_sketch p r t (x i) as)) `
              ({0..<s} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 2) \<Longrightarrow>
-         bit_count (encode_state y) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
+         bit_count (encode_f0_state y) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
     using b apply (simp add:image_def del:f0_space_usage.simps) by blast
 
   show ?thesis
