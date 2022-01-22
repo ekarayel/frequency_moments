@@ -380,7 +380,7 @@ lemma (in prob_space) median_bound:
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> - ln \<epsilon> / (2 * \<alpha>\<^sup>2)"
   assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> I) \<ge> 1/2+\<alpha>" 
-  shows "\<P>(\<omega> in M. median n (\<lambda>i. X i \<omega>) \<in> I) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
+  shows "\<P>(\<omega> in M. median n (\<lambda>i. X i \<omega>) \<in> I) \<ge> 1-\<epsilon>"
 proof -
   define Y :: "nat \<Rightarrow> 'a \<Rightarrow> real" where "Y = (\<lambda>i. indicator I \<circ> (X i))"
 
@@ -471,20 +471,18 @@ proof -
 qed
 
 lemma (in prob_space) median_bound_1:
-  fixes a b :: real
-  fixes n :: nat
   assumes "\<alpha> > 0"
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> - ln \<epsilon> / (2 * \<alpha>\<^sup>2)"
-  assumes "\<And>i. i < n \<Longrightarrow> \<P>(\<omega> in M. X i \<omega> \<in> {a..b}) \<ge> 1/2+\<alpha>" 
-  shows "\<P>(\<omega> in M. median n (\<lambda>i. X i \<omega>) \<in> {a..b}) \<ge> 1-\<epsilon>" (is "\<P>(\<omega> in M. ?lhs \<omega>) \<ge> ?C") 
-  apply (rule median_bound[OF _ assms(1) assms(2) assms(3) assms(4) assms(5)])
-  by (simp add:interval_def)+
+  assumes "\<forall>i \<in> {0..<n}. \<P>(\<omega> in M. X i \<omega> \<in> ({a..b} :: real set)) \<ge> 1/2+\<alpha>" 
+  shows "\<P>(\<omega> in M. median n (\<lambda>i. X i \<omega>) \<in> {a..b}) \<ge> 1-\<epsilon>" 
+  apply (rule median_bound[OF _ assms(1) assms(2) assms(3) assms(4)])
+   apply (simp add:interval_def)
+  using assms(5) by auto
 
 lemma (in prob_space) median_bound_2:
-  fixes \<mu> :: real
-  fixes \<delta> :: real
+  fixes \<mu> \<delta> :: real
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "indep_vars (\<lambda>_. borel) X {0..<n}"
   assumes "n \<ge> -18 * ln \<epsilon>"
