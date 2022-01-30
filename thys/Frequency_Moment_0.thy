@@ -6,10 +6,10 @@ theory Frequency_Moment_0
 begin
 
 text \<open>This section contains a formalization of the algorithm for the zero-th frequency moment.
-It is a KMV algorithm with a rounding method to match the space complexity of the best
-algorithm described in \cite{baryossef2002}.\<close>
+It is a KMV-type ($k$-minimum value) algorithm with a rounding method to match the space complexity 
+of the best algorithm described in \cite{baryossef2002}.\<close>
 
-text \<open>In addition ot the Isabelle proof here, there is also and informal hand-writtend proof in
+text \<open>In addition ot the Isabelle proof here, there is also an informal hand-writtend proof in
 Appendix~\ref{sec:f0_proof}.\<close>
 
 type_synonym f0_state = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<Rightarrow> (int set list)) \<times> (nat \<Rightarrow> float set)"
