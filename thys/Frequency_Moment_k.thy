@@ -1,7 +1,7 @@
 section \<open>Frequency Moment $k$\<close>
 
 theory Frequency_Moment_k
-  imports Main Median Product_PMF_Ext Lp.Lp List_Ext Encoding Frequency_Moments Landau_Ext
+  imports Main Median_Method.Median Product_PMF_Ext Lp.Lp List_Ext Encoding Frequency_Moments Landau_Ext
 begin
 
 text \<open>This section contains a formalization of the algorithm for the $k$-th frequency moment.

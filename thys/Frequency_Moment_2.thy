@@ -1,8 +1,9 @@
 section \<open>Frequency Moment $2$\<close>
 
 theory Frequency_Moment_2
-  imports Main Median Partitions Primes_Ext Encoding List_Ext 
+  imports Main Median_Method.Median Primes_Ext Encoding List_Ext 
     Universal_Hash_Families_Nat Frequency_Moments Landau_Ext
+    Equivalence_Relation_Enumeration.Equivalence_Relation_Enumeration
 begin
 
 text \<open>This section contains a formalization of the algorithm for the second frequency moment.
@@ -174,8 +175,6 @@ proof -
        apply (metis assms(1) linorder_not_less num_double numeral_mult of_nat_power power2_eq_square power2_nat_le_eq_le prime_ge_2_nat real_of_nat_less_numeral_iff)
     by simp+
 
-  have fold_sym: "\<And>x y. (x \<noteq> y \<and> y \<noteq> x) = (x \<noteq> y)" by auto
-
   have exp_h_prod_elim: "exp_h_prod = (\<lambda>as. prod_list (map (r \<circ> count_list as) (remdups as)))" 
     apply (simp add:exp_h_prod_def)
     apply (rule ext)
@@ -212,12 +211,12 @@ proof -
     finally show "expectation (h_prod x) = exp_h_prod x" by simp
   qed
 
-  have exp_h_prod_cong: "\<And>x y. has_eq_relation x y \<Longrightarrow> exp_h_prod x = exp_h_prod y" 
+  have "\<And>x y. kernel_of x = kernel_of y \<Longrightarrow> exp_h_prod x = exp_h_prod y" 
   proof -
     fix x y :: "nat list"
-    assume a:"has_eq_relation x y"
+    assume a:"kernel_of x = kernel_of y"
     then obtain f where b:"bij_betw f (set x) (set y)" and c:"\<And>z. z \<in> set x \<Longrightarrow> count_list x z = count_list y (f z)"
-      using eq_rel_obtain_bij[OF a] by blast
+      using kernel_of_eq_imp_bij by blast
     have "exp_h_prod x = prod ( (\<lambda>i. r(count_list y i)) \<circ> f) (set x)"
       by (simp add:exp_h_prod_def c)
     also have "... = (\<Prod>i \<in> f ` (set x). r(count_list y i))"
@@ -228,12 +227,26 @@ proof -
       apply (rule prod.cong)
        apply (metis b bij_betw_def)
       by simp
-    
     finally show "exp_h_prod x = exp_h_prod y" by simp
   qed
 
-  hence exp_h_prod_cong: "\<And>p x. of_bool (has_eq_relation p x) * exp_h_prod p = of_bool (has_eq_relation p x) * exp_h_prod x" 
-    by simp
+  hence exp_h_prod_cong: "\<And>p x. of_bool (kernel_of x = kernel_of p) * exp_h_prod p = 
+    of_bool (kernel_of x = kernel_of p) * exp_h_prod x" 
+    by (metis (full_types) of_bool_eq_0_iff vector_space_over_itself.scale_zero_left)
+
+  have c:"\<And>(xs :: nat list) n r. length xs = n \<Longrightarrow> 
+    (\<Sum>p\<leftarrow>enum_rgfs n. of_bool (kernel_of xs = kernel_of p) * r) = (r::real)"
+  proof -
+    fix xs :: "nat list"
+    fix n 
+    fix r :: real
+    assume a:"length xs = n"
+
+    have "(\<Sum>p\<leftarrow>enum_rgfs n. of_bool (kernel_of xs = kernel_of p) * 1) = (1::real)"
+      using equiv_rels_2[OF a[symmetric]] by (simp add:equiv_rels_def comp_def) 
+    thus "(\<Sum>p\<leftarrow>enum_rgfs n. of_bool (kernel_of xs = kernel_of p) * r) = (r::real)" 
+      by (simp add:sum_list_mult_const)
+  qed
 
   have "expectation f = (\<Sum>i\<in>set as. (\<Sum>j\<in>set as. c i * c j * expectation (h_prod [i,j])))"
     by (simp add:f_eq h_prod_def power2_eq_square sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum[OF int_M] algebra_simps)
@@ -243,13 +256,12 @@ proof -
     apply (subst exp_h_prod, simp, simp)
     by simp
   also have "... = (\<Sum>i \<in> set as. (\<Sum>j \<in> set as.  
-    c i * c j * (sum_list (map (\<lambda>p. of_bool (has_eq_relation p [i,j]) * exp_h_prod p) (enum_partitions 2)))))"
+    c i * c j * (sum_list (map (\<lambda>p. of_bool (kernel_of [i,j] = kernel_of p) * exp_h_prod p) (enum_rgfs 2)))))"
     apply (subst exp_h_prod_cong)
-    apply (subst sum_partitions', simp)
-    by simp
+    by (subst c, simp+) 
   also have "... = (\<Sum>i\<in>set as. c i * c i * r 2)"
     apply (simp add:numeral_eq_Suc exp_h_prod_elim r_one) 
-    by (simp add: has_eq_relation_elim distrib_left sum.distrib sum_collapse fold_sym)
+    by (simp add: kernel_of_eq All_less_Suc numeral_eq_Suc distrib_left sum.distrib sum_collapse)
   also have "... = real_of_rat (F 2 as) * ((real p)^2-1)"
     apply (subst sum_distrib_right[symmetric])
     by (simp add:c_def F_def power2_eq_square of_rat_sum of_rat_mult r_two)
@@ -269,15 +281,15 @@ proof -
     by simp
   also have "... = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as. 
     c i1 * c i2 * c i3 * c i4 * 
-    (sum_list (map (\<lambda>p. of_bool (has_eq_relation p [i1,i2,i3,i4]) * exp_h_prod p) (enum_partitions 4)))))))"
-    apply (subst exp_h_prod_cong)
-    apply (subst sum_partitions', simp)
-    by simp
+    (sum_list (map (\<lambda>p. of_bool (kernel_of [i1,i2,i3,i4] = kernel_of p) * exp_h_prod p) (enum_rgfs 4)))))))"
+    apply (subst exp_h_prod_cong) 
+    by (subst c, simp+) 
   also have "... = 
     3 * (\<Sum>i \<in> set as. (\<Sum>j \<in> set as. c i^2 * c j^2 * r 2 * r 2)) + ((\<Sum> i \<in> set as. c i^4 * r 4) - 3 *  (\<Sum> i \<in> set as. c i ^ 4 * r 2 * r 2))"
-    apply (simp add:numeral_eq_Suc exp_h_prod_elim r_one) 
-    apply (simp add: has_eq_relation_elim distrib_left sum.distrib sum_collapse fold_sym)
-    by (simp add: algebra_simps sum_subtractf sum_collapse)
+    apply (simp add: numeral_eq_Suc exp_h_prod_elim r_one) 
+    apply (simp add: kernel_of_eq All_less_Suc numeral_eq_Suc distrib_left sum.distrib sum_collapse neq_commute)
+    apply (simp add: algebra_simps sum_subtractf sum_collapse)
+    by (simp add: sum_distrib_left algebra_simps)
   also have "... = 3 * (\<Sum>i \<in> set as. c i^2 * r 2)^2 + (\<Sum> i \<in> set as. c i ^ 4 * (r 4 - 3 * r 2 * r 2))"
     apply (rule arg_cong2[where f="(+)"])
      apply (simp add:power2_eq_square sum_distrib_left sum_distrib_right algebra_simps)

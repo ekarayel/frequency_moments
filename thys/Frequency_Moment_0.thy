@@ -1,7 +1,7 @@
 section \<open>Frequency Moment $0$\<close>
 
 theory Frequency_Moment_0
-  imports Main Primes_Ext Float_Ext Median K_Smallest Universal_Hash_Families_Nat Encoding
+  imports Main Primes_Ext Float_Ext Median_Method.Median K_Smallest Universal_Hash_Families_Nat Encoding
   Frequency_Moments Landau_Ext
 begin
 

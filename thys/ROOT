@@ -4,6 +4,7 @@ session FrequencyMoments = HOL +
     "HOL-Algebra"
     "HOL-Probability"
     "Lp"
+    "Median_Method"
   theories
     Encoding
     Field
@@ -14,11 +15,8 @@ session FrequencyMoments = HOL +
     Frequency_Moment_k
     Landau_Ext
     List_Ext
-    Median
     Multiset_Ext
     K_Smallest
-    Partitions
-    Interpolation_Polynomial_Counts
     Primes_Ext
     Probability_Ext
     Product_PMF_Ext

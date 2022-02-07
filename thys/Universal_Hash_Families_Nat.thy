@@ -10,22 +10,33 @@ begin
 lemma fin_bounded_degree_polynomials:
   assumes "p > 0"
   shows "finite (bounded_degree_polynomials (ZFact (int p)) n)"
-  apply (rule fin_degree_bounded)
-   apply (metis ZFact_is_cring cring_def)
-  by (rule zfact_finite[OF assms])
+proof -
+  interpret cring "ZFact (int p)"
+    using ZFact_is_cring by simp
+  show ?thesis
+    using fin_degree_bounded zfact_finite[OF assms] by blast
+qed
 
 lemma ne_bounded_degree_polynomials:
   shows "bounded_degree_polynomials (ZFact (int p)) n \<noteq> {}"
-  apply (rule non_empty_bounded_degree_polynomials)
-  by (metis ZFact_is_cring cring_def)
+proof -
+  interpret cring "ZFact (int p)"
+    using ZFact_is_cring by simp
+
+  show ?thesis
+    by (rule non_empty_bounded_degree_polynomials)
+qed
 
 lemma card_bounded_degree_polynomials:
   assumes "p > 0"
   shows "card (bounded_degree_polynomials (ZFact (int p)) n) = p^n"
-  apply (subst bounded_degree_polynomials_count)
-    apply (metis ZFact_is_cring cring_def)
-   apply (rule zfact_finite[OF assms])
-  by (subst zfact_card, metis assms, simp)
+proof -
+  interpret cring "ZFact (int p)"
+    using ZFact_is_cring by simp
+  show ?thesis
+  apply (subst bounded_degree_polynomials_card)
+    by (subst zfact_card, metis assms, simp)
+qed
 
 fun hash :: "nat \<Rightarrow> nat \<Rightarrow> int set list \<Rightarrow> nat"
   where "hash p x f = the_inv_into {0..<p} (zfact_embed p) (Universal_Hash_Families.hash (ZFact p) (zfact_embed p x) f)"

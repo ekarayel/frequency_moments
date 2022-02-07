@@ -1,7 +1,8 @@
 section \<open>Universal Hash Families\<close>
 
 theory Universal_Hash_Families
-  imports Main Interpolation_Polynomial_Counts Product_PMF_Ext
+  imports Main Product_PMF_Ext 
+    Interpolation_Polynomials_HOL_Algebra.Interpolation_Polynomial_Cardinalities
 begin
 
 text \<open>A k-universal hash family $\mathcal H$ is probability space, whose elements are hash functions 
@@ -38,23 +39,23 @@ lemma hash_range_2:
   apply (rule image_subsetI)
   by (metis hash_range assms)
 
-lemma poly_cards:
-  assumes "field F \<and> finite (carrier F)"
-  assumes "K \<subseteq> carrier F"
+lemma (in field) poly_cards:
+  assumes "finite (carrier R)"
+  assumes "K \<subseteq> carrier R"
   assumes "card K \<le> n"
-  assumes "y ` K \<subseteq> (carrier F)"
-  shows "card {\<omega> \<in> bounded_degree_polynomials F n. (\<forall>k \<in> K. ring.eval F \<omega> k = y k)} = 
-         card (carrier F)^(n-card K)"
-  using interpolating_polynomials_count[where n="n-card K" and f="y" and F="F" and K="K"]  assms 
+  assumes "y ` K \<subseteq> (carrier R)"
+  shows "card {\<omega> \<in> bounded_degree_polynomials R n. (\<forall>k \<in> K. eval \<omega> k = y k)} = 
+         card (carrier R)^(n-card K)"
+  using interpolating_polynomials_card[where n="n-card K" and f="y" and K="K"] assms finite_subset
   by fastforce
 
-lemma poly_cards_single:
-  assumes "field F \<and> finite (carrier F)"
-  assumes "k \<in> carrier F"
+lemma (in field) poly_cards_single:
+  assumes "finite (carrier R)"
+  assumes "k \<in> carrier R"
   assumes "1 \<le> n"
-  assumes "y \<in> carrier F"
-  shows "card {\<omega> \<in> bounded_degree_polynomials F n. ring.eval F \<omega> k = y} = 
-         card (carrier F)^(n-1)"
+  assumes "y \<in> carrier R"
+  shows "card {\<omega> \<in> bounded_degree_polynomials R n. eval \<omega> k = y} = 
+         card (carrier R)^(n-1)"
   using poly_cards[OF assms(1), where K="{k}" and y="\<lambda>_. y", simplified] assms(3) assms(4)[simplified]
   by (simp add:assms)
 
@@ -68,20 +69,24 @@ lemma hash_prob:
   assumes "y ` K \<subseteq> carrier F"
   shows "\<P>(\<omega> in pmf_of_set (bounded_degree_polynomials F n). (\<forall>x \<in> K. hash F x \<omega> = y x)) = 1/(real (card (carrier F)))^card K" 
 proof -
+
+  interpret field "F" using assms(1) by blast
+
   have "\<zero>\<^bsub>F\<^esub> \<in> carrier F"
     using assms(1) field.is_ring ring.ring_simprules(2) by blast
-
   hence a:"card (carrier F) > 0"
     apply (subst card_gt_0_iff) 
     using assms(1) by blast
 
+  have b:"finite (carrier F)" using assms by blast
+
   show ?thesis
     apply (subst measure_pmf_of_set)
-      apply (metis non_empty_bounded_degree_polynomials field.is_ring  assms(1))
-     apply (metis fin_degree_bounded field.is_ring assms(1))
+      apply (metis non_empty_bounded_degree_polynomials)
+     apply (metis fin_degree_bounded assms(1))
     apply (simp add:hash_def expand_subset_filter[symmetric])
-    apply (subst poly_cards[OF assms(1) assms(2) assms(3) assms(4)])
-    apply (subst bounded_degree_polynomials_count, metis field.is_ring assms(1), metis assms(1))
+    apply (subst poly_cards[OF b assms(2) assms(3) assms(4)])
+    apply (subst bounded_degree_polynomials_card)
     apply (subst frac_eq_eq)
     apply (simp add:a, simp add:a, simp)
     by (metis assms(3) le_add_diff_inverse2 power_add)
@@ -105,6 +110,9 @@ lemma hash_indep_pmf:
   shows "prob_space.indep_vars (pmf_of_set (bounded_degree_polynomials F n)) 
     (\<lambda>_. pmf_of_set (carrier F)) (hash F) J"
 proof -
+  interpret field "F" using assms(1) by blast
+  have fin_carr:"finite (carrier F)" using assms by blast
+
   have "\<zero>\<^bsub>poly_ring F\<^esub> \<in> bounded_degree_polynomials F n"
     apply (simp add:bounded_degree_polynomials_def)
     apply (rule conjI)
@@ -113,7 +121,7 @@ proof -
   hence b: "bounded_degree_polynomials F n \<noteq> {}"
     by blast
   have c: "finite (bounded_degree_polynomials F n)"
-    by (metis finite_poly_count assms(1))
+    by (metis fin_degree_bounded assms(1))
   have d: "\<And> A P. A \<inter> {\<omega>. P \<omega>} = {\<omega> \<in> A. P \<omega>}"
     by blast
 
@@ -145,8 +153,8 @@ proof -
       have a_6: "\<And>x. x \<in> J' \<Longrightarrow> a x \<in> carrier F"  using True by force
       show ?thesis 
        apply (simp add:\<Omega>_def measure_pmf_of_set[OF b c] d hash_def)
-       apply (subst poly_cards[OF assms(1) a_3 a_2], metis True)
-        apply (simp add:bounded_degree_polynomials_count[OF e fin_carr] poly_cards_single[OF assms(1) a_5 a_4 a_6] power_divide)
+        apply (subst poly_cards[OF fin_carr a_3 a_2], metis True)
+        apply (simp add:bounded_degree_polynomials_card poly_cards_single[OF fin_carr a_5 a_4 a_6] power_divide)
         apply (subst frac_eq_eq, simp add:f, simp add:f) 
           apply (simp add:power_add[symmetric] power_mult[symmetric])
           apply (rule arg_cong2[where f="\<lambda>x y. x ^ y"], simp)
@@ -218,7 +226,7 @@ proof (rule inj_onI)
     using \<omega>_def assms(2) apply (simp add:bounded_degree_polynomials_def)
     by (metis assms(1) assms(3) field.is_ring list.inject ring.degree_oneE)
 
-  have "u \<otimes>\<^bsub>F\<^esub> x \<oplus>\<^bsub>F\<^esub> v = u \<otimes>\<^bsub>F\<^esub> y  \<oplus>\<^bsub>F\<^esub> v"
+  have "u \<otimes>\<^bsub>F\<^esub> x \<oplus>\<^bsub>F\<^esub> v = u \<otimes>\<^bsub>F\<^esub> y \<oplus>\<^bsub>F\<^esub> v"
     using a1 a2 a3 u_carr v_carr by (simp add:hash_def \<omega>_def)
 
   thus "x = y"
