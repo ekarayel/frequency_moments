@@ -2,7 +2,7 @@ section \<open>Universal Hash Families\<close>
 
 theory Universal_Hash_Families
   imports Main Product_PMF_Ext 
-    Interpolation_Polynomials_HOL_Algebra.Interpolation_Polynomial_Cardinalities
+    Interpolation_Polynomials_HOL_Algebra.Interpolation_Polynomial_Cardinalities Encoding
 begin
 
 text \<open>A k-universal hash family $\mathcal H$ is probability space, whose elements are hash functions 
@@ -19,6 +19,16 @@ In this section, we construct $k$-universal hash families following the approach
 by Wegman and Carter using the polynomials of degree less than $k$ over a finite field.\<close>
 
 text \<open>A hash function is just polynomial evaluation.\<close>
+
+definition (in prob_space) k_wise_indep_vars :: 
+  "nat \<Rightarrow> ('b \<Rightarrow> 'c measure) \<Rightarrow> ('b \<Rightarrow> 'a \<Rightarrow> 'c) \<Rightarrow> 'b set \<Rightarrow> bool" where
+  "k_wise_indep_vars k M' X' I = (\<forall>J \<subseteq> I. card J \<le> k \<longrightarrow> finite J \<longrightarrow> indep_vars M' X' J)" 
+
+lemma (in prob_space) k_wise_subset:
+  assumes "k_wise_indep_vars k M' X' I"
+  assumes "J \<subseteq> I"
+  shows "k_wise_indep_vars k M' X' J"
+  using assms by (simp add:k_wise_indep_vars_def)
 
 definition hash :: "('a, 'b) ring_scheme \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a" 
   where "hash F x \<omega> = ring.eval F \<omega> x"
@@ -100,6 +110,42 @@ lemma hash_prob_single:
   shows "\<P>(\<omega> in pmf_of_set (bounded_degree_polynomials F n). hash F x \<omega> = y) = 1/(real (card (carrier F)))" 
   using hash_prob[OF assms(1), where K="{x}" and y="\<lambda>_. y", simplified] assms 
   by (metis (no_types, lifting) Collect_cong One_nat_def UNIV_I space_measure_pmf)
+
+lemma hash_prob_range:
+  assumes "field F \<and> finite (carrier F)"
+  assumes "x \<in> carrier F"
+  assumes "1 \<le> n"
+  shows "\<P>(\<omega> in measure_pmf (pmf_of_set (bounded_degree_polynomials F n)).
+    hash F x \<omega> \<in> A) = card (A \<inter> carrier F) / (card (carrier F))"
+proof -
+  define \<Omega> where "\<Omega> = measure_pmf (pmf_of_set (bounded_degree_polynomials F n))"
+
+  interpret field "F" using assms by blast
+
+  have "\<P>(\<omega> in \<Omega>. hash F x \<omega> \<in> A) = measure \<Omega> (\<Union> k \<in> A \<inter> carrier F. {\<omega>. hash F x \<omega> = k})"
+    apply (simp only:\<Omega>_def)
+    apply (rule pmf_eq, simp)
+    apply (subst (asm) set_pmf_of_set[OF non_empty_bounded_degree_polynomials fin_degree_bounded])
+    using assms apply blast
+    using hash_range[OF is_ring] assms(2) by simp
+  also have "... = (\<Sum> k \<in> (A \<inter> carrier F). measure \<Omega> {\<omega>. hash F x \<omega> = k})"
+    apply (rule measure_finite_Union)
+    using assms apply blast
+    apply (simp add:\<Omega>_def)
+     apply (simp add:disjoint_family_on_def, fastforce) 
+    by (simp add:\<Omega>_def)
+  also have "... = (\<Sum> k \<in> (A \<inter> carrier F). \<P>(\<omega> in \<Omega>. \<forall>x' \<in> {x}. hash F x' \<omega> = k ))"
+    by (simp add:\<Omega>_def)
+  also have "... = (\<Sum> k \<in> (A \<inter> carrier F). 1/ real (card (carrier F)) ^ card {x})"
+    apply (rule sum.cong, simp)
+    apply (simp only:\<Omega>_def)
+    apply (rule hash_prob[OF assms(1)], simp add:assms, simp)
+    using assms(3) apply simp by blast
+  also have "... = real (card (A \<inter> carrier F)) / real (card (carrier F))"
+    by simp
+  finally show ?thesis
+    by (simp only:\<Omega>_def)
+qed
 
 lemma hash_indep_pmf:
   assumes "field F \<and> finite (carrier F)"
@@ -188,9 +234,6 @@ qed
 text \<open>We introduce k-wise independent random variables using the existing definition of
 independent random variables.\<close>
 
-definition (in prob_space) k_wise_indep_vars :: 
-  "nat \<Rightarrow> ('b \<Rightarrow> 'c measure) \<Rightarrow> ('b \<Rightarrow> 'a \<Rightarrow> 'c) \<Rightarrow> 'b set \<Rightarrow> bool" where
-  "k_wise_indep_vars k M' X' I = (\<forall>J \<subseteq> I. card J \<le> k \<longrightarrow> finite J \<longrightarrow> indep_vars M' X' J)" 
 
 lemma hash_k_wise_indep:
   assumes "field F \<and> finite (carrier F)"
@@ -234,10 +277,6 @@ proof (rule inj_onI)
     by (simp add: local.field_Units)
 qed
 
-lemma (in prob_space) k_wise_subset:
-  assumes "k_wise_indep_vars k M' X' I"
-  assumes "J \<subseteq> I"
-  shows "k_wise_indep_vars k M' X' J"
-  using assms by (simp add:k_wise_indep_vars_def)
+
 
 end

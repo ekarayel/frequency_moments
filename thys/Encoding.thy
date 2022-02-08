@@ -140,7 +140,7 @@ termination
 lemma list_encoding_dom:
   assumes "set l \<subseteq> dom f"
   shows "l \<in> dom (list\<^sub>S f)"
-  using assms apply (induction l, simp add:dom_def, simp) by fastforce
+  using assms by (induction l, simp_all add:dom_def, fastforce)
 
 lemma list_bit_count:
   "bit_count (list\<^sub>S f xs) = (\<Sum>x \<leftarrow> xs. bit_count (f x) + 1) + 1"

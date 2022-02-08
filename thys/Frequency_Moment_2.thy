@@ -2,7 +2,7 @@ section \<open>Frequency Moment $2$\<close>
 
 theory Frequency_Moment_2
   imports Main Median_Method.Median Primes_Ext Encoding List_Ext 
-    Universal_Hash_Families_Nat Frequency_Moments Landau_Ext
+    Universal_Hash_Families Frequency_Moments Landau_Ext Field
     Equivalence_Relation_Enumeration.Equivalence_Relation_Enumeration
 begin
 
@@ -12,9 +12,9 @@ The only difference is that the algorithm is adapted to work with prime field of
 greatly reduces the implementation complexity.\<close>
 
 fun f2_hash where
-  "f2_hash p h k = (if even (hash p k h) then int p - 1 else - int p - 1)"
+  "f2_hash p h k = (if even (hash (mod_ring p) k h) then int p - 1 else - int p - 1)"
 
-type_synonym f2_state = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> int set list) \<times> (nat \<times> nat \<Rightarrow> int)"
+type_synonym f2_state = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> nat list) \<times> (nat \<times> nat \<Rightarrow> int)"
 
 fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_state pmf" where
   "f2_init \<delta> \<epsilon> n =
@@ -22,7 +22,7 @@ fun f2_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f2_state p
       let s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>;
       let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>;
       let p = find_prime_above (max n 3);
-      h \<leftarrow> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4));
+      h \<leftarrow> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (mod_ring p) 4));
       return_pmf (s\<^sub>1, s\<^sub>2, p, h, (\<lambda>_ \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0 :: int)))
     }"
 
@@ -40,7 +40,7 @@ lemma f2_hash_exp:
   assumes "k < p"
   assumes "p > 2" 
   shows
-    "prob_space.expectation (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)) 
+    "prob_space.expectation (pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)) 
     (\<lambda>\<omega>. real_of_int (f2_hash p \<omega> k) ^m) = 
      (((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p))"
 proof -
@@ -50,11 +50,15 @@ proof -
   then obtain t where t_def: "p=2*t+1" 
     using oddE by blast
 
-  define \<Omega> where "\<Omega> = pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)"
+  interpret field "mod_ring p"
+    using mod_ring_is_field[OF assms(1)] by blast
+
+  define \<Omega> where "\<Omega> = pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)"
 
   have b: "finite (set_pmf \<Omega>)"
     apply (simp add:\<Omega>_def)
-    by (metis fin_bounded_degree_polynomials[OF g] ne_bounded_degree_polynomials set_pmf_of_set)
+    using fin_degree_bounded[OF mod_ring_finite]
+    by (metis non_empty_bounded_degree_polynomials set_pmf_of_set)
 
   have zero_le_4: "0 < (4::nat)" by simp
 
@@ -85,26 +89,26 @@ proof -
   hence c_2: "card ({k. odd k} \<inter> {0..<p}) * 2 = (p-1)" 
     by (simp add:t_def)
 
-  have d_1: " \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> Collect even) = (real p + 1)/(2*real p)"
+  have d_1: " \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect even) = (real p + 1)/(2*real p)"
     apply (subst \<Omega>_def, subst \<Omega>_def)
-    apply (subst hash_prob_range[OF assms(1) assms(2) zero_le_4])
-    apply (subst frac_eq_eq, simp add:g, simp add:g)
-    apply (simp)
-    using c_1 by linarith
-  have d_2: " \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> Collect odd) = (real p - 1)/(2*real p)"
+    apply (subst hash_prob_range, simp add:mod_ring_is_field[OF assms(1)], simp add:mod_ring_def)
+    apply (simp add:mod_ring_def assms, simp)
+    apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
+    using c_1 by (simp add:mod_ring_def lessThan_atLeast0) 
+  have d_2: " \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect odd) = (real p - 1)/(2*real p)"
     apply (subst \<Omega>_def, subst \<Omega>_def)
-    apply (subst hash_prob_range[OF assms(1) assms(2) zero_le_4])
-    apply (subst frac_eq_eq, simp add:g, simp add:g)
-    apply (simp)
-    using c_2 by linarith
+    apply (subst hash_prob_range, simp add:mod_ring_is_field[OF assms(1)], simp add:mod_ring_def)
+    apply (simp add:mod_ring_def assms, simp)
+    apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
+    using c_2 by (simp add:mod_ring_def lessThan_atLeast0 t_def)
 
   have "integral\<^sup>L \<Omega> (\<lambda>x. real_of_int (f2_hash p x k) ^ m) =
-    integral\<^sup>L \<Omega> (\<lambda>\<omega>. indicator {\<omega>. even (hash p k \<omega>)} \<omega> * (real p - 1)^m + 
-      indicator {\<omega>. odd (hash p k \<omega>)} \<omega> * (-real p - 1)^m)" 
+    integral\<^sup>L \<Omega> (\<lambda>\<omega>. indicator {\<omega>. even (hash (mod_ring p) k \<omega>)} \<omega> * (real p - 1)^m + 
+      indicator {\<omega>. odd (hash (mod_ring p) k \<omega>)} \<omega> * (-real p - 1)^m)" 
     by (rule Bochner_Integration.integral_cong, simp, simp)
   also have "... = 
-     \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> Collect even)  * (real p - 1) ^ m  + 
-     \<P>(\<omega> in measure_pmf \<Omega>. hash p k \<omega> \<in> Collect odd)  * (-real p - 1) ^ m "
+     \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect even)  * (real p - 1) ^ m  + 
+     \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect odd)  * (-real p - 1) ^ m "
     apply (subst Bochner_Integration.integral_add)
     apply (rule integrable_measure_pmf_finite[OF b])
     apply (rule integrable_measure_pmf_finite[OF b])
@@ -126,7 +130,7 @@ lemma
   assumes "Factorial_Ring.prime p"
   assumes "p > 2"
   assumes "\<And>a. a \<in> set as \<Longrightarrow> a < p"
-  defines "M \<equiv> measure_pmf (pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))"
+  defines "M \<equiv> measure_pmf (pmf_of_set (bounded_degree_polynomials (mod_ring p) 4))"
   defines "f \<equiv> (\<lambda>\<omega>. real_of_int (sum_list (map (f2_hash p \<omega>) as))^2)"
   shows var_f2:"prob_space.variance M f \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" (is "?A")
   and exp_f2:"prob_space.expectation M f = real_of_rat (F 2 as) * ((real p)\<^sup>2-1)" (is "?B")
@@ -141,6 +145,9 @@ proof -
   interpret prob_space M
     using prob_space_measure_pmf M_def by auto
 
+  interpret field "mod_ring p"
+    using mod_ring_is_field[OF assms(1)] by blast
+
   have f_eq: "f = (\<lambda>\<omega>. (\<Sum>x \<in> set as. c x * h \<omega> x)^2)"
     by (simp add:f_def c_def h_def sum_list_eval del:f2_hash.simps)
 
@@ -148,8 +155,8 @@ proof -
 
   have int_M: "\<And>f. integrable M (\<lambda>\<omega>. ((f \<omega>)::real))"
     apply (simp add:M_def)
-    apply (rule integrable_measure_pmf_finite)
-    by (metis p_ge_0 set_pmf_of_set ne_bounded_degree_polynomials fin_bounded_degree_polynomials)
+    apply (rule integrable_measure_pmf_finite) 
+    by (metis set_pmf_of_set non_empty_bounded_degree_polynomials fin_degree_bounded[OF mod_ring_finite])
 
   have r_one: "r (Suc 0) = 0" by (simp add:r_def algebra_simps)
 
@@ -190,14 +197,16 @@ proof -
     assume "length x \<le> 4"
     hence card_x: "card (set x) \<le> 4" using card_length dual_order.trans by blast
 
+    have x_sub_p': "set x \<subseteq> carrier (mod_ring p) " apply (simp add:mod_ring_def)
+      using x_sub_p lessThan_atLeast0 by presburger
     have "expectation (h_prod x) = expectation (\<lambda>\<omega>. \<Prod> i \<in> set x. h \<omega> i^(count_list x i))"
       apply (rule arg_cong[where f="expectation"])
       by (simp add:h_prod_def prod_list_eval)
     also have "... = (\<Prod>i \<in> set x. expectation (\<lambda>\<omega>. h \<omega> i^(count_list x i)))"
       apply (subst indep_vars_lebesgue_integral, simp)
         apply (simp add:h_def)
-        apply (rule indep_vars_compose2[where X="hash p" and M'=" (\<lambda>_. pmf_of_set {0..<p})"])
-         using hash_k_wise_indep[where n="4" and p="p"] card_x x_sub_p assms(1)
+        apply (rule indep_vars_compose2[where X="hash (mod_ring p)" and M'=" (\<lambda>_. pmf_of_set (carrier (mod_ring p)))"])
+         using hash_k_wise_indep[where n="4" and F="mod_ring p"] card_x x_sub_p' assms(1) mod_ring_is_field[OF assms(1)] mod_ring_finite[where n="p"]
          apply (simp add:k_wise_indep_vars_def M_def[symmetric])
         apply simp
        apply (rule int_M)
@@ -324,7 +333,7 @@ lemma f2_alg_sketch:
   defines "s\<^sub>2 \<equiv> nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   defines "p \<equiv> find_prime_above (max n 3)"
   defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
-  defines "\<Omega> \<equiv> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))" 
+  defines "\<Omega> \<equiv> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (mod_ring p) 4))" 
   shows "sketch = \<Omega> \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, 
       \<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. sum_list (map (f2_hash p (h i)) as)))"
 proof -
@@ -365,17 +374,20 @@ proof -
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define p where "p = find_prime_above (max n 3)"
   define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = 
-    prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4))"
+    prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (mod_ring p) 4))"
 
   define s\<^sub>1_from :: "f2_state \<Rightarrow> nat" where "s\<^sub>1_from = fst"
   define s\<^sub>2_from :: "f2_state \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
   define p_from :: "f2_state \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
-  define h_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> int set list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
+  define h_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> nat list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
   define sketch_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
 
   have p_prime: "Factorial_Ring.prime p" 
     apply (simp add:p_def) 
     using find_prime_above_is_prime by blast
+
+  interpret field "mod_ring p"
+    using mod_ring_is_field p_prime by blast
 
   have p_ge_3: "p \<ge> 3"
     apply (simp add:p_def)
@@ -388,8 +400,8 @@ proof -
 
   have p_ge_0: "p > 0" using p_ge_2 by simp
 
-  have fin_omega_2: "finite (set_pmf ( pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)))"
-    by (metis fin_bounded_degree_polynomials[OF p_ge_0] ne_bounded_degree_polynomials set_pmf_of_set)
+  have fin_omega_2: "finite (set_pmf ( pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)))"
+    by (metis fin_degree_bounded non_empty_bounded_degree_polynomials mod_ring_finite set_pmf_of_set)
 
   have fin_omega_1: "finite (set_pmf \<Omega>\<^sub>0)"
     apply (simp add:\<Omega>\<^sub>0_def set_prod_pmf)
@@ -402,9 +414,8 @@ proof -
     apply (simp add:p_def) 
     by (meson find_prime_above_lower_bound max.boundedE)
 
-  have fin_poly': "finite (bounded_degree_polynomials (ZFact (int p)) 4)"
-    apply (rule fin_bounded_degree_polynomials)
-    using p_ge_3 by auto
+  have fin_poly': "finite (bounded_degree_polynomials (mod_ring p) 4)"
+    using fin_degree_bounded mod_ring_finite by auto
 
   have s2_nonzero: "s\<^sub>2 > 0"
     using assms by (simp add:s\<^sub>2_def)
@@ -500,7 +511,7 @@ proof -
     using s2_nonzero apply (simp add:f'_def f2_def f3_def f_def median_rat median_restrict cong:restrict_cong)
     by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
 
-  have distr': "M = map_pmf f (prod_pmf  ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (ZFact (int p)) 4)))"
+  have distr': "M = map_pmf f (prod_pmf  ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)))"
     using f2_alg_sketch[OF assms(1) assms(2), where as="as" and n="n"]
     apply (simp add:M_def Let_def s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
     apply (subst bind_assoc_pmf)
@@ -597,7 +608,7 @@ definition encode_f2_state :: "f2_state \<Rightarrow> bool list option" where
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
     N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
-    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (list\<^sub>S (zfact\<^sub>S p))) \<times>\<^sub>S
+    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (list\<^sub>S N\<^sub>S)) \<times>\<^sub>S
     (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S))))"
 
 lemma "inj_on encode_f2_state (dom encode_f2_state)"
@@ -606,7 +617,7 @@ lemma "inj_on encode_f2_state (dom encode_f2_state)"
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis encode_extensional list_encoding zfact_encoding)
+  apply (rule prod_encoding, rule encode_extensional, rule list_encoding, rule nat_encoding)
   by (metis encode_extensional int_encoding)
 
 theorem f2_exact_space_usage:
@@ -623,6 +634,11 @@ proof -
   have find_prime_above_3: "find_prime_above 3 = 3" 
     by (simp add:find_prime_above.simps)
 
+  have "p \<ge> 2" using p_def find_prime_above_min by presburger
+  hence p_ge_1: "p > 1" by simp
+  interpret cring "mod_ring p"
+    using mod_ring_is_cring[OF p_ge_1] by auto
+
   have p_ge_0: "p > 0" 
     by (metis find_prime_above_min p_def gr0I not_numeral_le_zero)
   have p_le_n: "p \<le> 2 * n + 3" 
@@ -631,23 +647,23 @@ proof -
     apply (simp add: p_def) 
     by (metis One_nat_def find_prime_above_upper_bound Suc_1 add_Suc_right linear not_less_eq_eq numeral_3_eq_3)
 
-  have a: "\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4 \<Longrightarrow>
+  have a: "\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (mod_ring p) 4 \<Longrightarrow>
        bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
       sum_list (map (f2_hash p (y i)) as)))
        \<le> ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
   proof -
     fix y
-    assume a_1:"y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (ZFact (int p)) 4"
+    assume a_1:"y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (mod_ring p) 4"
 
     have a_2: "y \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})" using a_1  PiE_iff by blast
 
-    have a_3: "\<And>x. x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> bit_count (list\<^sub>S (zfact\<^sub>S p) x) 
+    have a_3: "\<And>x. x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> bit_count (list\<^sub>S N\<^sub>S x) 
       \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
     proof -
       fix x 
       assume a_5: "x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})"
-      have "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le> ereal ( real 4 * (2 * log 2 (real p) + 2) + 1)"
-        apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0])
+      have "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal ( real 4 * (2 * log 2 (real p) + 2) + 1)"
+        apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0]) 
         using a_1 a_5 by blast
       also have "... \<le> ereal (real 4 * (2 * log 2 (3 + 2 * real n) + 2) + 1)"
         apply simp
@@ -655,7 +671,7 @@ proof -
         using p_le_n by simp
       also have "... \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
         by simp
-      finally show "bit_count (list\<^sub>S (zfact\<^sub>S p) x) \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
+      finally show "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
         by blast
     qed
 
@@ -717,7 +733,7 @@ proof -
     apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:f2_space_usage.simps)
     apply (subst set_prod_pmf, simp)
     apply (simp add: PiE_iff  del:f2_space_usage.simps)
-    apply (subst set_pmf_of_set, metis ne_bounded_degree_polynomials, metis fin_bounded_degree_polynomials[OF p_ge_0])
+    apply (subst set_pmf_of_set) apply (rule non_empty_bounded_degree_polynomials) apply (rule fin_degree_bounded[OF mod_ring_finite])
     by (metis a)
 qed
 

@@ -1,7 +1,7 @@
 section "Frequency Moments"
 
 theory Frequency_Moments
-  imports Main HOL.List HOL.Rat List_Ext
+  imports Main HOL.List HOL.Rat List_Ext Universal_Hash_Families Field
 begin
 
 text \<open>This section contains a definition of the frequency moments of a stream.\<close>
@@ -23,5 +23,40 @@ proof -
     by (metis  count_list_gr_1  of_nat_1 of_nat_power_le_of_nat_cancel_iff one_le_power)
   finally show  "F k as > 0" by simp
 qed
+
+lemma bounded_degree_polynomial_bit_count:
+  assumes "p > 0"
+  assumes "x \<in> bounded_degree_polynomials (mod_ring p) n"
+  shows "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal (real n * (2 * log 2 p + 2) + 1)" (is "_ \<le> ?rhs")
+proof -
+  have a:"length x \<le> n" 
+    using  assms(2) by (simp add:bounded_degree_polynomials_length)
+  have b:"\<And>y. y \<in> set x \<Longrightarrow> y \<le> p-1"
+  proof -
+    fix y
+    assume "y \<in> set x"
+    moreover have "x \<in> (carrier (poly_ring (mod_ring p)))" 
+      using bounded_degree_polynomials_def assms(2) by blast
+    ultimately have "y \<in> carrier (mod_ring p)"
+      using univ_poly_carrier polynomial_def 
+      by (metis empty_iff list.set(1) subset_code(1))
+    hence "y < p"
+      by (simp add:mod_ring_def)
+    thus "y \<le> p -1"
+      using assms(1) by simp
+  qed
+
+  have "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal (length x) * (ereal (2 * log 2 (1 + real (p - 1)) + 1) + 1) + 1"
+    apply (rule list_bit_count_est)
+    apply (rule nat_bit_count_est[where m="p-1"])
+    using b by simp
+  also have "... \<le> ereal (n * ((2 * log 2 p + 1) + 1) + 1)"
+    apply (simp, rule mult_mono)
+    using a assms by simp+
+  also have "... \<le> ?rhs"
+    by (simp add:ac_simps)
+  finally show ?thesis by simp
+qed
+
 
 end
