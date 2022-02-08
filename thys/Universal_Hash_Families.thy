@@ -2,7 +2,7 @@ section \<open>Universal Hash Families\<close>
 
 theory Universal_Hash_Families
   imports Main Product_PMF_Ext 
-    Interpolation_Polynomials_HOL_Algebra.Interpolation_Polynomial_Cardinalities Encoding
+    Interpolation_Polynomials_HOL_Algebra.Interpolation_Polynomial_Cardinalities Encoding Field
 begin
 
 text \<open>A k-universal hash family $\mathcal H$ is probability space, whose elements are hash functions 
@@ -30,22 +30,19 @@ lemma (in prob_space) k_wise_subset:
   shows "k_wise_indep_vars k M' X' J"
   using assms by (simp add:k_wise_indep_vars_def)
 
-definition hash :: "('a, 'b) ring_scheme \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a" 
-  where "hash F x \<omega> = ring.eval F \<omega> x"
+definition hash where "hash R x \<omega> = ring.eval R \<omega> x"
 
-lemma hash_range:
-  assumes "ring F"
-  assumes "\<omega> \<in> bounded_degree_polynomials F n"
-  assumes "x \<in> carrier F"
-  shows "hash F x \<omega> \<in> carrier F"
+lemma (in ring) hash_range:
+  assumes "\<omega> \<in> bounded_degree_polynomials R n"
+  assumes "x \<in> carrier R"
+  shows "hash R x \<omega> \<in> carrier R"
   using assms 
   apply (simp add:hash_def bounded_degree_polynomials_def)
-  by (metis ring.eval_in_carrier ring.polynomial_incl univ_poly_carrier)
+  by (metis eval_in_carrier polynomial_incl univ_poly_carrier)
 
-lemma hash_range_2:
-  assumes "ring F"
-  assumes "\<omega> \<in> bounded_degree_polynomials F n"
-  shows "(\<lambda>x. hash F x \<omega>) ` carrier F \<subseteq> carrier F"
+lemma (in ring) hash_range_2:
+  assumes "\<omega> \<in> bounded_degree_polynomials R n"
+  shows "(\<lambda>x. hash R x \<omega>) ` carrier R \<subseteq> carrier R"
   apply (rule image_subsetI)
   by (metis hash_range assms)
 
@@ -72,152 +69,134 @@ lemma (in field) poly_cards_single:
 lemma expand_subset_filter: "{x \<in> A. P x} = A \<inter> {x. P x}"
   by force
 
+context finite_field
+begin
 lemma hash_prob:
-  assumes "field F \<and> finite (carrier F)"
-  assumes "K \<subseteq> carrier F"
+  assumes "K \<subseteq> carrier R"
   assumes "card K \<le> n"
-  assumes "y ` K \<subseteq> carrier F"
-  shows "\<P>(\<omega> in pmf_of_set (bounded_degree_polynomials F n). (\<forall>x \<in> K. hash F x \<omega> = y x)) = 1/(real (card (carrier F)))^card K" 
+  assumes "y ` K \<subseteq> carrier R"
+  shows "\<P>(\<omega> in pmf_of_set (bounded_degree_polynomials R n). (\<forall>x \<in> K. hash R x \<omega> = y x)) = 1/(real (card (carrier R)))^card K" 
 proof -
 
-  interpret field "F" using assms(1) by blast
-
-  have "\<zero>\<^bsub>F\<^esub> \<in> carrier F"
+  have "\<zero> \<in> carrier R"
     using assms(1) field.is_ring ring.ring_simprules(2) by blast
-  hence a:"card (carrier F) > 0"
+  hence a:"card (carrier R) > 0"
     apply (subst card_gt_0_iff) 
-    using assms(1) by blast
-
-  have b:"finite (carrier F)" using assms by blast
+    using finite_carrier by blast
 
   show ?thesis
     apply (subst measure_pmf_of_set)
       apply (metis non_empty_bounded_degree_polynomials)
-     apply (metis fin_degree_bounded assms(1))
+     apply (metis fin_degree_bounded finite_carrier)
     apply (simp add:hash_def expand_subset_filter[symmetric])
-    apply (subst poly_cards[OF b assms(2) assms(3) assms(4)])
+    apply (subst poly_cards[OF finite_carrier assms(1) assms(2) assms(3)])
     apply (subst bounded_degree_polynomials_card)
     apply (subst frac_eq_eq)
     apply (simp add:a, simp add:a, simp)
-    by (metis assms(3) le_add_diff_inverse2 power_add)
+    by (metis assms(2) le_add_diff_inverse2 power_add)
 qed
 
 lemma hash_prob_single:
-  assumes "field F \<and> finite (carrier F)"
-  assumes "x \<in> carrier F"
+  assumes "x \<in> carrier R"
   assumes "1 \<le> n"
-  assumes "y \<in> carrier F"
-  shows "\<P>(\<omega> in pmf_of_set (bounded_degree_polynomials F n). hash F x \<omega> = y) = 1/(real (card (carrier F)))" 
-  using hash_prob[OF assms(1), where K="{x}" and y="\<lambda>_. y", simplified] assms 
-  by (metis (no_types, lifting) Collect_cong One_nat_def UNIV_I space_measure_pmf)
+  assumes "y \<in> carrier R"
+  shows "\<P>(\<omega> in pmf_of_set (bounded_degree_polynomials R n). hash R x \<omega> = y) = 1/(real (card (carrier R)))" 
+  using hash_prob[where K="{x}"] assms finite_carrier by simp
 
 lemma hash_prob_range:
-  assumes "field F \<and> finite (carrier F)"
-  assumes "x \<in> carrier F"
+  assumes "x \<in> carrier R"
   assumes "1 \<le> n"
-  shows "\<P>(\<omega> in measure_pmf (pmf_of_set (bounded_degree_polynomials F n)).
-    hash F x \<omega> \<in> A) = card (A \<inter> carrier F) / (card (carrier F))"
+  shows "\<P>(\<omega> in measure_pmf (pmf_of_set (bounded_degree_polynomials R n)).
+    hash R x \<omega> \<in> A) = card (A \<inter> carrier R) / (card (carrier R))"
 proof -
-  define \<Omega> where "\<Omega> = measure_pmf (pmf_of_set (bounded_degree_polynomials F n))"
+  define \<Omega> where "\<Omega> = measure_pmf (pmf_of_set (bounded_degree_polynomials R n))"
 
-  interpret field "F" using assms by blast
-
-  have "\<P>(\<omega> in \<Omega>. hash F x \<omega> \<in> A) = measure \<Omega> (\<Union> k \<in> A \<inter> carrier F. {\<omega>. hash F x \<omega> = k})"
+  have "\<P>(\<omega> in \<Omega>. hash R x \<omega> \<in> A) = measure \<Omega> (\<Union> k \<in> A \<inter> carrier R. {\<omega>. hash R x \<omega> = k})"
     apply (simp only:\<Omega>_def)
     apply (rule pmf_eq, simp)
     apply (subst (asm) set_pmf_of_set[OF non_empty_bounded_degree_polynomials fin_degree_bounded])
-    using assms apply blast
-    using hash_range[OF is_ring] assms(2) by simp
-  also have "... = (\<Sum> k \<in> (A \<inter> carrier F). measure \<Omega> {\<omega>. hash F x \<omega> = k})"
+    using finite_carrier assms apply blast
+    using hash_range assms(1) by simp
+  also have "... = (\<Sum> k \<in> (A \<inter> carrier R). measure \<Omega> {\<omega>. hash R x \<omega> = k})"
     apply (rule measure_finite_Union)
-    using assms apply blast
+    using finite_carrier apply blast
     apply (simp add:\<Omega>_def)
      apply (simp add:disjoint_family_on_def, fastforce) 
     by (simp add:\<Omega>_def)
-  also have "... = (\<Sum> k \<in> (A \<inter> carrier F). \<P>(\<omega> in \<Omega>. \<forall>x' \<in> {x}. hash F x' \<omega> = k ))"
+  also have "... = (\<Sum> k \<in> (A \<inter> carrier R). \<P>(\<omega> in \<Omega>. \<forall>x' \<in> {x}. hash R x' \<omega> = k ))"
     by (simp add:\<Omega>_def)
-  also have "... = (\<Sum> k \<in> (A \<inter> carrier F). 1/ real (card (carrier F)) ^ card {x})"
+  also have "... = (\<Sum> k \<in> (A \<inter> carrier R). 1/ real (card (carrier R)) ^ card {x})"
     apply (rule sum.cong, simp)
     apply (simp only:\<Omega>_def)
-    apply (rule hash_prob[OF assms(1)], simp add:assms, simp)
-    using assms(3) apply simp by blast
-  also have "... = real (card (A \<inter> carrier F)) / real (card (carrier F))"
+    apply (rule hash_prob, simp add:assms, simp)
+    using assms(2) apply simp by blast
+  also have "... = real (card (A \<inter> carrier R)) / real (card (carrier R))"
     by simp
   finally show ?thesis
     by (simp only:\<Omega>_def)
 qed
 
 lemma hash_indep_pmf:
-  assumes "field F \<and> finite (carrier F)"
-  assumes "J\<subseteq>carrier F"
+  assumes "J\<subseteq>carrier R"
   assumes "finite J" 
   assumes "card J \<le> n"
   assumes "1 \<le> n"
-  shows "prob_space.indep_vars (pmf_of_set (bounded_degree_polynomials F n)) 
-    (\<lambda>_. pmf_of_set (carrier F)) (hash F) J"
+  shows "prob_space.indep_vars (pmf_of_set (bounded_degree_polynomials R n)) 
+    (\<lambda>_. pmf_of_set (carrier R)) (hash R) J"
 proof -
-  interpret field "F" using assms(1) by blast
-  have fin_carr:"finite (carrier F)" using assms by blast
 
-  have "\<zero>\<^bsub>poly_ring F\<^esub> \<in> bounded_degree_polynomials F n"
-    apply (simp add:bounded_degree_polynomials_def)
-    apply (rule conjI)
-     apply (simp add: univ_poly_zero univ_poly_zero_closed)
-    using univ_poly_zero by blast
-  hence b: "bounded_degree_polynomials F n \<noteq> {}"
-    by blast
-  have c: "finite (bounded_degree_polynomials F n)"
-    by (metis fin_degree_bounded assms(1))
+  have b: "bounded_degree_polynomials R n \<noteq> {}"
+    using non_empty_bounded_degree_polynomials by simp
+  have c: "finite (bounded_degree_polynomials R n)"
+    by (rule fin_degree_bounded, rule finite_carrier) 
   have d: "\<And> A P. A \<inter> {\<omega>. P \<omega>} = {\<omega> \<in> A. P \<omega>}"
     by blast
 
-  have fin_carr: "finite (carrier F)" using assms(1) by blast
-  have e:"ring F" using assms(1) field.is_ring by blast
-  have f: "0 < card (carrier F)" 
-    by (metis assms(1) card_0_eq e empty_iff gr0I ring.ring_simprules(2))
+  have "\<zero> \<in> carrier R"
+    using assms(1) field.is_ring ring.ring_simprules(2) by blast
+  hence f:"card (carrier R) > 0"
+    apply (subst card_gt_0_iff) 
+    using finite_carrier by blast
 
-  define \<Omega> where "\<Omega> = (pmf_of_set (bounded_degree_polynomials F n))"
+  define \<Omega> where "\<Omega> = (pmf_of_set (bounded_degree_polynomials R n))"
   have a:"\<And>a J'.
        J' \<subseteq> J \<Longrightarrow>
        finite J' \<Longrightarrow>
-       measure \<Omega> {\<omega>. \<forall>x\<in>J'. hash F x \<omega> = a x} =
-       (\<Prod>x\<in>J'. measure \<Omega> {\<omega>. hash F x \<omega> = a x})"
+       measure \<Omega> {\<omega>. \<forall>x\<in>J'. hash R x \<omega> = a x} =
+       (\<Prod>x\<in>J'. measure \<Omega> {\<omega>. hash R x \<omega> = a x})"
   proof -
     fix a
     fix J'
     assume a_1: "J' \<subseteq> J"
     assume a_11: "finite J'"
-    have a_2: "card J' \<le> n" by (metis card_mono order_trans a_1 assms(3) assms(4))
-    have a_3: "J' \<subseteq> carrier F" by (metis order_trans a_1 assms(2))
+    have a_2: "card J' \<le> n" by (metis card_mono order_trans a_1 assms(2) assms(3))
+    have a_3: "J' \<subseteq> carrier R" by (metis order_trans a_1 assms(1))
     have a_4: "1 \<le>n " using assms by blast
 
-    show "measure_pmf.prob \<Omega> {\<omega>. \<forall>x\<in>J'. hash F x \<omega> = a x} =
-       (\<Prod>x\<in>J'. measure_pmf.prob \<Omega> {\<omega>. hash F x \<omega> = a x})"
-    proof (cases "a ` J' \<subseteq> carrier F")
+    show "measure_pmf.prob \<Omega> {\<omega>. \<forall>x\<in>J'. hash R x \<omega> = a x} =
+       (\<Prod>x\<in>J'. measure_pmf.prob \<Omega> {\<omega>. hash R x \<omega> = a x})"
+    proof (cases "a ` J' \<subseteq> carrier R")
       case True
-      have a_5: "\<And>x. x \<in> J' \<Longrightarrow> x \<in> carrier F"  using a_1 assms(2) order_trans by force
-      have a_6: "\<And>x. x \<in> J' \<Longrightarrow> a x \<in> carrier F"  using True by force
+      have a_5: "\<And>x. x \<in> J' \<Longrightarrow> x \<in> carrier R"  using a_1 assms(1) order_trans by force
+      have a_6: "\<And>x. x \<in> J' \<Longrightarrow> a x \<in> carrier R"  using True by force
       show ?thesis 
        apply (simp add:\<Omega>_def measure_pmf_of_set[OF b c] d hash_def)
-        apply (subst poly_cards[OF fin_carr a_3 a_2], metis True)
-        apply (simp add:bounded_degree_polynomials_card poly_cards_single[OF fin_carr a_5 a_4 a_6] power_divide)
+        apply (subst poly_cards[OF finite_carrier a_3 a_2], metis True)
+        apply (simp add:bounded_degree_polynomials_card poly_cards_single[OF finite_carrier a_5 a_4 a_6] power_divide)
         apply (subst frac_eq_eq, simp add:f, simp add:f) 
           apply (simp add:power_add[symmetric] power_mult[symmetric])
           apply (rule arg_cong2[where f="\<lambda>x y. x ^ y"], simp)
         using a_2 a_4 mult_eq_if by force
     next
       case False
-      then obtain j where a_8: "j \<in> J'" and a_9: "a j \<notin> carrier F" by blast
-      have a_7: "\<And>x \<omega>. \<omega> \<in> bounded_degree_polynomials F n \<Longrightarrow> x \<in> carrier F \<Longrightarrow> hash F x \<omega> \<in> carrier F"
-        apply (simp add:bounded_degree_polynomials_def hash_def)
-        by (metis e ring.eval_in_carrier  ring.polynomial_incl univ_poly_carrier)
-      have a_10: "{\<omega> \<in> bounded_degree_polynomials F n. \<forall>x\<in>J'. hash F x \<omega> = a x} = {}"
+      then obtain j where a_8: "j \<in> J'" and a_9: "a j \<notin> carrier R" by blast
+      have a_10: "{\<omega> \<in> bounded_degree_polynomials R n. \<forall>x\<in>J'. hash R x \<omega> = a x} = {}"
         apply (rule order_antisym)
-        apply (rule subsetI, simp, metis a_7 a_8 a_9  a_3 in_mono)
+        apply (rule subsetI, simp, metis hash_range a_8 a_9  a_3 in_mono)
         by (rule subsetI, simp) 
-      have a_12: "{\<omega> \<in> bounded_degree_polynomials F n. hash F j \<omega> = a j} = {}"
+      have a_12: "{\<omega> \<in> bounded_degree_polynomials R n. hash R j \<omega> = a j} = {}"
         apply (rule order_antisym)
-        apply (rule subsetI, simp, metis a_7 a_8 a_9  a_3 in_mono)
+        apply (rule subsetI, simp, metis hash_range a_8 a_9  a_3 in_mono)
         by (rule subsetI, simp) 
       then show ?thesis
         apply (simp add:\<Omega>_def measure_pmf_of_set[OF b c] d a_10)
@@ -236,47 +215,18 @@ independent random variables.\<close>
 
 
 lemma hash_k_wise_indep:
-  assumes "field F \<and> finite (carrier F)"
   assumes "1 \<le> n"
-  shows "prob_space.k_wise_indep_vars (pmf_of_set (bounded_degree_polynomials F n)) n
-    (\<lambda>_. pmf_of_set (carrier F)) (hash F) (carrier F)"
+  shows "prob_space.k_wise_indep_vars (pmf_of_set (bounded_degree_polynomials R n)) n
+    (\<lambda>_. pmf_of_set (carrier R)) (hash R) (carrier R)"
   apply (simp add:measure_pmf.k_wise_indep_vars_def)
-  using hash_indep_pmf[OF assms(1) _ _ _ assms(2)] by blast
+  using hash_indep_pmf[OF _ _ _ assms(1)] by blast
 
 lemma hash_inj_if_degree_1:
-  assumes "field F \<and> finite (carrier F)"
-  assumes "\<omega> \<in> bounded_degree_polynomials F n"
+  assumes "\<omega> \<in> bounded_degree_polynomials R n"
   assumes "degree \<omega> = 1"
-  shows "inj_on (\<lambda>x. hash F x \<omega>) (carrier F)"
-proof (rule inj_onI)
-  fix x y
-  assume a1: "x \<in> carrier F"
-  assume a2: "y \<in> carrier F"
-  assume a3: "hash F x \<omega> = hash F y \<omega>"
-
-  interpret field F
-    by (metis assms(1))
-
-  obtain u v where \<omega>_def: "\<omega> = [u,v]" using assms(3)
-    apply (cases \<omega>, simp)
-    by (cases "(tl \<omega>)", simp, simp)
-
-  have u_carr: "u \<in> carrier F - {\<zero>\<^bsub>F\<^esub>}"
-    using \<omega>_def assms apply (simp add:bounded_degree_polynomials_def)
-    by (metis field.is_ring list.sel(1) ring.degree_oneE assms(1) assms(3))
-
-  have v_carr: "v \<in> carrier F" 
-    using \<omega>_def assms(2) apply (simp add:bounded_degree_polynomials_def)
-    by (metis assms(1) assms(3) field.is_ring list.inject ring.degree_oneE)
-
-  have "u \<otimes>\<^bsub>F\<^esub> x \<oplus>\<^bsub>F\<^esub> v = u \<otimes>\<^bsub>F\<^esub> y \<oplus>\<^bsub>F\<^esub> v"
-    using a1 a2 a3 u_carr v_carr by (simp add:hash_def \<omega>_def)
-
-  thus "x = y"
-    using u_carr a1 a2 v_carr
-    by (simp add: local.field_Units)
-qed
-
-
+  shows "inj_on (\<lambda>x. hash R x \<omega>) (carrier R)"
+  using assms eval_inj_if_degree_1
+  by (simp add:bounded_degree_polynomials_def hash_def)
+end
 
 end

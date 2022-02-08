@@ -498,4 +498,20 @@ qed
 lemma "3 \<oplus>\<^bsub>mod_ring 5\<^esub> 3 = 1"
   by (simp add:mod_ring_def)
 
+locale finite_field = field +
+  assumes finite_carrier: "finite (carrier R)"
+begin
+end
+
+lemma finite_fieldI:
+  assumes "field F"
+  assumes "finite (carrier F)"
+  shows "finite_field F"
+  unfolding finite_field_def finite_field_axioms_def using assms by simp
+
+lemma mod_ring_is_finite_field:
+  assumes"Factorial_Ring.prime n"
+  shows "finite_field (mod_ring n)"
+  by (rule finite_fieldI[OF mod_ring_is_field[OF assms] mod_ring_finite])
+
 end

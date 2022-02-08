@@ -50,8 +50,8 @@ proof -
   then obtain t where t_def: "p=2*t+1" 
     using oddE by blast
 
-  interpret field "mod_ring p"
-    using mod_ring_is_field[OF assms(1)] by blast
+  interpret finite_field "mod_ring p"
+    using mod_ring_is_finite_field[OF assms(1)] by simp
 
   define \<Omega> where "\<Omega> = pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)"
 
@@ -91,13 +91,13 @@ proof -
 
   have d_1: " \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect even) = (real p + 1)/(2*real p)"
     apply (subst \<Omega>_def, subst \<Omega>_def)
-    apply (subst hash_prob_range, simp add:mod_ring_is_field[OF assms(1)], simp add:mod_ring_def)
+    apply (subst hash_prob_range, simp add:mod_ring_def)
     apply (simp add:mod_ring_def assms, simp)
     apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
     using c_1 by (simp add:mod_ring_def lessThan_atLeast0) 
   have d_2: " \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect odd) = (real p - 1)/(2*real p)"
     apply (subst \<Omega>_def, subst \<Omega>_def)
-    apply (subst hash_prob_range, simp add:mod_ring_is_field[OF assms(1)], simp add:mod_ring_def)
+    apply (subst hash_prob_range, simp add:mod_ring_def)
     apply (simp add:mod_ring_def assms, simp)
     apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
     using c_2 by (simp add:mod_ring_def lessThan_atLeast0 t_def)
@@ -145,8 +145,8 @@ proof -
   interpret prob_space M
     using prob_space_measure_pmf M_def by auto
 
-  interpret field "mod_ring p"
-    using mod_ring_is_field[OF assms(1)] by blast
+  interpret finite_field "mod_ring p"
+    using mod_ring_is_finite_field[OF assms(1)] by simp
 
   have f_eq: "f = (\<lambda>\<omega>. (\<Sum>x \<in> set as. c x * h \<omega> x)^2)"
     by (simp add:f_def c_def h_def sum_list_eval del:f2_hash.simps)
@@ -206,7 +206,7 @@ proof -
       apply (subst indep_vars_lebesgue_integral, simp)
         apply (simp add:h_def)
         apply (rule indep_vars_compose2[where X="hash (mod_ring p)" and M'=" (\<lambda>_. pmf_of_set (carrier (mod_ring p)))"])
-         using hash_k_wise_indep[where n="4" and F="mod_ring p"] card_x x_sub_p' assms(1) mod_ring_is_field[OF assms(1)] mod_ring_finite[where n="p"]
+         using hash_k_wise_indep[where n="4"] card_x x_sub_p' assms(1)
          apply (simp add:k_wise_indep_vars_def M_def[symmetric])
         apply simp
        apply (rule int_M)
@@ -386,8 +386,8 @@ proof -
     apply (simp add:p_def) 
     using find_prime_above_is_prime by blast
 
-  interpret field "mod_ring p"
-    using mod_ring_is_field p_prime by blast
+  interpret finite_field "mod_ring p"
+    using mod_ring_is_finite_field[OF p_prime] by simp
 
   have p_ge_3: "p \<ge> 3"
     apply (simp add:p_def)

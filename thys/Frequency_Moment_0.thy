@@ -146,17 +146,18 @@ proof -
   have f_M: "finite M"
     by (rule finite_subset[where B="{0..<p}"], metis assms(3), simp)
 
-  interpret field "mod_ring p" using mod_ring_is_field[OF assms(1)] by simp
+  interpret finite_field "mod_ring p"
+    using mod_ring_is_finite_field[OF assms(1)] by simp
 
   have a2: "\<And>\<omega> x. x < p \<Longrightarrow> \<omega> \<in> bounded_degree_polynomials (mod_ring p) 2 \<Longrightarrow> hash (mod_ring p) x \<omega> < p" 
-    by (metis ring_axioms hash_range mod_ring_carr)
+    by (metis hash_range mod_ring_carr)
   have "\<And>\<omega>. degree \<omega> \<ge> 1 \<Longrightarrow> \<omega> \<in> bounded_degree_polynomials (mod_ring p) 2 \<Longrightarrow> degree \<omega> = 1"
     apply (simp add:bounded_degree_polynomials_def) 
     by (metis One_nat_def Suc_1 le_less_Suc_eq less_imp_diff_less list.size(3) pos2)
   hence a3: "\<And>\<omega> x y. x < p \<Longrightarrow> y < p \<Longrightarrow>  x \<noteq> y \<Longrightarrow> degree \<omega> \<ge> 1 \<Longrightarrow> 
     \<omega> \<in> bounded_degree_polynomials (mod_ring p) 2 \<Longrightarrow> 
     hash (mod_ring p) x \<omega> \<noteq> hash (mod_ring p) y \<omega>" 
-    using hash_inj_if_degree_1 field_axioms mod_ring_finite[where n="p"] inj_onD mod_ring_carr 
+    using hash_inj_if_degree_1 inj_onD mod_ring_carr 
     by metis
 
   have a1: 
@@ -527,7 +528,8 @@ proof -
   have m_eq_F_0: "real m = of_rat (F 0 as)"
     by (simp add:m_def F_def)
 
-  interpret field "mod_ring p" using mod_ring_is_field[OF p_prime] by simp
+  interpret finite_field "mod_ring p"
+    using mod_ring_is_finite_field[OF p_prime] by simp
 
   have fin_omega_1: "finite (set_pmf \<Omega>\<^sub>1)"
     apply (simp add:\<Omega>\<^sub>1_def)
@@ -562,7 +564,6 @@ proof -
         by simp
       also have "... = card ({k. int k \<le> a} \<inter> {0..<p}) / real p"
         apply (simp only:\<Omega>\<^sub>1_def, subst hash_prob_range)
-           apply (metis mod_ring_finite field_axioms)
         apply (simp add:mod_ring_carr x_le_p, simp, simp add:mod_ring_def) 
         using lessThan_atLeast0 by presburger
       also have "... = card {0..<nat (a+1)} / real p"
@@ -599,7 +600,7 @@ proof -
        apply (rule integrable_measure_pmf_finite[OF fin_omega_1])
       apply (rule prob_space.indep_vars_compose2[where Y="\<lambda>i x. of_bool (int x \<le> a)" and M'="\<lambda>_. measure_pmf (pmf_of_set (carrier (mod_ring p)))"])
         apply (simp add:prob_space_measure_pmf)
-       using hash_k_wise_indep[where n="2" and F="mod_ring p"] xs_subs_p' field_axioms mod_ring_finite[where n="p"] finite_subset[OF _ finite_set[where xs="as"]]
+       using hash_k_wise_indep[where n="2"] xs_subs_p' finite_subset[OF _ finite_set[where xs="as"]]
        apply (simp add:measure_pmf.k_wise_indep_vars_def \<Omega>\<^sub>1_def) 
       by simp
     also have "... \<le> (\<Sum> x \<in> set as. (a+1)/real p)"
@@ -873,7 +874,7 @@ proof -
         assume a_1:"\<omega> \<in> {\<omega> \<in> space (measure_pmf \<Omega>\<^sub>1). f b \<omega> < t}"
         assume a_2:"\<omega> \<in> set_pmf \<Omega>\<^sub>1"
         have a:"\<And>x. x < p \<Longrightarrow> hash (mod_ring p) x \<omega> < p" 
-          using hash_range[where F="mod_ring p"] mod_ring_carr[where n="p"]  a_2 is_ring
+          using hash_range mod_ring_carr[where n="p"]  a_2 is_ring
           by (simp add:\<Omega>\<^sub>1_def set_pmf_of_set[OF non_empty_bounded_degree_polynomials fin_degree_bounded[OF mod_ring_finite]]) 
         have "t \<le> card (set as)"
           using True by simp
@@ -1116,7 +1117,7 @@ proof -
         fix x
         assume a:"x \<in> set as"
         have "hash (mod_ring p) x \<omega> < p" 
-          using hash_range[where F="mod_ring p"] is_ring xs_le_p a mod_ring_carr  b
+          using hash_range xs_le_p a  b
           apply (simp add:mod_ring_carr \<Omega>\<^sub>1_def)
           by (simp add:\<Omega>\<^sub>1_def set_pmf_of_set[OF non_empty_bounded_degree_polynomials fin_degree_bounded[OF mod_ring_finite]])
         thus "truncate_down r (real (hash (mod_ring p) x \<omega>)) \<le> real p"
@@ -1352,7 +1353,7 @@ proof -
       apply (rule order_trans[OF least_subset])
       apply (rule f_subset[where f="\<lambda>x. float_of (truncate_down r (real x))"])
       apply (rule image_subsetI, simp) 
-      using hash_range[ where n="2" and F="mod_ring p"] is_ring
+      using hash_range[where n="2"] 
       using b_1 apply (simp add: PiE_iff mod_ring_carr )
       using assms(3) n_le_p
       by (meson atLeastLessThan_iff order_less_le_trans subset_code(1) zero_le)
