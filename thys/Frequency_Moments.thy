@@ -1,7 +1,7 @@
 section "Frequency Moments"
 
 theory Frequency_Moments
-  imports Main HOL.List HOL.Rat List_Ext Universal_Hash_Families Field
+  imports Main HOL.List HOL.Rat List_Ext Universal_Hash_Families Field Encoding
 begin
 
 text \<open>This section contains a definition of the frequency moments of a stream.\<close>
@@ -26,7 +26,7 @@ qed
 
 lemma bounded_degree_polynomial_bit_count:
   assumes "p > 0"
-  assumes "x \<in> bounded_degree_polynomials (mod_ring p) n"
+  assumes "x \<in> bounded_degree_polynomials (Field.mod_ring p) n"
   shows "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal (real n * (2 * log 2 p + 2) + 1)" (is "_ \<le> ?rhs")
 proof -
   have a:"length x \<le> n" 
@@ -35,13 +35,13 @@ proof -
   proof -
     fix y
     assume "y \<in> set x"
-    moreover have "x \<in> (carrier (poly_ring (mod_ring p)))" 
+    moreover have "x \<in> (carrier (poly_ring (Field.mod_ring p)))" 
       using bounded_degree_polynomials_def assms(2) by blast
-    ultimately have "y \<in> carrier (mod_ring p)"
+    ultimately have "y \<in> carrier (Field.mod_ring p)"
       using univ_poly_carrier polynomial_def 
       by (metis empty_iff list.set(1) subset_code(1))
     hence "y < p"
-      by (simp add:mod_ring_def)
+      by (simp add:Field.mod_ring_def)
     thus "y \<le> p -1"
       using assms(1) by simp
   qed
