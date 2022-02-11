@@ -1,8 +1,6 @@
 theory Universal_Hash_Families_PMF
   imports 
-    "HOL-Probability.Independent_Family"
     "HOL-Probability.Stream_Space"
-    "HOL-Probability.Probability_Mass_Function"
     "HOL-Probability.Product_PMF"
 begin
 

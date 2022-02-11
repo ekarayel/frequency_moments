@@ -12,7 +12,7 @@ The only difference is that the algorithm is adapted to work with prime field of
 greatly reduces the implementation complexity.\<close>
 
 fun f2_hash where
-  "f2_hash p h k = (if even (hash (mod_ring p) k h) then int p - 1 else - int p - 1)"
+  "f2_hash p h k = (if even (poly_hash_family.hash (mod_ring p) k h) then int p - 1 else - int p - 1)"
 
 type_synonym f2_state = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> nat list) \<times> (nat \<times> nat \<Rightarrow> int)"
 
@@ -35,28 +35,27 @@ fun f2_result :: "f2_state \<Rightarrow> rat pmf" where
     return_pmf (median s\<^sub>2 (\<lambda>i\<^sub>2 \<in> {..<s\<^sub>2}. 
       (\<Sum>i\<^sub>1\<in>{..<s\<^sub>1} . (rat_of_int (sketch (i\<^sub>1, i\<^sub>2)))\<^sup>2) / (((rat_of_nat p)\<^sup>2-1) * rat_of_nat s\<^sub>1)))"
 
+context 
+  fixes p :: nat
+  assumes p_prime: "Factorial_Ring.prime p"
+begin
+
+interpretation carter_wegman_hash_family "mod_ring p" 4
+  apply (rule carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite])
+  using p_prime by auto
+
 lemma f2_hash_exp:
-  assumes "Factorial_Ring.prime p"
   assumes "k < p"
   assumes "p > 2" 
   shows
-    "prob_space.expectation (pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)) 
-    (\<lambda>\<omega>. real_of_int (f2_hash p \<omega> k) ^m) = 
-     (((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p))"
+    "expectation (\<lambda>\<omega>. real_of_int (f2_hash p \<omega> k) ^m) = 
+     ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)"
 proof -
   have g:"p > 0" using assms(1) prime_gt_0_nat by auto
 
-  have "odd p" using assms prime_odd_nat by blast
+  have "odd p" using p_prime prime_odd_nat assms by blast
   then obtain t where t_def: "p=2*t+1" 
     using oddE by blast
-
-  interpret finite_field "mod_ring p"
-    using mod_ring_is_finite_field[OF assms(1)] by simp
-
-  define \<Omega> where "\<Omega> = pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)"
-
-  have b: "finite (set_pmf \<Omega>)"
-    by (simp add:\<Omega>_def)
 
   have zero_le_4: "0 < (4::nat)" by simp
 
@@ -87,51 +86,38 @@ proof -
   hence c_2: "card ({k. odd k} \<inter> {..<p}) * 2 = (p-1)" 
     by (simp add:t_def)
 
-  have d_1: " \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect even) = (real p + 1)/(2*real p)"
-    apply (subst \<Omega>_def, subst \<Omega>_def)
-    apply (subst hash_prob_range, simp add:mod_ring_def)
-    apply (simp add:mod_ring_def assms, simp)
+  have d_1: "prob {\<omega>. hash k \<omega> \<in> Collect even} = (real p + 1)/(2*real p)"
+    apply (subst hash_prob_range, simp add:mod_ring_carr assms)
     apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
     using c_1 by (simp add:mod_ring_def lessThan_atLeast0) 
-  have d_2: " \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect odd) = (real p - 1)/(2*real p)"
-    apply (subst \<Omega>_def, subst \<Omega>_def)
-    apply (subst hash_prob_range, simp add:mod_ring_def)
-    apply (simp add:mod_ring_def assms, simp)
+  have d_2: "prob {\<omega>. hash k \<omega> \<in> Collect odd} = (real p - 1)/(2*real p)"
+    apply (subst hash_prob_range, simp add:mod_ring_carr assms)
     apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
     using c_2 by (simp add:mod_ring_def lessThan_atLeast0 t_def)
 
-  have "integral\<^sup>L \<Omega> (\<lambda>x. real_of_int (f2_hash p x k) ^ m) =
-    integral\<^sup>L \<Omega> (\<lambda>\<omega>. indicator {\<omega>. even (hash (mod_ring p) k \<omega>)} \<omega> * (real p - 1)^m + 
-      indicator {\<omega>. odd (hash (mod_ring p) k \<omega>)} \<omega> * (-real p - 1)^m)" 
+  have "expectation (\<lambda>x. real_of_int (f2_hash p x k) ^ m) =
+    expectation (\<lambda>\<omega>. indicator {\<omega>. even (hash k \<omega>)} \<omega> * (real p - 1)^m + 
+      indicator {\<omega>. odd (hash k \<omega>)} \<omega> * (-real p - 1)^m)" 
     by (rule Bochner_Integration.integral_cong, simp, simp)
   also have "... = 
-     \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect even)  * (real p - 1) ^ m  + 
-     \<P>(\<omega> in measure_pmf \<Omega>. hash (mod_ring p) k \<omega> \<in> Collect odd)  * (-real p - 1) ^ m "
-    apply (subst Bochner_Integration.integral_add)
-    apply (rule integrable_measure_pmf_finite[OF b])
-    apply (rule integrable_measure_pmf_finite[OF b])
-    by simp
+     prob {\<omega>. hash  k \<omega> \<in> Collect even}  * (real p - 1) ^ m  + 
+     prob {\<omega>. hash  k \<omega> \<in> Collect odd}  * (-real p - 1) ^ m "
+    by (simp add: integrable_measure_pmf_finite M_def)
   also have "... = (real p + 1) * (real p - 1) ^ m / (2 * real p) + (real p - 1) * (- real p - 1) ^ m / (2 * real p)"
     by (subst d_1, subst d_2, simp)
   also have "... =  
     ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)"
     by (simp add:add_divide_distrib ac_simps)
-  finally have a:"integral\<^sup>L \<Omega> (\<lambda>x. real_of_int (f2_hash p x k) ^ m) = 
+  finally show "expectation (\<lambda>x. real_of_int (f2_hash p x k) ^ m) = 
     ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)" by simp
-
-  show ?thesis
-    apply (subst \<Omega>_def[symmetric])
-    by (metis a)
 qed
 
 lemma 
-  assumes "Factorial_Ring.prime p"
   assumes "p > 2"
   assumes "\<And>a. a \<in> set as \<Longrightarrow> a < p"
-  defines "M \<equiv> measure_pmf (pmf_of_set (bounded_degree_polynomials (mod_ring p) 4))"
   defines "f \<equiv> (\<lambda>\<omega>. real_of_int (sum_list (map (f2_hash p \<omega>) as))^2)"
-  shows var_f2:"prob_space.variance M f \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" (is "?A")
-  and exp_f2:"prob_space.expectation M f = real_of_rat (F 2 as) * ((real p)\<^sup>2-1)" (is "?B")
+  shows var_f2:"variance f \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" (is "?A")
+  and exp_f2:"expectation f = real_of_rat (F 2 as) * ((real p)\<^sup>2-1)" (is "?B")
 proof -
   define h where "h = (\<lambda>\<omega> x. real_of_int (f2_hash p \<omega> x))"
   define c where "c = (\<lambda>x. real (count_list as x))"
@@ -143,18 +129,10 @@ proof -
   interpret prob_space M
     using prob_space_measure_pmf M_def by auto
 
-  interpret finite_field "mod_ring p"
-    using mod_ring_is_finite_field[OF assms(1)] by simp
-
   have f_eq: "f = (\<lambda>\<omega>. (\<Sum>x \<in> set as. c x * h \<omega> x)^2)"
     by (simp add:f_def c_def h_def sum_list_eval del:f2_hash.simps)
 
-  have p_ge_0: "p > 0" using assms(2) by simp
-
-  have int_M: "\<And>f. integrable M (\<lambda>\<omega>. ((f \<omega>)::real))"
-    apply (simp add:M_def)
-    apply (rule integrable_measure_pmf_finite) 
-    by (metis set_pmf_of_set non_empty_bounded_degree_polynomials fin_degree_bounded[OF mod_ring_finite])
+  have p_ge_0: "p > 0" using assms by simp
 
   have r_one: "r (Suc 0) = 0" by (simp add:r_def algebra_simps)
 
@@ -176,8 +154,8 @@ proof -
     apply (rule mult_left_mono)
       apply (rule mult_left_mono)
     apply simp
-    using assms(2) 
-       apply (metis assms(1) linorder_not_less num_double numeral_mult of_nat_power power2_eq_square power2_nat_le_eq_le prime_ge_2_nat real_of_nat_less_numeral_iff)
+    using assms 
+       apply (metis p_prime linorder_not_less num_double numeral_mult of_nat_power power2_eq_square power2_nat_le_eq_le prime_ge_2_nat real_of_nat_less_numeral_iff)
     by simp+
 
   have exp_h_prod_elim: "exp_h_prod = (\<lambda>as. prod_list (map (r \<circ> count_list as) (remdups as)))" 
@@ -190,7 +168,7 @@ proof -
   proof -
     fix x 
     assume "set x \<subseteq> set as"
-    hence x_sub_p: "set x \<subseteq> {..<p}" using assms(3) atLeastLessThan_iff by blast
+    hence x_sub_p: "set x \<subseteq> {..<p}" using assms(2) atLeastLessThan_iff by blast
     hence x_le_p: "\<And>k. k \<in> set x \<Longrightarrow> k < p" by auto
     assume "length x \<le> 4"
     hence card_x: "card (set x) \<le> 4" using card_length dual_order.trans by blast
@@ -203,15 +181,13 @@ proof -
     also have "... = (\<Prod>i \<in> set x. expectation (\<lambda>\<omega>. h \<omega> i^(count_list x i)))"
       apply (subst indep_vars_lebesgue_integral, simp)
         apply (simp add:h_def)
-        apply (rule indep_vars_compose2[where X="hash (mod_ring p)" and M'=" (\<lambda>_. pmf_of_set (carrier (mod_ring p)))"])
-         using measure_pmf.k_wise_indep_vars_subset[OF hash_k_wise_indep[where n="4"]] card_x x_sub_p' assms(1)
+        apply (rule indep_vars_compose2[where X="hash" and M'=" (\<lambda>_. pmf_of_set (carrier (mod_ring p)))"])
+         using k_wise_indep_vars_subset[OF hash_k_wise_indep] card_x x_sub_p' assms(1)
          apply (simp add:M_def[symmetric])
-        apply simp
-       apply (rule int_M)
-      by simp
+         by simp+
     also have "... = (\<Prod>i \<in> set x. r (count_list x i))"
       apply (rule prod.cong, simp)
-      using f2_hash_exp[OF assms(1) x_le_p assms(2)] 
+      using f2_hash_exp[OF x_le_p assms(1)] 
       by (simp add:h_def r_def M_def[symmetric] del:f2_hash.simps)
     also have "... = exp_h_prod x"
       by (simp add:exp_h_prod_def)
@@ -256,7 +232,7 @@ proof -
   qed
 
   have "expectation f = (\<Sum>i\<in>set as. (\<Sum>j\<in>set as. c i * c j * expectation (h_prod [i,j])))"
-    by (simp add:f_eq h_prod_def power2_eq_square sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum[OF int_M] algebra_simps)
+    by (simp add:f_eq h_prod_def power2_eq_square sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum algebra_simps)
   also have "... = (\<Sum>i\<in>set as. (\<Sum>j\<in>set as. c i * c j * exp_h_prod [i,j]))"
     apply (rule sum.cong, simp)
     apply (rule sum.cong, simp)
@@ -276,7 +252,7 @@ proof -
 
   have "expectation (\<lambda>x. (f x)\<^sup>2) = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as.
     c i1 * c i2 * c i3 * c i4 * expectation (h_prod [i1, i2, i3, i4])))))"
-    apply (simp add:f_eq h_prod_def power4_eq_xxxx sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum[OF int_M])
+    apply (simp add:f_eq h_prod_def power4_eq_xxxx sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum)
     by (simp add:algebra_simps)
   also have "... = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as. 
     c i1 * c i2 * c i3 * c i4 * exp_h_prod [i1,i2,i3,i4]))))"
@@ -314,13 +290,13 @@ proof -
   finally have v_1: "expectation (\<lambda>x. (f x)\<^sup>2) \<le> 3 * (real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
     by simp
   
-  have "variance f \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
-    apply (subst variance_eq[OF int_M int_M], subst b)
+  show "variance f \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
+    apply (simp add: variance_eq, subst b)
     apply (simp add:power_mult_distrib)
     using v_1 by simp
-
-  thus ?A by simp
 qed
+
+end
 
 lemma f2_alg_sketch:
   fixes n :: nat
@@ -365,27 +341,27 @@ theorem f2_alg_correct:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> > 0"
   assumes "set as \<subseteq> {..<n}"
-  defines "M \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n) \<bind> f2_result"
-  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as) \<ge> 1-of_rat \<epsilon>"
+  defines "\<Omega> \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n) \<bind> f2_result"
+  shows "\<P>(\<omega> in measure_pmf \<Omega>. \<bar>\<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as) \<ge> 1-of_rat \<epsilon>"
 proof -
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define p where "p = find_prime_above (max n 3)"
-  define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = 
-    prod_pmf ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (mod_ring p) 4))"
+  have p_prime: "Factorial_Ring.prime p" 
+    apply (simp add:p_def) 
+    using find_prime_above_is_prime by blast
+
+  interpret carter_wegman_hash_family "mod_ring p" 4
+    apply (rule carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite])
+    using p_prime by auto
+
+  define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = prod_pmf ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) (\<lambda>_. pmf_of_set space)"
 
   define s\<^sub>1_from :: "f2_state \<Rightarrow> nat" where "s\<^sub>1_from = fst"
   define s\<^sub>2_from :: "f2_state \<Rightarrow> nat" where "s\<^sub>2_from = fst \<circ> snd"
   define p_from :: "f2_state \<Rightarrow> nat" where "p_from = fst \<circ> snd \<circ> snd"
   define h_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> nat list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
   define sketch_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
-
-  have p_prime: "Factorial_Ring.prime p" 
-    apply (simp add:p_def) 
-    using find_prime_above_is_prime by blast
-
-  interpret finite_field "mod_ring p"
-    using mod_ring_is_finite_field[OF p_prime] by simp
 
   have p_ge_3: "p \<ge> 3"
     apply (simp add:p_def)
@@ -398,13 +374,11 @@ proof -
 
   have p_ge_0: "p > 0" using p_ge_2 by simp
 
-  have fin_omega_2: "finite (set_pmf ( pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)))"
-    by (metis fin_degree_bounded non_empty_bounded_degree_polynomials mod_ring_finite set_pmf_of_set)
+  have fin_omega_2: "finite (set_pmf ( pmf_of_set (space)))" by simp
 
   have fin_omega_1: "finite (set_pmf \<Omega>\<^sub>0)"
     apply (simp add:\<Omega>\<^sub>0_def set_prod_pmf)
-    apply (rule finite_PiE, simp)
-    by (metis finite_bounded_degree_polynomials)
+    by (rule finite_PiE, simp, simp)
 
   have as_le_p: "\<And>x. x \<in> set as \<Longrightarrow> x < p" 
     apply (rule order_less_le_trans[where y="n"])
@@ -460,9 +434,8 @@ proof -
        apply (rule sum_mono)
        apply (simp add:f3_def \<Omega>\<^sub>0_def)
        apply (subst variance_prod_pmf_slice, simp add:a, simp)
-       apply (rule integrable_measure_pmf_finite[OF fin_omega_2])
-       apply (rule var_f2[OF p_prime p_ge_2 as_le_p], simp)
-      by simp
+        apply (rule integrable_measure_pmf_finite[OF fin_omega_2])
+      using var_f2[OF p_prime p_ge_2 as_le_p] by (simp add:M_def, simp)
     also have "... = 2 * (real_of_rat (F 2 as)^2) / real s\<^sub>1"
       apply (simp)
       apply (subst frac_eq_eq, simp add:s1_nonzero, metis p_sq_ne_1, simp add:s1_nonzero)
@@ -496,6 +469,7 @@ proof -
        apply (simp add:f3_def \<Omega>\<^sub>0_def)
        apply (subst integral_prod_pmf_slice, simp, simp add:a)
         apply (rule integrable_measure_pmf_finite[OF fin_omega_2])
+      apply (subst M_def[symmetric])
        apply (subst exp_f2[OF p_prime p_ge_2 as_le_p], simp, simp)
       by simp
     also have "... =  real_of_rat (F 2 as)"
@@ -509,9 +483,9 @@ proof -
     using s2_nonzero apply (simp add:f'_def f2_def f3_def f_def median_rat median_restrict lessThan_atLeast0 cong:restrict_cong)
     by (simp add:of_rat_divide of_rat_sum of_rat_power of_rat_mult of_rat_diff)
 
-  have distr': "M = map_pmf f (prod_pmf  ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)))"
+  have distr': "\<Omega> = map_pmf f (prod_pmf  ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) (\<lambda>_. pmf_of_set (bounded_degree_polynomials (mod_ring p) 4)))"
     using f2_alg_sketch[OF assms(1) assms(2), where as="as" and n="n"]
-    apply (simp add:M_def lessThan_atLeast0 Let_def s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
+    apply (simp add:\<Omega>_def lessThan_atLeast0 Let_def s\<^sub>1_def [symmetric] s\<^sub>2_def[symmetric] p_def[symmetric])
     apply (subst bind_assoc_pmf)
     apply (subst bind_return_pmf)
     apply (subst f2_result_conv, simp)
@@ -582,7 +556,7 @@ proof -
   qed
 
   show ?thesis
-    apply (simp add: distr' e real_f f'_def g_def \<Omega>\<^sub>0_def[symmetric])
+    apply (simp add: distr' e real_f f'_def g_def \<Omega>\<^sub>0_def[symmetric] space_def[symmetric])
     apply (rule prob_space.median_bound_2[where M="\<Omega>\<^sub>0" and \<epsilon>="real_of_rat \<epsilon>" and X="(\<lambda>i \<omega>. f2 \<omega> i)", simplified])
         apply (metis prob_space_measure_pmf)
        using assms apply simp 

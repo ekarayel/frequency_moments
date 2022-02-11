@@ -4,99 +4,8 @@ text \<open>Some additional results about probability spaces in addition to "HOL
 
 theory Probability_Ext
   imports Main "HOL-Probability.Independent_Family" Multiset_Ext "HOL-Probability.Stream_Space"
- "HOL-Probability.Probability_Mass_Function"
+ "HOL-Probability.Probability_Mass_Function" Universal_Hash_Families_PMF
 begin
-
-lemma measure_inters: "measure M (E \<inter> space M) = \<P>(x in M. x \<in> E)"
-  by (simp add: Collect_conj_eq inf_commute)
-
-lemma set_comp_subsetI: "(\<And>x. P x \<Longrightarrow> f x \<in> B) \<Longrightarrow> {f x|x. P x} \<subseteq> B"
-  by blast
-
-lemma set_comp_cong: 
-  assumes "\<And>x. P x \<Longrightarrow> f x = h (g x)"
-  shows "{f x| x. P x} = h ` {g x| x. P x}"
-  using assms by (simp add: setcompr_eq_image, auto)
-
-lemma indep_sets_distr:
-  assumes "f \<in> measurable M N"
-  assumes "prob_space M"
-  assumes "prob_space.indep_sets M (\<lambda>i. (\<lambda>a. f -` a \<inter> space M) ` A i) I"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> A i \<subseteq> sets N"
-  shows "prob_space.indep_sets (distr M N f) A I"
-proof -
-  define F where "F = (\<lambda>i. (\<lambda>a. f -` a \<inter> space M) ` A i)"
-  have indep_F: "prob_space.indep_sets M F I"
-    using F_def assms(3) by simp
-
-  have sets_A: "\<And>i. i \<in> I \<Longrightarrow> A i \<subseteq> sets N"
-    using assms(4) by blast
-
-  have indep_A: "\<And>A' J. J \<noteq> {} \<Longrightarrow> J \<subseteq> I \<Longrightarrow> finite J \<Longrightarrow> 
-  \<forall>j\<in>J. A' j \<in> A j \<Longrightarrow> measure (distr M N f) (\<Inter> (A' ` J)) = (\<Prod>j\<in>J. measure (distr M N f) (A' j))"
-  proof -
-    fix A' J
-    assume a1:"J \<subseteq> I"
-    assume a2:"finite J"
-    assume a3:"J \<noteq> {}"
-    assume a4:"\<forall>j \<in> J. A' j \<in> A j"
-
-    define F' where "F' = (\<lambda>i. f -` A' i \<inter> space M)"
-
-    have "\<Inter> (F' ` J) = f -` (\<Inter> (A' ` J)) \<inter> space M" 
-      apply (rule order_antisym)
-      apply (rule subsetI, simp add:F'_def a3)
-      by (rule subsetI, simp add:F'_def a3)
-    moreover have "\<Inter> (A' ` J) \<in> sets N" 
-      using a4 a1 sets_A 
-      by (metis a2 a3 sets.finite_INT subset_iff)
-    ultimately have r1: "measure (distr M N f) (\<Inter> (A' ` J)) = measure M (\<Inter> (F' ` J))" 
-      using assms(1) measure_distr by metis
-
-    have "\<And>j. j \<in> J \<Longrightarrow> F' j \<in> F j"
-      using a4 F'_def F_def by blast
-    hence r2:"measure M (\<Inter> (F' ` J)) = (\<Prod>j\<in> J. measure M (F' j))"
-      using indep_F prob_space.indep_setsD assms(2) a1 a2 a3 by metis
-
-    have "\<And>j. j \<in> J \<Longrightarrow> F' j =  f -` A' j  \<inter> space M" 
-      by (simp add:F'_def)
-    moreover have "\<And>j. j \<in> J \<Longrightarrow> A' j \<in> sets N" 
-      using a4 a1 sets_A by blast
-    ultimately have r3:"\<And>j. j \<in> J \<Longrightarrow> measure M (F' j) = measure (distr M N f) (A' j)"
-      using assms(1) measure_distr by metis
-
-    show "measure (distr M N f) (\<Inter> (A' ` J)) = (\<Prod>j\<in>J. measure (distr M N f) (A' j))"
-      using r1 r2 r3 by auto
-  qed
-
-  show ?thesis 
-    apply (rule prob_space.indep_setsI)
-    using assms apply (simp add:prob_space.prob_space_distr)
-    apply (simp add:sets_A)
-    using indep_A by blast
-qed
-
-lemma indep_vars_distr:
-  assumes "f \<in> measurable M N"
-  assumes "\<And>i. i \<in> I \<Longrightarrow> X' i \<in> measurable N (M' i)"
-  assumes "prob_space.indep_vars M M' (\<lambda>i. (X' i) \<circ> f) I"
-  assumes "prob_space M"
-  shows "prob_space.indep_vars (distr M N f) M' X' I"
-proof -
-  have b1: "f \<in> space M \<rightarrow> space N" using assms(1) by (simp add:measurable_def)
-  have a:"\<And>i. i \<in> I \<Longrightarrow> {(X' i \<circ> f) -` A \<inter> space M |A. A \<in> sets (M' i)} = (\<lambda>a. f -` a \<inter> space M) ` {X' i -` A \<inter> space N |A. A \<in> sets (M' i)}"
-    apply (rule set_comp_cong)
-    apply (rule order_antisym, rule subsetI, simp) using b1 apply fast
-    by (rule subsetI, simp) 
-  show ?thesis 
-  using assms apply (simp add:prob_space.indep_vars_def2 prob_space.prob_space_distr)
-   apply (rule indep_sets_distr)
-  apply (simp add:a cong:prob_space.indep_sets_cong)
-  apply (simp add:a cong:prob_space.indep_sets_cong)
-   apply (simp add:a cong:prob_space.indep_sets_cong)
-  using assms(2) measurable_sets by blast
-qed
-
 
 text \<open>Random variables that depend on disjoint sets of the components of a product space are
 independent.\<close>
@@ -177,31 +86,18 @@ lemma (in prob_space) variance_divide:
   apply (subst diff_divide_distrib[symmetric])
   using assms by (simp add:power2_eq_square algebra_simps)
 
-lemma pmf_eq:
-  assumes "\<And>x. x \<in> set_pmf \<Omega> \<Longrightarrow> (x \<in> P) = (x \<in> Q)"
-  shows "measure (measure_pmf \<Omega>) P = measure (measure_pmf \<Omega>) Q"
-    apply (rule measure_eq_AE)
-      apply (subst AE_measure_pmf_iff)
-    using assms by auto
-
 lemma pmf_mono_1:
   assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q"
   shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q"
 proof -
   have "measure (measure_pmf \<Omega>) P = measure (measure_pmf \<Omega>) (P \<inter> set_pmf \<Omega>)" 
-    by (rule pmf_eq, simp)
+    by (rule measure_pmf_eq, simp)
   also have "... \<le>  measure (measure_pmf \<Omega>) Q"
   apply (rule finite_measure.finite_measure_mono, simp)
      apply (rule subsetI) using assms apply blast
     by simp
   finally show ?thesis by simp
 qed
-
-lemma pmf_mono_2:
-  assumes "\<And>\<omega>. \<omega> \<in> set_pmf M \<Longrightarrow> P \<omega> \<Longrightarrow> Q \<omega>"
-  shows "\<P>(\<omega> in measure_pmf M. P \<omega>) \<le> \<P>(\<omega> in measure_pmf M. Q \<omega>)"
-  apply (rule pmf_mono_1)
-  using assms by simp
 
 lemma pmf_add:
   assumes  "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q \<or> x \<in> R"
@@ -215,15 +111,19 @@ proof -
   finally show ?thesis by simp
 qed
 
-lemma pmf_add_2:
-  assumes "\<P>(\<omega> in measure_pmf \<Omega>. P \<omega>) \<le> r1"
-  assumes "\<P>(\<omega> in measure_pmf \<Omega>. Q \<omega>) \<le> r2"
-  shows "\<P>(\<omega> in measure_pmf \<Omega>. P \<omega> \<or> Q \<omega>) \<le> r1 + r2"
+lemma (in prob_space) prob_add:
+  assumes "{\<omega>. P \<omega>} \<in> events"
+  assumes "{\<omega>. Q \<omega>} \<in> events"
+  assumes "prob {\<omega>. P \<omega>} \<le> r1"
+  assumes "prob {\<omega>. Q \<omega>} \<le> r2"
+  shows "prob {\<omega>. P \<omega> \<or> Q \<omega>} \<le> r1 + r2"
 proof -
-  have "\<P>(\<omega> in measure_pmf \<Omega>. P \<omega> \<or> Q \<omega>) \<le> \<P>(\<omega> in measure_pmf \<Omega>. P \<omega>) + \<P>(\<omega> in measure_pmf \<Omega>. Q \<omega>)"
-    by (rule pmf_add, simp)
+  have "prob {\<omega>. P \<omega> \<or> Q \<omega>} = prob ({\<omega>. P \<omega>} \<union> {\<omega>. Q \<omega>})"
+    by (simp add: Collect_disj_eq)
+  also have "... \<le> prob {\<omega>. P \<omega>} + prob {\<omega>. Q \<omega>}"
+    by (rule measure_subadditive[OF assms(1,2)], simp+)
   also have "... \<le> r1 + r2"
-    by (rule add_mono [OF assms])
+    using assms add_mono by simp
   finally show ?thesis by simp
 qed
 
@@ -393,7 +293,7 @@ lemma (in prob_space) var_sum_pairwise_indep_2:
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   assumes "\<And>J. J \<subseteq> I \<Longrightarrow> card J = 2 \<Longrightarrow> indep_vars (\<lambda> _. borel) f J"
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
-  apply (rule var_sum_pairwise_indep[OF assms(1) assms(2) assms(3)], simp, simp)
+  apply (rule var_sum_pairwise_indep[OF assms(1,2,3)], simp, simp)
   apply (rule indep_var_from_indep_vars, simp)
   by (rule assms(4), simp, simp)
 
