@@ -63,7 +63,7 @@ lemma indep_vars_restrict:
   assumes "\<And>i. i \<in> J \<Longrightarrow> f i \<subseteq> I"
   assumes "finite I"
   shows "prob_space.indep_vars (measure_pmf (prod_pmf I M)) (\<lambda>i. measure_pmf (prod_pmf (f i) M)) (\<lambda>i \<omega>. restrict \<omega> (f i)) J"
-proof (rule indep_vars_pmf[simplified])
+proof (rule prob_space.indep_vars_pmf'[simplified])
   fix a :: "'c \<Rightarrow> 'a \<Rightarrow> 'b"
   fix J'
   assume e:"J' \<subseteq> J"
@@ -113,8 +113,13 @@ proof (rule indep_vars_pmf[simplified])
     then show ?thesis 
       by (metis (mono_tags, lifting) Collect_empty_eq j_def c measure_empty prod_zero_iff)
   qed
+next
+  show "prob_space (measure_pmf (prod_pmf I M))"
+    by (simp add:prob_space_measure_pmf)
+next
+  show "prob_space.is_pmf (measure_pmf (prod_pmf I M))"
+    by (rule is_pmfI)
 qed  
-
 
 lemma indep_vars_restrict_intro:
   fixes M :: "'a \<Rightarrow> 'b pmf"

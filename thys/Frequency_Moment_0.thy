@@ -226,8 +226,8 @@ proof -
       prob (\<Union> i \<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and>
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}.
       {\<omega>.  hash x \<omega> = fst i \<and> hash y \<omega> = snd i})"
-      unfolding M_def apply (rule pmf_mono_1)
-      using a3   apply simp 
+      apply (rule pmf_mono', simp) 
+      using a3   apply (simp add:M_def measure_pmf_inverse) 
       by (metis a2 a1_3 a1_2 a1_1 assms(1) lessThan_iff nat_neq_iff subset_eq)
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and>
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 
@@ -239,9 +239,8 @@ proof -
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 
       prob {\<omega>. (\<forall>u \<in> {x,y}. hash u \<omega> = (if u = x then (fst i) else (snd i)))})" 
       apply (rule sum_mono)
-      unfolding M_def
-      apply (rule pmf_mono_1)
-      by (simp, force)
+      apply (rule pmf_mono', simp)
+      by (force)
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and>
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 1/(real p)\<^sup>2)"
       apply (rule sum_mono)
@@ -317,8 +316,7 @@ proof -
     prob (\<Union> i \<in> {(x,y) \<in> M' \<times> M'. x < y}. {\<omega>. 
     degree \<omega> \<ge> 1 \<and> truncate_down r (hash (fst i) \<omega>) \<le> c \<and>
     truncate_down r (hash (fst i) \<omega>) = truncate_down r (hash (snd i) \<omega>)})"
-    unfolding M_def
-    apply (rule pmf_mono_1)
+    apply (rule pmf_mono', simp)
     apply (simp) 
     by (metis linorder_neqE_nat)
   also have "... \<le> (\<Sum> i \<in> {(x,y) \<in> M' \<times> M'. x < y}. prob 
@@ -361,8 +359,7 @@ proof -
     by (subst pos_divide_le_eq, simp add:p_ge_0, simp add:power2_eq_square)
 
   have "prob {\<omega>. ?l \<omega>} \<le> prob {\<omega>. ?l \<omega> \<and> degree \<omega> \<ge> 1} + prob {\<omega>. degree \<omega> < 1}"
-    unfolding M_def
-    by (rule pmf_add, simp, linarith)
+    by (rule pmf_add, simp+, linarith)
   also have "... \<le> ?r1 + ?r2" by (rule add_mono, metis a, metis b)
   finally show ?thesis by simp
 qed
@@ -371,7 +368,6 @@ end
 lemma of_bool_square: "(of_bool x)\<^sup>2 = ((of_bool x)::real)"
   by (cases x, simp, simp)
  
-
 theorem f0_alg_correct:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
@@ -668,8 +664,7 @@ proof -
 
     have "prob {\<omega>. f a \<omega> \<ge> t} \<le> 
       prob {\<omega> \<in> Sigma_Algebra.space M. abs (real (f a \<omega>) - expectation (\<lambda>\<omega>. real (f a \<omega>))) \<ge> 3 * sqrt (m *(real_of_int a+1)/p)}"
-      unfolding M_def
-    proof (rule pmf_mono_1)
+    proof (rule pmf_mono', simp)
       fix \<omega>
       assume "\<omega> \<in> {\<omega>. t \<le> f a \<omega>}"
       hence t_le: "t \<le> f a \<omega>" by simp
@@ -738,7 +733,7 @@ proof -
         apply (subst exp_f) using a_ge_0 a_le_p True apply (simp, simp)
         apply (subst abs_ge_iff)
         using t_le by blast
-      thus "\<omega> \<in> {\<omega> \<in> Sigma_Algebra.space (measure_pmf (pmf_of_set local.space)). 3 * sqrt (real m * (real_of_int a + 1) / real p) \<le> \<bar>real (f a \<omega>) - measure_pmf.expectation (pmf_of_set local.space) (\<lambda>\<omega>. real (f a \<omega>))\<bar>}"
+      thus "\<omega> \<in> {\<omega> \<in> Sigma_Algebra.space M. 3 * sqrt (real m * (real_of_int a + 1) / real p) \<le> \<bar>real (f a \<omega>) -expectation (\<lambda>\<omega>. real (f a \<omega>))\<bar>}"
         by (simp add: M_def)
     qed
     also have "... \<le> variance  (\<lambda>\<omega>. real (f a \<omega>)) / (3 * sqrt (real m * (of_int a + 1) / real p))\<^sup>2"
@@ -758,10 +753,9 @@ proof -
       case True
       have "prob {\<omega>. f b \<omega> < t} \<le> prob {\<omega> \<in> Sigma_Algebra.space M. abs (real (f b \<omega>) - expectation (\<lambda>\<omega>. real (f b \<omega>))) 
         \<ge> 3 * sqrt (m *(real_of_int b+1)/p)}"
-        unfolding M_def
-      proof (rule pmf_mono_1)
+      proof (rule pmf_mono', simp)
         fix \<omega>
-        assume "\<omega> \<in> set_pmf (pmf_of_set local.space)"
+        assume "\<omega> \<in> set_pmf (Abs_pmf M)"
         have aux: "(real t + 3 * sqrt (real t / (1 - \<delta>') + 1)) * (1 - \<delta>') =
            real t - \<delta>' * t + 3 * ((1-\<delta>') * sqrt( real t / (1-\<delta>') + 1))"
           by (simp add:algebra_simps)
@@ -835,7 +829,7 @@ proof -
           apply (subst exp_f) using b_ge_0 True apply (simp, simp)
           apply (subst abs_ge_iff)
           using t_ge by force
-        thus "\<omega> \<in> {\<omega>\<in> Sigma_Algebra.space (measure_pmf (pmf_of_set space)). 3 * sqrt (real m * (real_of_int b + 1) / real p) \<le> \<bar>real (f b \<omega>) - measure_pmf.expectation (pmf_of_set local.space) (\<lambda>\<omega>. real (f b \<omega>))\<bar>}" 
+        thus "\<omega> \<in> {\<omega>\<in> Sigma_Algebra.space M. 3 * sqrt (real m * (real_of_int b + 1) / real p) \<le> \<bar>real (f b \<omega>) - expectation (\<lambda>\<omega>. real (f b \<omega>))\<bar>}" 
           by (simp add:M_def)
       qed
       also have "... \<le> variance (\<lambda>\<omega>. real (f b \<omega>)) 
@@ -855,13 +849,12 @@ proof -
     next
       case False
       have "prob {\<omega>. f b \<omega> < t} \<le> prob {\<omega>. False}"
-        unfolding M_def
-      proof (rule pmf_mono_1)
+      proof (rule pmf_mono', simp)
         fix \<omega>
         assume a_1:"\<omega> \<in> {\<omega>. f b \<omega> < t}"
-        assume a_2:"\<omega> \<in> set_pmf (pmf_of_set space)"
+        assume a_2:"\<omega> \<in> set_pmf (Abs_pmf M)"
         have a:"\<And>x. x < p \<Longrightarrow> hash x \<omega> < p" 
-          using hash_range mod_ring_carr a_2 by (simp add:M_def) 
+          using hash_range mod_ring_carr a_2 by (simp add:M_def measure_pmf_inverse) 
         have "t \<le> card (set as)"
           using True by simp
         also have "... \<le> f b \<omega>"
@@ -882,8 +875,7 @@ proof -
       prob {\<omega>. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> 
       truncate_down r (real (hash x \<omega>)) \<le> real_of_int b \<and> 
       truncate_down r (real (hash x \<omega>)) = truncate_down r (real (hash y \<omega>))}" 
-      unfolding M_def
-      apply (rule pmf_mono_1)
+      apply (rule pmf_mono', simp)
       apply (simp add:has_no_collision_def M_def) 
       by force
     also have "... \<le> 6 * (real (card (set as)))\<^sup>2 * (real_of_int b)\<^sup>2 
@@ -926,10 +918,9 @@ proof -
     have "prob {\<omega>. 
         real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>} \<le> 
       prob {\<omega>. f a \<omega> \<ge> t \<or> f b \<omega> < t \<or> \<not>(has_no_collision \<omega>)}"
-      unfolding  M_def
-    proof (rule pmf_mono_1, rule ccontr)
+    proof (rule pmf_mono', simp, rule ccontr)
       fix \<omega>
-      assume "\<omega> \<in> set_pmf (pmf_of_set local.space)"
+      assume "\<omega> \<in> set_pmf (Abs_pmf M)"
       assume "\<omega> \<in> {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>}"
       hence est: "real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>" by simp
       assume "\<omega> \<notin> {\<omega>. t \<le> f a \<omega> \<or> f b \<omega> < t \<or> \<not> has_no_collision \<omega>}"
@@ -1079,11 +1070,11 @@ proof -
       prob {\<omega>. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> 
       truncate_down r (real (hash x \<omega>)) \<le> real p \<and> 
       truncate_down r (real (hash x \<omega>)) = truncate_down r (real (hash y \<omega>))}" 
-      unfolding M_def
-    proof (rule pmf_mono_1)
+    proof (rule pmf_mono', simp)
       fix \<omega>
       assume a:"\<omega> \<in> {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>}"
-      assume b:"\<omega> \<in> set_pmf (pmf_of_set space)" 
+      assume "\<omega> \<in> set_pmf (Abs_pmf M)" 
+      hence b:"\<omega> \<in> set_pmf (pmf_of_set space)" by (simp add:M_def measure_pmf_inverse)
       have a_1: "card (set as) < t" using False by auto
       have a_2:"card (h \<omega>) = card ((\<lambda>x. truncate_down r (real (hash x \<omega>))) ` (set as))"
         apply (simp add:h_def)

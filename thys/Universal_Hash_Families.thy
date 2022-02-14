@@ -28,6 +28,7 @@ definition (in prob_space) k_wise_indep_vars ::
   "nat \<Rightarrow> ('b \<Rightarrow> 'c measure) \<Rightarrow> ('b \<Rightarrow> 'a \<Rightarrow> 'c) \<Rightarrow> 'b set \<Rightarrow> bool" where
   "k_wise_indep_vars k M' X' I = (\<forall>J \<subseteq> I. card J \<le> k \<longrightarrow> finite J \<longrightarrow> indep_vars M' X' J)" 
 
+
 lemma (in prob_space) k_wise_indep_vars_subset:
   assumes "k_wise_indep_vars k M' X' I"
   assumes "J \<subseteq> I"
@@ -81,6 +82,12 @@ lemma integrable_M[simp]:
     unfolding M_def
     by (rule integrable_measure_pmf_finite, simp)
 
+lemma is_pmf[simp]: "is_pmf"
+  unfolding M_def by (rule is_pmfI)
+
+lemma set_pmf_eq_space[simp]: "set_pmf (Abs_pmf M) = space"
+  by (simp add:M_def measure_pmf_inverse)
+
 end
 
 locale carter_wegman_hash_family = poly_hash_family +
@@ -131,29 +138,27 @@ proof -
 qed
 
 lemma hash_prob_single:
-  assumes "x \<in> carrier R"
-  assumes "y \<in> carrier R"
+  assumes "x \<in> carrier R" "y \<in> carrier R"
   shows "prob {\<omega>. hash x \<omega> = y} = 1/(real (card (carrier R)))" 
   using hash_prob[where K="{x}"] assms finite_carrier n_ge_0 by simp
 
 lemma hash_prob_range:
-  assumes "x \<in> carrier R"
+  assumes [simp]:"x \<in> carrier R"
   shows "prob {\<omega>. hash x \<omega> \<in> A} = card (A \<inter> carrier R) / (card (carrier R))"
 proof -
   have "prob {\<omega>. hash x \<omega> \<in> A} = prob (\<Union>a \<in> A \<inter> carrier R. {\<omega>. hash x \<omega> = a})"
-    using hash_range assms by (auto intro:measure_pmf_eq simp:M_def)
+    by (rule measure_pmf_eq, auto)
   also have "... = (\<Sum> a \<in> (A \<inter> carrier R). prob {\<omega>. hash x \<omega> = a})"
     by (rule measure_finite_Union, auto simp:M_def disjoint_family_on_def)
   also have "... = (\<Sum> a \<in> (A \<inter> carrier R). 1/(real (card (carrier R))))"
-    by (rule sum.cong, auto simp:hash_prob_single[OF assms])
+    by (rule sum.cong, auto simp:hash_prob_single)
   also have "... = card (A \<inter> carrier R) / (card (carrier R))"
     by simp
   finally show ?thesis by simp
 qed
 
 lemma hash_indep_pmf:
-  assumes "J\<subseteq>carrier R"
-  assumes "finite J" 
+  assumes "J \<subseteq> carrier R"
   assumes "card J \<le> n"
   shows "indep_vars (\<lambda>_. pmf_of_set (carrier R)) hash J"
 proof (cases "n > 0")
@@ -164,23 +169,24 @@ proof (cases "n > 0")
   hence card_R_ge_0:"card (carrier R) > 0"
     using card_gt_0_iff finite_carrier by blast
 
+  have fin_J: "finite J"
+    using finite_carrier assms(1) finite_subset by blast
+
   show ?thesis
-    unfolding M_def
-  proof (rule indep_vars_pmf[simplified])
+  proof (rule indep_vars_pmf'[OF is_pmf])
     fix a
     fix J'
     assume a: "J' \<subseteq> J" "finite J'"
-    have card_J': "card J' \<le> n" by (metis card_mono order_trans a(1) assms(2,3))
+    have card_J': "card J' \<le> n" by (metis card_mono order_trans a(1) assms(2) fin_J)
     have J'_in_carr: "J' \<subseteq> carrier R" by (metis order_trans a(1) assms(1))
 
-    show "measure_pmf.prob (pmf_of_set space) {\<omega>. \<forall>x\<in>J'. hash x \<omega> = a x} =
-       (\<Prod>x\<in>J'. measure_pmf.prob (pmf_of_set space)  {\<omega>. hash x \<omega> = a x})"
+    show "prob {\<omega>. \<forall>x\<in>J'. hash x \<omega> = a x} = (\<Prod>x\<in>J'. prob  {\<omega>. hash x \<omega> = a x})"
     proof (cases "a ` J' \<subseteq> carrier R")
       case True
       have a_carr: "\<And>x. x \<in> J' \<Longrightarrow> a x \<in> carrier R"  using True by force
-      have "measure_pmf.prob (pmf_of_set space) {\<omega>. \<forall>x\<in>J'. hash x \<omega> = a x} = 
+      have "prob {\<omega>. \<forall>x\<in>J'. hash x \<omega> = a x} = 
         real (card {\<omega> \<in> space. \<forall>x\<in>J'. eval \<omega> x = a x}) / real (card space)"
-        by (simp add:measure_pmf_of_set inters_eq_set_filter hash_def)
+        by (simp add:M_def measure_pmf_of_set inters_eq_set_filter hash_def)
       also have "... = real (card (carrier R) ^ (n - card J')) / real (card space)"
         using True by (simp add: poly_cards[OF J'_in_carr card_J'])
       also have "... = real (card (carrier R)) ^ (n - card J') / real (card (carrier R)) ^ n"
@@ -191,8 +197,8 @@ proof (cases "n > 0")
       also have "... =  (\<Prod>x\<in>J'. real (card {\<omega> \<in> space. eval \<omega> x = a x}) / real (card space))"
         using n_ge_0 a_carr poly_cards_single[OF subsetD[OF J'_in_carr]]
         by (simp add:space_def bounded_degree_polynomials_card power_divide)
-      also have "... = (\<Prod>x\<in>J'. measure_pmf.prob (pmf_of_set space) {\<omega>. hash x \<omega> = a x})"
-        by (simp add:measure_pmf_of_set inters_eq_set_filter hash_def)
+      also have "... = (\<Prod>x\<in>J'. prob {\<omega>. hash x \<omega> = a x})"
+        by (simp add:measure_pmf_of_set M_def inters_eq_set_filter hash_def)
       finally show ?thesis by simp
     next
       case False
@@ -208,20 +214,19 @@ proof (cases "n > 0")
         using j_def by blast
       hence "{\<omega> \<in> space. \<forall>x\<in>J'. hash x \<omega> = a x} = {}" using b by blast
       ultimately show ?thesis 
-        by (simp add:measure_pmf_of_set inters_eq_set_filter prod_dividef)
+        by (simp add:measure_pmf_of_set M_def inters_eq_set_filter prod_dividef)
     qed
   qed
 next
   case False
   hence "n = 0" by simp
-  hence "J = {}" using assms by fastforce  
-  then show ?thesis unfolding M_def using measure_pmf.indep_vars_empty by simp
+  hence "J = {}" using assms finite_carrier finite_subset by fastforce  
+  then show ?thesis  using indep_vars_empty by simp
 qed
 
 lemma hash_k_wise_indep:
-  "k_wise_indep_vars  n
-    (\<lambda>_. pmf_of_set (carrier R)) hash (carrier R)"
-  using hash_indep_pmf by (simp add:k_wise_indep_vars_def)
+  "k_wise_indep_vars n (\<lambda>_. pmf_of_set (carrier R)) hash (carrier R)"
+  unfolding k_wise_indep_vars_def using hash_indep_pmf by simp
 
 lemma hash_inj_if_degree_1:
   assumes "\<omega> \<in> space"
@@ -229,6 +234,7 @@ lemma hash_inj_if_degree_1:
   shows "inj_on (\<lambda>x. hash x \<omega>) (carrier R)"
   using assms eval_inj_if_degree_1
   by (simp add:M_def space_def bounded_degree_polynomials_def hash_def)
+
 end
 
 lemma poly_hash_familyI:
@@ -244,7 +250,7 @@ lemma carter_wegman_hash_familyI:
   assumes "finite (carrier F)"
   assumes "0 < n"
   shows "carter_wegman_hash_family F n"
-  using assms field.is_ring poly_hash_familyI[OF field.is_ring[OF assms(1)] assms(2) assms(3)]
+  using assms field.is_ring[OF assms(1)] poly_hash_familyI
   by (simp add:carter_wegman_hash_family_def carter_wegman_hash_family_axioms_def)
 
 end

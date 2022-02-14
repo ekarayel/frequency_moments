@@ -538,9 +538,7 @@ proof -
         by (simp add:\<Omega>\<^sub>0_def)
       have "\<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * F 2 as) < \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>) \<le> 
           \<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * F 2 as) \<le> \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>)"
-          apply (simp add:\<Omega>\<^sub>0_def)
-          apply (rule pmf_mono_1)
-        by simp 
+        by (rule measure_pmf.pmf_mono'[OF is_pmfI], simp)
       also have "... \<le> var / (real_of_rat (\<delta> * F 2 as))\<^sup>2"
         using prob_space.Chebyshev_inequality[where M="\<Omega>\<^sub>0" and a="real_of_rat (\<delta> * F 2 as)"
             and f="\<lambda>\<omega>. f2 \<omega> i",simplified] assms(2) prob_space_measure_pmf[where p="\<Omega>\<^sub>0"] F_2_nonzero

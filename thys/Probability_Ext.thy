@@ -86,6 +86,23 @@ lemma (in prob_space) variance_divide:
   apply (subst diff_divide_distrib[symmetric])
   using assms by (simp add:power2_eq_square algebra_simps)
 
+
+lemma (in prob_space) pmf_mono':
+  assumes "is_pmf"
+  assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf (Abs_pmf M) \<Longrightarrow> x \<in> Q"
+  shows "prob P \<le> prob Q"
+proof -
+  have "prob P = prob (P \<inter> (set_pmf (Abs_pmf M)))"
+    apply (rule  measure_pmf_eq[OF assms(1)])
+    using assms(2) by blast
+  also have "... \<le> prob Q"
+    apply (rule finite_measure.finite_measure_mono, simp)
+    using assms apply blast
+    by (subst is_pmf_iff[OF assms(1)], simp)
+  finally show ?thesis by simp
+qed
+
+(*
 lemma pmf_mono_1:
   assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q"
   shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q"
@@ -97,17 +114,19 @@ proof -
      apply (rule subsetI) using assms apply blast
     by simp
   finally show ?thesis by simp
-qed
+qed *)
 
-lemma pmf_add:
-  assumes  "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q \<or> x \<in> R"
-  shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q + measure (measure_pmf \<Omega>) R"
+lemma (in prob_space) pmf_add:
+  assumes "is_pmf"
+  assumes  "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf (Abs_pmf M) \<Longrightarrow> x \<in> Q \<or> x \<in> R"
+  shows "prob P \<le> prob Q + prob R"
 proof -
-  have "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) (Q \<union> R)"
-    apply (rule pmf_mono_1)
+  have [simp]:"events = UNIV" by (subst is_pmf_iff[OF assms(1)], simp)
+  have "prob P \<le> prob (Q \<union> R)"
+    apply (rule pmf_mono'[OF assms(1)])
     using assms by blast
-  also have "... \<le> measure (measure_pmf \<Omega>) Q + measure (measure_pmf \<Omega>) R"
-    by (rule measure_subadditive, simp+)
+  also have "... \<le> prob Q + prob R"
+    by (rule measure_subadditive, auto)
   finally show ?thesis by simp
 qed
 
@@ -140,7 +159,7 @@ proof
   have "(\<integral>\<^sup>+ \<omega>. ennreal (norm (f \<omega> * g \<omega>)) \<partial>M)\<^sup>2 = (\<integral>\<^sup>+ \<omega>. ennreal \<bar>f \<omega>\<bar> * ennreal \<bar>g \<omega>\<bar> \<partial>M)\<^sup>2" 
     by (simp add: abs_mult ennreal_mult)
   also have "... \<le>  (\<integral>\<^sup>+ \<omega>. ennreal \<bar>f \<omega>\<bar>^2 \<partial>M) * (\<integral>\<^sup>+ \<omega>. ennreal \<bar>g \<omega>\<bar>^2 \<partial>M)"
-    apply (rule Cauchy_Schwarz_nn_integral) by auto
+    by (rule Cauchy_Schwarz_nn_integral, auto)
   also have "... < \<infinity>" 
     using sq_int by (auto simp: integrable_iff_bounded ennreal_power ennreal_mult_less_top)
   finally have "(\<integral>\<^sup>+ x. ennreal (norm (f x * g x)) \<partial>M)\<^sup>2 < \<infinity>" 
@@ -191,19 +210,15 @@ lemma (in prob_space) var_sum_1:
   assumes "\<And>i. i \<in> I \<Longrightarrow> f i \<in> borel_measurable M"
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   shows 
-    "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. (\<Sum>j \<in> I. covariance (f i) (f j)))" (is "?lhs = ?rhs")
+    "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. (\<Sum>j \<in> I. covariance (f i) (f j)))"
 proof -
   have a:"\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. (f i \<omega> - expectation (f i)) * (f j \<omega> - expectation (f j)))" 
     using assms covar_integrable by simp
-  have "?lhs = expectation (\<lambda>\<omega>. (\<Sum>i\<in>I. f i \<omega> - expectation (f i))\<^sup>2)"
-    apply (subst Bochner_Integration.integral_sum)
-    apply (simp add: square_integrable_imp_integrable[OF assms(2) assms(3)])
-    by (subst sum_subtractf[symmetric], simp)
+  have "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = expectation (\<lambda>\<omega>. (\<Sum>i\<in>I. f i \<omega> - expectation (f i))\<^sup>2)"
+    using square_integrable_imp_integrable[OF assms(2,3)]
+    by (simp add: Bochner_Integration.integral_sum  sum_subtractf)
   also have "... = expectation (\<lambda>\<omega>. (\<Sum>i \<in> I. (\<Sum>j \<in> I. (f i \<omega> - expectation (f i)) *  (f j \<omega> - expectation (f j)))))"
-    apply (simp add: power2_eq_square sum_distrib_right sum_distrib_left)
-    apply (rule Bochner_Integration.integral_cong, simp)
-    apply (rule sum.cong, simp)+
-    by (simp add:mult.commute)
+    by (simp add: power2_eq_square sum_distrib_right sum_distrib_left mult.commute)
   also have "... = (\<Sum>i \<in> I. (\<Sum>j \<in> I. covariance (f i) (f j)))"
     using a by (simp add: Bochner_Integration.integral_sum covariance_def) 
   finally show ?thesis by simp
@@ -221,13 +236,13 @@ lemma (in prob_space) covar_indep_eq_zero:
   assumes "indep_var borel f borel g"
   shows "covariance f g = 0"
 proof -
-  have a:"indep_var borel ((\<lambda>t. t - expectation f) \<circ> f) borel  ((\<lambda>t. t - expectation g) \<circ> g)"
-    by (rule indep_var_compose[OF assms(3)], simp, simp)
+  have a:"indep_var borel ((\<lambda>t. t - expectation f) \<circ> f) borel ((\<lambda>t. t - expectation g) \<circ> g)"
+    by (rule indep_var_compose[OF assms(3)], auto)
 
-  show ?thesis
-    apply (simp add:covariance_def)
-    apply (subst indep_var_lebesgue_integral)
-    using a assms by (simp add:comp_def prob_space)+
+  have b:"expectation (\<lambda>\<omega>. (f \<omega> - expectation f) * (g \<omega> - expectation g)) = 0" 
+    using a assms by (subst indep_var_lebesgue_integral, auto simp add:comp_def prob_space)
+
+  thus ?thesis by (simp add:covariance_def)
 qed
 
 lemma (in prob_space) var_sum_2:
@@ -237,12 +252,15 @@ lemma (in prob_space) var_sum_2:
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = 
       (\<Sum>i \<in> I. variance (f i)) + (\<Sum>i \<in> I. \<Sum>j \<in> I - {i}. covariance (f i) (f j))"
-  apply (subst var_sum_1[OF assms(1) assms(2) assms(3)], simp)
-  apply (subst covar_self_eq[symmetric])
-  apply (subst sum.distrib[symmetric])
-  apply (rule sum.cong, simp)
-  apply (subst sum.insert[symmetric], simp add:assms, simp)
-  by (rule sum.cong, simp add:insert_absorb, simp)
+proof -
+  have "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i\<in>I. \<Sum>j\<in>I. covariance (f i) (f j))"
+    by (simp add: var_sum_1[OF assms(1,2,3)])
+  also have "... = (\<Sum>i\<in>I. covariance (f i) (f i) + (\<Sum>j\<in>I-{i}. covariance (f i) (f j)))"
+    using assms by (subst sum.insert[symmetric], auto simp add:insert_absorb)
+  also have "... = (\<Sum>i\<in>I. variance (f i)) +  (\<Sum>i \<in> I. (\<Sum>j\<in>I-{i}. covariance (f i) (f j)))"
+    by (simp add: covar_self_eq[symmetric] sum.distrib)
+  finally show ?thesis by simp
+qed
 
 lemma (in prob_space) var_sum_pairwise_indep:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
@@ -253,14 +271,10 @@ lemma (in prob_space) var_sum_pairwise_indep:
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
 proof -
   have "\<And>i j. i \<in> I \<Longrightarrow> j \<in> I - {i} \<Longrightarrow> covariance (f i) (f j) = 0" 
-    apply (rule covar_indep_eq_zero)
-    using assms square_integrable_imp_integrable[OF assms(2) assms(3)] by auto
-
+    using covar_indep_eq_zero assms(4) square_integrable_imp_integrable[OF assms(2,3)] by auto
   hence a:"(\<Sum>i \<in> I. \<Sum>j \<in> I - {i}. covariance (f i) (f j)) = 0"
     by simp
-
-  show ?thesis
-    by (subst var_sum_2[OF assms(1) assms(2) assms(3)], simp, simp add:a)
+  thus ?thesis by (simp add: var_sum_2[OF assms(1,2,3)])
 qed
 
 lemma (in prob_space) indep_var_from_indep_vars:
@@ -278,11 +292,9 @@ proof -
     using indep_vars_reindex[OF a c]
     by (simp add:comp_def)
   also have "... = indep_vars (\<lambda>x. case_bool M' M' x) (\<lambda>x. case_bool (f i) (f j) x) UNIV"
-    apply (rule indep_vars_cong, simp)
-    apply (metis bool.case_distrib)
-    by (simp add: bool.case_eq_if)
+    by (rule indep_vars_cong, auto simp:bool.case_distrib bool.case_eq_if)
   also have "... = ?thesis"
-    apply (subst indep_var_def) by simp
+    by (simp add: indep_var_def)
   finally show ?thesis by simp
 qed
 
