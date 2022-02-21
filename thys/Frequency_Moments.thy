@@ -1,7 +1,8 @@
 section "Frequency Moments"
 
 theory Frequency_Moments
-  imports Main HOL.List HOL.Rat List_Ext Universal_Hash_Families Field Encoding
+  imports Main HOL.List HOL.Rat List_Ext Encoding     Universal_Hash_Families.Field
+    Interpolation_Polynomials_HOL_Algebra.Interpolation_Polynomial_Cardinalities
 begin
 
 text \<open>This section contains a definition of the frequency moments of a stream.\<close>
@@ -57,6 +58,5 @@ proof -
     by (simp add:ac_simps)
   finally show ?thesis by simp
 qed
-
 
 end

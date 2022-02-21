@@ -7,9 +7,9 @@ session FrequencyMoments = HOL +
     "Median_Method"
     "Interpolation_Polynomials_HOL_Algebra"
     "Equivalence_Relation_Enumeration"
+    "Universal_Hash_Families"
   theories
     Encoding
-    Field
     Float_Ext
     Frequency_Moments
     Frequency_Moment_0
@@ -23,7 +23,6 @@ session FrequencyMoments = HOL +
     Probability_Ext
     Product_PMF_Ext
     Set_Ext
-    Universal_Hash_Families
   document_files
     "root.tex"
     "root.bib"

@@ -4,7 +4,7 @@ text \<open>Some additional results about probability spaces in addition to "HOL
 
 theory Probability_Ext
   imports Main "HOL-Probability.Independent_Family" Multiset_Ext "HOL-Probability.Stream_Space"
- "HOL-Probability.Probability_Mass_Function" Universal_Hash_Families_PMF
+ "HOL-Probability.Probability_Mass_Function"  Universal_Hash_Families.Preliminary_Results
 begin
 
 text \<open>Random variables that depend on disjoint sets of the components of a product space are
@@ -88,17 +88,16 @@ lemma (in prob_space) variance_divide:
 
 
 lemma (in prob_space) pmf_mono':
-  assumes "is_pmf"
-  assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf (Abs_pmf M) \<Longrightarrow> x \<in> Q"
+  assumes "M = measure_pmf p"
+  assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf p \<Longrightarrow> x \<in> Q"
   shows "prob P \<le> prob Q"
 proof -
-  have "prob P = prob (P \<inter> (set_pmf (Abs_pmf M)))"
-    apply (rule  measure_pmf_eq[OF assms(1)])
-    using assms(2) by blast
+  have "prob P = prob (P \<inter> (set_pmf p))"
+    by (rule  measure_pmf_eq[OF assms(1)], blast)
   also have "... \<le> prob Q"
     apply (rule finite_measure.finite_measure_mono, simp)
     using assms apply blast
-    by (subst is_pmf_iff[OF assms(1)], simp)
+    by (simp add:assms(1))
   finally show ?thesis by simp
 qed
 
@@ -117,11 +116,11 @@ proof -
 qed *)
 
 lemma (in prob_space) pmf_add:
-  assumes "is_pmf"
-  assumes  "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf (Abs_pmf M) \<Longrightarrow> x \<in> Q \<or> x \<in> R"
+  assumes "M = measure_pmf p"
+  assumes  "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf p \<Longrightarrow> x \<in> Q \<or> x \<in> R"
   shows "prob P \<le> prob Q + prob R"
 proof -
-  have [simp]:"events = UNIV" by (subst is_pmf_iff[OF assms(1)], simp)
+  have [simp]:"events = UNIV" by (subst assms(1), simp)
   have "prob P \<le> prob (Q \<union> R)"
     apply (rule pmf_mono'[OF assms(1)])
     using assms by blast

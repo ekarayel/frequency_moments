@@ -4,7 +4,7 @@ text \<open>This section introduces a restricted version of @{term "Pi_pmf"} whe
 and contains some additional results about that case in addition to \verb|HOL-Probability.Product_PMF|\<close>
 
 theory Product_PMF_Ext
-  imports Main Probability_Ext "HOL-Probability.Product_PMF" Universal_Hash_Families_PMF
+  imports Main Probability_Ext "HOL-Probability.Product_PMF" Universal_Hash_Families.Preliminary_Results
 begin
 
 definition prod_pmf where "prod_pmf I M = Pi_pmf I undefined M"
@@ -62,8 +62,8 @@ lemma indep_vars_restrict:
   assumes "J \<noteq> {}"
   assumes "\<And>i. i \<in> J \<Longrightarrow> f i \<subseteq> I"
   assumes "finite I"
-  shows "prob_space.indep_vars (measure_pmf (prod_pmf I M)) (\<lambda>i. measure_pmf (prod_pmf (f i) M)) (\<lambda>i \<omega>. restrict \<omega> (f i)) J"
-proof (rule prob_space.indep_vars_pmf'[simplified])
+  shows "prob_space.indep_vars (measure_pmf (prod_pmf I M)) (\<lambda>_. discrete) (\<lambda>i \<omega>. restrict \<omega> (f i)) J"
+proof (rule prob_space.indep_vars_pmf[OF prob_space_measure_pmf], simp)
   fix a :: "'c \<Rightarrow> 'a \<Rightarrow> 'b"
   fix J'
   assume e:"J' \<subseteq> J"
@@ -113,12 +113,6 @@ proof (rule prob_space.indep_vars_pmf'[simplified])
     then show ?thesis 
       by (metis (mono_tags, lifting) Collect_empty_eq j_def c measure_empty prod_zero_iff)
   qed
-next
-  show "prob_space (measure_pmf (prod_pmf I M))"
-    by (simp add:prob_space_measure_pmf)
-next
-  show "prob_space.is_pmf (measure_pmf (prod_pmf I M))"
-    by (rule is_pmfI)
 qed  
 
 lemma indep_vars_restrict_intro:

@@ -2,7 +2,8 @@ section \<open>Frequency Moment $2$\<close>
 
 theory Frequency_Moment_2
   imports Main Median_Method.Median Primes_Ext Encoding List_Ext 
-    Universal_Hash_Families Frequency_Moments Landau_Ext Field
+    Universal_Hash_Families.Carter_Wegman_Hash_Family Frequency_Moments Landau_Ext
+    Universal_Hash_Families.Field
     Equivalence_Relation_Enumeration.Equivalence_Relation_Enumeration Product_PMF_Ext
 begin
 
@@ -12,7 +13,7 @@ The only difference is that the algorithm is adapted to work with prime field of
 greatly reduces the implementation complexity.\<close>
 
 fun f2_hash where
-  "f2_hash p h k = (if even (poly_hash_family.hash (mod_ring p) k h) then int p - 1 else - int p - 1)"
+  "f2_hash p h k = (if even (ring.hash (mod_ring p) k h) then int p - 1 else - int p - 1)"
 
 type_synonym f2_state = "nat \<times> nat \<times> nat \<times> (nat \<times> nat \<Rightarrow> nat list) \<times> (nat \<times> nat \<Rightarrow> int)"
 
@@ -87,11 +88,11 @@ proof -
     by (simp add:t_def)
 
   have d_1: "prob {\<omega>. hash k \<omega> \<in> Collect even} = (real p + 1)/(2*real p)"
-    apply (subst hash_prob_range, simp add:mod_ring_carr assms)
+    apply (subst prob_range, simp add:mod_ring_carr assms)
     apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
     using c_1 by (simp add:mod_ring_def lessThan_atLeast0) 
   have d_2: "prob {\<omega>. hash k \<omega> \<in> Collect odd} = (real p - 1)/(2*real p)"
-    apply (subst hash_prob_range, simp add:mod_ring_carr assms)
+    apply (subst prob_range, simp add:mod_ring_carr assms)
     apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
     using c_2 by (simp add:mod_ring_def lessThan_atLeast0 t_def)
 
@@ -181,8 +182,8 @@ proof -
     also have "... = (\<Prod>i \<in> set x. expectation (\<lambda>\<omega>. h \<omega> i^(count_list x i)))"
       apply (subst indep_vars_lebesgue_integral, simp)
         apply (simp add:h_def)
-        apply (rule indep_vars_compose2[where X="hash" and M'=" (\<lambda>_. pmf_of_set (carrier (mod_ring p)))"])
-         using k_wise_indep_vars_subset[OF hash_k_wise_indep] card_x x_sub_p' assms(1)
+        apply (rule indep_vars_compose2[where X="hash" and M'=" (\<lambda>_. discrete)"])
+         using k_wise_indep_vars_subset[OF k_wise_indep] card_x x_sub_p' assms(1)
          apply (simp add:M_def[symmetric])
          by simp+
     also have "... = (\<Prod>i \<in> set x. r (count_list x i))"
@@ -538,7 +539,7 @@ proof -
         by (simp add:\<Omega>\<^sub>0_def)
       have "\<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * F 2 as) < \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>) \<le> 
           \<P>(\<omega> in \<Omega>\<^sub>0. real_of_rat (\<delta> * F 2 as) \<le> \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>)"
-        by (rule measure_pmf.pmf_mono'[OF is_pmfI], simp)
+        by (rule measure_pmf.pmf_mono', simp, simp)
       also have "... \<le> var / (real_of_rat (\<delta> * F 2 as))\<^sup>2"
         using prob_space.Chebyshev_inequality[where M="\<Omega>\<^sub>0" and a="real_of_rat (\<delta> * F 2 as)"
             and f="\<lambda>\<omega>. f2 \<omega> i",simplified] assms(2) prob_space_measure_pmf[where p="\<Omega>\<^sub>0"] F_2_nonzero

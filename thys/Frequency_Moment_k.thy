@@ -815,7 +815,7 @@ next
       by (rule integrable_measure_pmf_finite[OF fin_omega_2])
     have "?lhs i \<le> measure_pmf.prob (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))
       {y. real_of_rat (\<delta> * F k as) \<le> \<bar>f1 y i - real_of_rat (F k as)\<bar>}"
-      by (rule pmf_mono_1, simp)
+      by (rule prob_space.pmf_mono'[OF prob_space_measure_pmf], simp, simp)
     also have "... \<le> prob_space.variance (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>)) (\<lambda>\<omega>. f1 \<omega> i)/a^2"
       using f1_exp[OF d_1]
       using prob_space.Chebyshev_inequality[OF prob_space_measure_pmf _ d_3 d_2, simplified]

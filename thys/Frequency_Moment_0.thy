@@ -1,20 +1,22 @@
 section \<open>Frequency Moment $0$\<close>
 
 theory Frequency_Moment_0
-  imports Main Primes_Ext Float_Ext Median_Method.Median K_Smallest Universal_Hash_Families Encoding
-  Frequency_Moments Landau_Ext Field Product_PMF_Ext
+  imports Main Primes_Ext Float_Ext Median_Method.Median K_Smallest 
+    Universal_Hash_Families.Carter_Wegman_Hash_Family Encoding
+    Frequency_Moments Landau_Ext Product_PMF_Ext
+    Universal_Hash_Families.Field
 begin
 
 text \<open>This section contains a formalization of the algorithm for the zero-th frequency moment.
 It is a KMV-type ($k$-minimum value) algorithm with a rounding method to match the space complexity 
 of the best algorithm described in \cite{baryossef2002}.\<close>
 
-text \<open>In addition ot the Isabelle proof here, there is also an informal hand-writtend proof in
+text \<open>In addition to the Isabelle proof here, there is also an informal hand-writtend proof in
 Appendix~\ref{sec:f0_proof}.\<close>
 
 type_synonym f0_state = "nat \<times> nat \<times> nat \<times> nat \<times> (nat \<Rightarrow> nat list) \<times> (nat \<Rightarrow> float set)"
 
-definition hash where "hash p = poly_hash_family.hash (mod_ring p)"
+definition hash where "hash p = ring.hash (mod_ring p)"
 
 fun f0_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f0_state pmf" where
   "f0_init \<delta> \<epsilon> n =
@@ -126,7 +128,7 @@ context
 begin
 
 interpretation carter_wegman_hash_family "mod_ring p" 2
-  rewrites "poly_hash_family.hash (mod_ring p) = Frequency_Moment_0.hash p"
+  rewrites "ring.hash (mod_ring p) = Frequency_Moment_0.hash p"
   apply (rule carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite])
   using p_prime apply auto
   by (simp add:hash_def)
@@ -162,7 +164,7 @@ proof -
     by (metis One_nat_def Suc_1 le_less_Suc_eq less_imp_diff_less list.size(3) pos2)
   hence a3: "\<And>\<omega> x y. x < p \<Longrightarrow> y < p \<Longrightarrow>  x \<noteq> y \<Longrightarrow> degree \<omega> \<ge> 1 \<Longrightarrow> 
     \<omega> \<in> space \<Longrightarrow>  hash x \<omega> \<noteq> hash y \<omega>" 
-    using inj_onD[OF hash_inj_if_degree_1]  mod_ring_carr by blast 
+    using inj_onD[OF inj_if_degree_1]  mod_ring_carr by blast 
 
   have a1: 
     "\<And>x y. x < y \<Longrightarrow> x \<in> M' \<Longrightarrow> y \<in> M' \<Longrightarrow> prob 
@@ -226,7 +228,7 @@ proof -
       prob (\<Union> i \<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and>
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}.
       {\<omega>.  hash x \<omega> = fst i \<and> hash y \<omega> = snd i})"
-      apply (rule pmf_mono', simp) 
+      apply (rule pmf_mono'[OF M_def]) 
       using a3   apply (simp add:M_def measure_pmf_inverse) 
       by (metis a2 a1_3 a1_2 a1_1 assms(1) lessThan_iff nat_neq_iff subset_eq)
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and>
@@ -239,8 +241,8 @@ proof -
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 
       prob {\<omega>. (\<forall>u \<in> {x,y}. hash u \<omega> = (if u = x then (fst i) else (snd i)))})" 
       apply (rule sum_mono)
-      apply (rule pmf_mono', simp)
-      by (force)
+      apply (rule pmf_mono'[OF M_def])
+      by force
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and>
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 1/(real p)\<^sup>2)"
       apply (rule sum_mono)
@@ -316,7 +318,7 @@ proof -
     prob (\<Union> i \<in> {(x,y) \<in> M' \<times> M'. x < y}. {\<omega>. 
     degree \<omega> \<ge> 1 \<and> truncate_down r (hash (fst i) \<omega>) \<le> c \<and>
     truncate_down r (hash (fst i) \<omega>) = truncate_down r (hash (snd i) \<omega>)})"
-    apply (rule pmf_mono', simp)
+    apply (rule pmf_mono'[OF M_def])
     apply (simp) 
     by (metis linorder_neqE_nat)
   also have "... \<le> (\<Sum> i \<in> {(x,y) \<in> M' \<times> M'. x < y}. prob 
@@ -359,7 +361,7 @@ proof -
     by (subst pos_divide_le_eq, simp add:p_ge_0, simp add:power2_eq_square)
 
   have "prob {\<omega>. ?l \<omega>} \<le> prob {\<omega>. ?l \<omega> \<and> degree \<omega> \<ge> 1} + prob {\<omega>. degree \<omega> < 1}"
-    by (rule pmf_add, simp+, linarith)
+    by (rule pmf_add[OF M_def], simp, linarith)
   also have "... \<le> ?r1 + ?r2" by (rule add_mono, metis a, metis b)
   finally show ?thesis by simp
 qed
@@ -382,7 +384,7 @@ proof -
     using p_def find_prime_above_is_prime by simp
 
   interpret carter_wegman_hash_family "mod_ring p" 2
-    rewrites "poly_hash_family.hash (mod_ring p) = Frequency_Moment_0.hash p"
+    rewrites "ring.hash (mod_ring p) = Frequency_Moment_0.hash p"
     apply (rule carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite])
     using p_prime apply auto
     by (simp add:hash_def)
@@ -559,7 +561,7 @@ proof -
       also have "... = prob {\<omega>. hash x \<omega> \<in> {k. int k \<le> a}}"
         by (simp add:M_def)
       also have "... = card ({k. int k \<le> a} \<inter> {..<p}) / real p"
-        apply (subst hash_prob_range, simp add:mod_ring_carr x_le_p)
+        apply (subst prob_range, simp add:mod_ring_carr x_le_p)
         by (simp add:mod_ring_def)
       also have "... = card {..<nat (a+1)} / real p"
         apply (rule arg_cong2[where f="(/)"])
@@ -574,7 +576,7 @@ proof -
         by simp
     qed
     have "expectation(\<lambda>\<omega>. real (f a \<omega>)) = expectation (\<lambda>\<omega>. (\<Sum>x \<in> set as. of_bool (int (hash x \<omega>) \<le> a)))"
-      by (simp add:f_def inters_eq_set_filter)
+      by (simp add:f_def Int_def)
     also have "... =  (\<Sum>x \<in> set as. expectation (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a)))"
       by (rule Bochner_Integration.integral_sum, simp)
     also have "... = (\<Sum> x \<in> set as. (a+1)/real p)"
@@ -585,11 +587,11 @@ proof -
 
     have "variance (\<lambda>\<omega>. real (f a \<omega>)) = 
       variance (\<lambda>\<omega>. (\<Sum>x \<in> set as. of_bool (int (hash x \<omega>) \<le> a)))"
-      by (simp add:f_def inters_eq_set_filter)
+      by (simp add:f_def Int_def)
     also have "... = (\<Sum>x \<in> set as. variance (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a)))"
       apply (rule var_sum_pairwise_indep_2, simp, simp add:M_def, simp)
-      apply (rule indep_vars_compose2[where Y="\<lambda>i x. of_bool (int x \<le> a)" and M'="\<lambda>_. measure_pmf (pmf_of_set (carrier (mod_ring p)))"])
-       using k_wise_indep_vars_subset[OF hash_k_wise_indep] xs_subs_p' finite_subset[OF _ finite_set[where xs="as"]]
+      apply (rule indep_vars_compose2[where Y="\<lambda>i x. of_bool (int x \<le> a)" and M'="\<lambda>_. discrete"])
+       using k_wise_indep_vars_subset[OF k_wise_indep] xs_subs_p' finite_subset[OF _ finite_set[where xs="as"]]
        apply (simp add:M_def) 
       by simp
     also have "... \<le> (\<Sum> x \<in> set as. (a+1)/real p)"
@@ -664,7 +666,7 @@ proof -
 
     have "prob {\<omega>. f a \<omega> \<ge> t} \<le> 
       prob {\<omega> \<in> Sigma_Algebra.space M. abs (real (f a \<omega>) - expectation (\<lambda>\<omega>. real (f a \<omega>))) \<ge> 3 * sqrt (m *(real_of_int a+1)/p)}"
-    proof (rule pmf_mono', simp)
+    proof (rule pmf_mono'[OF M_def])
       fix \<omega>
       assume "\<omega> \<in> {\<omega>. t \<le> f a \<omega>}"
       hence t_le: "t \<le> f a \<omega>" by simp
@@ -753,9 +755,9 @@ proof -
       case True
       have "prob {\<omega>. f b \<omega> < t} \<le> prob {\<omega> \<in> Sigma_Algebra.space M. abs (real (f b \<omega>) - expectation (\<lambda>\<omega>. real (f b \<omega>))) 
         \<ge> 3 * sqrt (m *(real_of_int b+1)/p)}"
-      proof (rule pmf_mono', simp)
+      proof (rule pmf_mono'[OF M_def])
         fix \<omega>
-        assume "\<omega> \<in> set_pmf (Abs_pmf M)"
+        assume "\<omega> \<in> set_pmf (pmf_of_set space)"
         have aux: "(real t + 3 * sqrt (real t / (1 - \<delta>') + 1)) * (1 - \<delta>') =
            real t - \<delta>' * t + 3 * ((1-\<delta>') * sqrt( real t / (1-\<delta>') + 1))"
           by (simp add:algebra_simps)
@@ -849,10 +851,10 @@ proof -
     next
       case False
       have "prob {\<omega>. f b \<omega> < t} \<le> prob {\<omega>. False}"
-      proof (rule pmf_mono', simp)
+      proof (rule pmf_mono'[OF M_def])
         fix \<omega>
         assume a_1:"\<omega> \<in> {\<omega>. f b \<omega> < t}"
-        assume a_2:"\<omega> \<in> set_pmf (Abs_pmf M)"
+        assume a_2:"\<omega> \<in> set_pmf (pmf_of_set space)"
         have a:"\<And>x. x < p \<Longrightarrow> hash x \<omega> < p" 
           using hash_range mod_ring_carr a_2 by (simp add:M_def measure_pmf_inverse) 
         have "t \<le> card (set as)"
@@ -875,7 +877,7 @@ proof -
       prob {\<omega>. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> 
       truncate_down r (real (hash x \<omega>)) \<le> real_of_int b \<and> 
       truncate_down r (real (hash x \<omega>)) = truncate_down r (real (hash y \<omega>))}" 
-      apply (rule pmf_mono', simp)
+      apply (rule pmf_mono'[OF M_def])
       apply (simp add:has_no_collision_def M_def) 
       by force
     also have "... \<le> 6 * (real (card (set as)))\<^sup>2 * (real_of_int b)\<^sup>2 
@@ -918,9 +920,9 @@ proof -
     have "prob {\<omega>. 
         real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>} \<le> 
       prob {\<omega>. f a \<omega> \<ge> t \<or> f b \<omega> < t \<or> \<not>(has_no_collision \<omega>)}"
-    proof (rule pmf_mono', simp, rule ccontr)
+    proof (rule pmf_mono'[OF M_def], rule ccontr)
       fix \<omega>
-      assume "\<omega> \<in> set_pmf (Abs_pmf M)"
+      assume "\<omega> \<in> set_pmf (pmf_of_set space)"
       assume "\<omega> \<in> {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>}"
       hence est: "real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>" by simp
       assume "\<omega> \<notin> {\<omega>. t \<le> f a \<omega> \<or> f b \<omega> < t \<or> \<not> has_no_collision \<omega>}"
@@ -1070,11 +1072,10 @@ proof -
       prob {\<omega>. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> 
       truncate_down r (real (hash x \<omega>)) \<le> real p \<and> 
       truncate_down r (real (hash x \<omega>)) = truncate_down r (real (hash y \<omega>))}" 
-    proof (rule pmf_mono', simp)
+    proof (rule pmf_mono'[OF M_def])
       fix \<omega>
       assume a:"\<omega> \<in> {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>}"
-      assume "\<omega> \<in> set_pmf (Abs_pmf M)" 
-      hence b:"\<omega> \<in> set_pmf (pmf_of_set space)" by (simp add:M_def measure_pmf_inverse)
+      assume b:"\<omega> \<in> set_pmf (pmf_of_set space)" 
       have a_1: "card (set as) < t" using False by auto
       have a_2:"card (h \<omega>) = card ((\<lambda>x. truncate_down r (real (hash x \<omega>))) ` (set as))"
         apply (simp add:h_def)
@@ -1243,7 +1244,7 @@ proof -
   hence p_ge_0: "p > 0" by simp
   
   interpret poly_hash_family "mod_ring p" 2
-    rewrites "poly_hash_family.hash (mod_ring p) = Frequency_Moment_0.hash p"
+    rewrites "ring.hash (mod_ring p) = Frequency_Moment_0.hash p"
     using mod_ring_is_cring[OF p_ge_1] cring.axioms(1) mod_ring_finite  poly_hash_familyI 
     using pos2 apply blast
     by (simp add:hash_def)
