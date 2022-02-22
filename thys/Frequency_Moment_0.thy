@@ -1215,10 +1215,10 @@ lemma "inj_on encode_f0_state (dom encode_f0_state)"
   apply (rule encoding_imp_inj)
   apply (simp add: encode_f0_state_def)
   apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis encode_extensional list_encoding nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis encode_extensional list_encoding nat_encoding)
   by (rule encode_extensional, rule encode_set, rule encode_float)
 
 lemma f_subset:
@@ -1356,10 +1356,9 @@ proof -
       bit_count (list\<^sub>S (list\<^sub>S N\<^sub>S) (map x [0..<s])) +
       bit_count (list\<^sub>S (set\<^sub>S F\<^sub>S) (map (\<lambda>i\<in>{..<s}. f0_sketch p r t (x i) as) [0..<s]))"
       using b_2
-      apply (simp add:encode_f0_state_def dependent_bit_count prod_bit_count lessThan_atLeast0
-        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] fun\<^sub>S_def
-        del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
-      by (simp add:ac_simps  lessThan_atLeast0 del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps)
+      apply (simp add:encode_f0_state_def dependent_bit_count lessThan_atLeast0
+        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] fun\<^sub>S_def)
+      by (simp add:ac_simps  lessThan_atLeast0)
     also have "... \<le> ereal (2* log 2 (real s + 1) + 1) + ereal  (2* log 2 (real t + 1) + 1)
       + ereal (2* log 2 (real p + 1) + 1) + ereal (2 * log 2 (real r + 1) + 1)
       + (ereal (real s) * (ereal (real 2 * (2 * log 2 (real p) + 2) + 1) + 1) + 1) 

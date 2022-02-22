@@ -86,7 +86,6 @@ lemma (in prob_space) variance_divide:
   apply (subst diff_divide_distrib[symmetric])
   using assms by (simp add:power2_eq_square algebra_simps)
 
-
 lemma (in prob_space) pmf_mono':
   assumes "M = measure_pmf p"
   assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf p \<Longrightarrow> x \<in> Q"
@@ -100,20 +99,6 @@ proof -
     by (simp add:assms(1))
   finally show ?thesis by simp
 qed
-
-(*
-lemma pmf_mono_1:
-  assumes "\<And>x. x \<in> P \<Longrightarrow> x \<in> set_pmf \<Omega> \<Longrightarrow> x \<in> Q"
-  shows "measure (measure_pmf \<Omega>) P \<le> measure (measure_pmf \<Omega>) Q"
-proof -
-  have "measure (measure_pmf \<Omega>) P = measure (measure_pmf \<Omega>) (P \<inter> set_pmf \<Omega>)" 
-    by (rule measure_pmf_eq, simp)
-  also have "... \<le>  measure (measure_pmf \<Omega>) Q"
-  apply (rule finite_measure.finite_measure_mono, simp)
-     apply (rule subsetI) using assms apply blast
-    by simp
-  finally show ?thesis by simp
-qed *)
 
 lemma (in prob_space) pmf_add:
   assumes "M = measure_pmf p"

@@ -872,9 +872,9 @@ lemma "inj_on encode_fk_state (dom encode_fk_state)"
   apply (simp add:encode_fk_state_def)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis nat_encoding)
-  apply (rule prod_encoding, metis nat_encoding)
-  by (metis encode_extensional prod_encoding nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  apply (rule dependent_encoding, metis nat_encoding)
+  by (metis encode_extensional dependent_encoding nat_encoding)
 
 theorem fk_exact_space_usage:
   assumes "k \<ge> 1"
@@ -899,7 +899,7 @@ proof (cases "as = []")
     have h_2: "snd x \<le> 0" using h_a by force
     
     have "bit_count  ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) x) \<le>  ereal (2 * log 2 (1 + real 0) + 1) +  ereal (2 * log 2 (1 + real 0) + 1)"
-      apply (subst prod_bit_count_2)
+      apply (subst dependent_bit_count_2)
       apply (rule add_mono)
        apply (rule nat_bit_count_est, rule h_1)
       by (rule nat_bit_count_est, rule h_2)
@@ -930,10 +930,10 @@ proof (cases "as = []")
   finally have "bit_count (N\<^sub>S s\<^sub>1) + (bit_count (N\<^sub>S s\<^sub>2) + (bit_count (N\<^sub>S k) + (bit_count (N\<^sub>S 0) +
     bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S N\<^sub>S \<times>\<^sub>S N\<^sub>S) (\<lambda>_\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0, 0))))))
     \<le> ereal (fk_space_usage (k, n, length as, \<epsilon>, \<delta>))"
-    by (simp add:add.assoc del:fk_space_usage.simps N\<^sub>S.simps)
+    by (simp add:add.assoc del:fk_space_usage.simps)
   thus ?thesis 
-    by (simp add: a Let_def s\<^sub>1_def s\<^sub>2_def encode_fk_state_def  AE_measure_pmf_iff dependent_bit_count prod_bit_count
-        del:fk_space_usage.simps N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps) 
+    by (simp add: a Let_def s\<^sub>1_def s\<^sub>2_def encode_fk_state_def  AE_measure_pmf_iff dependent_bit_count
+        del:fk_space_usage.simps) 
 next
   case False
   define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
@@ -967,15 +967,15 @@ next
       ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ( 
       ereal (2 * log 2 (real k + 1) + 1) + (
       ereal (2 * log 2 (real (length as) + 1) + 1) + (
-       (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 ((n)+1) + 1) + ereal (2 * log 2 ((length as)+1) + 1)) + 1))+ 1))))"
-      apply (simp add:encode_fk_state_def dependent_bit_count prod_bit_count PiE_iff comp_def fun\<^sub>S_def
-          del:N\<^sub>S.simps encode_prod.simps encode_dependent_sum.simps plus_ereal.simps sum_list_ereal times_ereal.simps)
+       (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 (n+1) + 1) + ereal (2 * log 2 (length as+1) + 1)) + 1))+ 1))))"
+      apply (simp add:encode_fk_state_def dependent_bit_count PiE_iff comp_def fun\<^sub>S_def
+          del: plus_ereal.simps sum_list_ereal times_ereal.simps)
       apply (rule add_mono, simp add: nat_bit_count[simplified])
       apply (rule add_mono, simp add: nat_bit_count[simplified])
       apply (rule add_mono, simp add: nat_bit_count[simplified])
       apply (rule add_mono, simp add: nat_bit_count[simplified])
       apply (rule list_bit_count_est[where xs="map y (List.product [0..<s\<^sub>1] [0..<s\<^sub>2])", simplified])
-      apply (subst prod_bit_count_2)
+      apply (subst dependent_bit_count_2)
       apply (rule add_mono)
       apply (rule nat_bit_count_est, metis b1)
       by (rule nat_bit_count_est, metis b2)

@@ -95,7 +95,7 @@ proof -
   qed
   have "is_encoding (\<lambda>f. if True then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
     apply (rule encoding_compose[where f="(I\<^sub>S \<times>\<^sub>S I\<^sub>S)"])
-     apply (metis prod_encoding int_encoding, simp)
+     apply (metis dependent_encoding int_encoding, simp)
     by (metis a)
   moreover have "F\<^sub>S = (\<lambda>f. if f \<in> UNIV then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
     by (rule ext, simp add:F\<^sub>S_def)
@@ -227,7 +227,7 @@ proof (cases "m \<noteq> 0")
   qed 
 
   have "bit_count (F\<^sub>S f) = bit_count (I\<^sub>S (mantissa f)) + bit_count (I\<^sub>S (exponent f))"
-    by (simp add:f_def F\<^sub>S_def)
+    by (simp add: F\<^sub>S_def dependent_bit_count)
   also have "... \<le> 
       ereal (2 * (log 2 (real_of_int (abs (mantissa f) + 1)))+ 2) + 
       ereal (2 * (log 2 (real_of_int (abs (exponent f) + 1)))+ 2)"
@@ -257,19 +257,19 @@ proof (cases "m \<noteq> 0")
     by simp
   also have "... = ereal (4 + 2 * (log 2 (real_of_int (abs m) + 2) + log 2 (abs e + 1)))"
     by (simp add:m_def)
-  finally show ?thesis by (simp add:f_def[symmetric] bit_count_append del:N\<^sub>S.simps I\<^sub>S.simps)
+  finally show ?thesis by (simp add:f_def[symmetric] bit_count_append del:I\<^sub>S.simps)
 next
   case False
   hence "float_of (m * 2 powr e) = Float 0 0"
     apply simp 
     using zero_float.abs_eq by linarith
-  then show ?thesis by (simp add:f_def F\<^sub>S_def)
+  then show ?thesis by (simp add: f_def F\<^sub>S_def N\<^sub>S_def dependent_bit_count)
 qed
 
 lemma float_bit_count_zero:
   "bit_count (F\<^sub>S (float_of 0)) = 4"
   apply (subst zero_float.abs_eq[symmetric])
-  by (simp add:F\<^sub>S_def)
+  by (simp add:F\<^sub>S_def N\<^sub>S_def dependent_bit_count)
 
 lemma log_est: "log 2 (real n + 1) \<le> n"
 proof -

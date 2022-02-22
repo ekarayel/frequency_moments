@@ -588,7 +588,7 @@ lemma "inj_on encode_f2_state (dom encode_f2_state)"
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
   apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule prod_encoding, rule encode_extensional, rule list_encoding, rule nat_encoding)
+  apply (rule dependent_encoding, rule encode_extensional, rule list_encoding, rule nat_encoding)
   by (metis encode_extensional int_encoding)
 
 theorem f2_exact_space_usage:
@@ -679,8 +679,8 @@ proof -
        + (ereal (real s\<^sub>1 * real s\<^sub>2) * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1) ) + 1))))"
       using a_2
       apply (simp add: encode_f2_state_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] 
-        dependent_bit_count prod_bit_count fun\<^sub>S_def lessThan_atLeast0
-          del:encode_dependent_sum.simps encode_prod.simps N\<^sub>S.simps plus_ereal.simps of_nat_add)
+         dependent_bit_count fun\<^sub>S_def lessThan_atLeast0
+          del:  plus_ereal.simps of_nat_add)
       apply (rule add_mono, rule nat_bit_count)
       apply (rule add_mono, rule nat_bit_count)
       apply (rule add_mono, rule nat_bit_count_est, metis p_le_n)

@@ -81,8 +81,7 @@ qed
 lemma snd_decode_len:
   assumes "decode f t = (u,v)"
   shows "length v \<le> length t"
-  using snd_decode_suffix assms suffix_length_le 
-  by (metis snd_conv)
+  by (metis snd_conv snd_decode_suffix assms suffix_length_le)
 
 lemma encoding_by_witness:
   assumes "\<And>x y. x \<in> dom f \<Longrightarrow> g (the (f x)@y) = (x,y)"
@@ -195,7 +194,7 @@ fun nat_encoding_aux :: "nat \<Rightarrow> bool list"
     "nat_encoding_aux 0 = [False]" |
     "nat_encoding_aux (Suc n) = True#(odd n)#nat_encoding_aux (n div 2)"
 
-fun N\<^sub>S where "N\<^sub>S n = Some (nat_encoding_aux n)"
+definition N\<^sub>S where "N\<^sub>S n = Some (nat_encoding_aux n)"
 
 fun decode_nat :: "bool list \<Rightarrow> nat \<times> bool list" 
   where
@@ -206,17 +205,17 @@ fun decode_nat :: "bool list \<Rightarrow> nat \<times> bool list"
 
 lemma nat_encoding_aux:
   "decode_nat (nat_encoding_aux x @ y) = (x, y)"
-  by (induction x rule:nat_encoding_aux.induct, simp, simp add:mult.commute)
+  by (induction x rule:nat_encoding_aux.induct, auto simp:mult.commute)
 
 lemma nat_encoding:
   shows "is_encoding N\<^sub>S"
-  by (rule encoding_by_witness[where g="decode_nat"], simp add:nat_encoding_aux)
+  by (rule encoding_by_witness[where g="decode_nat"], simp add:nat_encoding_aux N\<^sub>S_def)
 
 lemma nat_bit_count:
   "bit_count (N\<^sub>S n) \<le> 2 * log 2 (real n+1) + 1"
 proof (induction n rule:nat_encoding_aux.induct)
   case 1
-  then show ?case by simp
+  then show ?case by (simp add:N\<^sub>S_def)
 next
   case (2 n)
   have "log 2 2 + log 2 (1 + real (n div 2)) \<le> log 2 (2 + real n)"
@@ -224,7 +223,7 @@ next
     by (subst log_le_cancel_iff, simp+)
   hence "1 + 2 * log 2 (1 + real (n div 2)) + 1 \<le> 2 * log 2 (2 + real n)"
     by simp
-  thus ?case using 2 by (simp add:add.commute) 
+  thus ?case using 2 by (simp add:add.commute N\<^sub>S_def) 
 qed
 
 lemma nat_bit_count_est:
@@ -251,7 +250,7 @@ fun decode_int :: "bool list \<Rightarrow> (int \<times> bool list)"
 
 lemma int_encoding: "is_encoding I\<^sub>S"
   apply (rule encoding_by_witness[where g="decode_int"])
-  by (simp add:nat_encoding_aux)
+  by (simp add:nat_encoding_aux N\<^sub>S_def)
 
 lemma int_bit_count:
   "bit_count (I\<^sub>S x) \<le> 2 * log 2 (\<bar>x\<bar>+1) + 2"
@@ -260,8 +259,8 @@ proof -
     by simp
   show ?thesis
     apply (cases "x \<ge> 0")
-     using nat_bit_count[where n="nat x"] apply (simp add: bit_count_append add.commute)
-     using nat_bit_count[where n="nat (-x-1)"] apply (simp add: bit_count_append add.commute)
+     using nat_bit_count[where n="nat x"] apply (simp add: bit_count_append add.commute N\<^sub>S_def)
+     using nat_bit_count[where n="nat (-x-1)"] apply (simp add: bit_count_append add.commute N\<^sub>S_def)
      using a order_trans by blast
 qed
 
@@ -274,53 +273,9 @@ proof -
 qed
 
 text \<open>Encoding for Cartesian products\<close>
-
-fun encode_prod :: "'a encoding \<Rightarrow> 'b encoding \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>S" 65)
-  where 
-    "encode_prod e1 e2 x = e1 (fst x)@\<^sub>S e2 (snd x)"
-
-fun decode_prod :: "'a encoding \<Rightarrow> 'b encoding \<Rightarrow> bool list \<Rightarrow> ('a \<times> 'b) \<times> bool list"
-  where
-    "decode_prod e1 e2 x0 = (
-      let (r1,x1) = decode e1 x0 in (
-        let (r2,x2) = decode e2 x1 in ((r1,r2),x2)))"
-
-lemma prod_encoding_dom:
-  "x \<in> dom (e1 \<times>\<^sub>S e2) = (fst x \<in> dom e1 \<and> snd x \<in> dom e2)"
-  apply (case_tac [!] "e1 (fst x)")
-   apply (case_tac [!] "e2 (snd x)")
-  by (simp add:dom_def del:not_None_eq)+
-
-lemma prod_encoding:
-  assumes "is_encoding e1"
-  assumes "is_encoding e2"
-  shows "is_encoding (encode_prod e1 e2)"
-proof  (rule encoding_by_witness[where g="decode_prod e1 e2"])
-  fix x y
-  assume a:"x \<in> dom (e1 \<times>\<^sub>S e2)"
-
-  have b:"e1 (fst x) = Some (the (e1 (fst x)))"
-    by (metis a prod_encoding_dom domIff option.exhaust_sel)
-  have c:"e2 (snd x) = Some (the (e2 (snd x)))" 
-    by (metis a prod_encoding_dom domIff option.exhaust_sel)
-
-  show "decode_prod e1 e2 (the ((e1 \<times>\<^sub>S e2) x) @ y) = (x, y)"
-    apply (simp, subst b, subst c)
-    apply simp
-    using assms b c by (simp add:decode_elim)
-qed
-
-lemma prod_bit_count:
-  "bit_count ((e\<^sub>1 \<times>\<^sub>S e\<^sub>2) (x\<^sub>1,x\<^sub>2)) = bit_count (e\<^sub>1 x\<^sub>1) + bit_count (e\<^sub>2 x\<^sub>2)"
-  by (simp add:bit_count_append)
-
-lemma prod_bit_count_2:
-  "bit_count ((e1 \<times>\<^sub>S e2) x) = bit_count (e1 (fst x)) + bit_count (e2 (snd x))"
-  by (simp add:bit_count_append)
-
 text \<open>Encoding for dependent sums\<close>
 
-fun encode_dependent_sum :: "'a encoding \<Rightarrow> ('a \<Rightarrow> 'b encoding) \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>D" 65)
+definition encode_dependent_sum :: "'a encoding \<Rightarrow> ('a \<Rightarrow> 'b encoding) \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>D" 65)
   where 
     "encode_dependent_sum e1 e2 x = e1 (fst x)@\<^sub>S e2 (fst x) (snd x)"
 
@@ -335,23 +290,31 @@ proof -
 
   have a: "\<And>x. x \<in> dom (e1 \<times>\<^sub>D e2) \<Longrightarrow> fst x \<in> dom e1"
     apply (simp add:dom_def del:not_None_eq) 
-    using append_encoding.simps by metis
+    using append_encoding.simps encode_dependent_sum_def by metis
   have b: "\<And>x. x \<in> dom (e1 \<times>\<^sub>D e2) \<Longrightarrow> snd x \<in> dom (e2 (fst x))"
     apply (simp add:dom_def del:not_None_eq) 
-    using append_encoding.simps by metis
+    using append_encoding.simps encode_dependent_sum_def by metis
   have c: "\<And>x. x \<in> dom (e1 \<times>\<^sub>D e2) \<Longrightarrow> e1 (fst x) = Some (the (e1 (fst x)))"
     using a by (simp add: domIff)
   have d: "\<And>x. x \<in> dom (e1 \<times>\<^sub>D e2) \<Longrightarrow> e2 (fst x) (snd x) = Some (the (e2 (fst x) (snd x)))"
     using b by (simp add: domIff)
   show ?thesis
     apply (rule encoding_by_witness[where g="d"])
-    apply (simp add:d_def, subst c, simp, subst d, simp)
+    apply (simp add:d_def encode_dependent_sum_def, subst c, simp, subst d, simp)
     using assms a b by (simp add:d_def decode_elim_2)
 qed
 
 lemma dependent_bit_count:
   "bit_count ((e\<^sub>1 \<times>\<^sub>D e\<^sub>2) (x\<^sub>1,x\<^sub>2)) = bit_count (e\<^sub>1 x\<^sub>1) + bit_count (e\<^sub>2 x\<^sub>1 x\<^sub>2)"
-  by (simp add:bit_count_append)
+  by (simp add:bit_count_append encode_dependent_sum_def)
+
+lemma dependent_bit_count_2:
+  "bit_count ((e\<^sub>1 \<times>\<^sub>D e\<^sub>2) x) = bit_count (e\<^sub>1 (fst x)) + bit_count (e\<^sub>2 (fst x) (snd x))"
+  by (simp add:bit_count_append encode_dependent_sum_def)
+
+abbreviation encode_prod :: "'a encoding \<Rightarrow> 'b encoding \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>S" 65)
+  where 
+    "encode_prod e1 e2 \<equiv> e1  \<times>\<^sub>D (\<lambda>_. e2)"
 
 text \<open>This lemma helps derive an encoding on the domain of an injective function using an 
 existing encoding on its image.\<close>
@@ -388,12 +351,12 @@ lemma extensional_bit_count:
 
 text \<open>Encoding for ordered sets.\<close>
 
-fun set\<^sub>S where "set\<^sub>S e S = (if finite S then list\<^sub>S e (sorted_list_of_set S) else None)"
+definition set\<^sub>S where "set\<^sub>S e S = (if finite S then list\<^sub>S e (sorted_list_of_set S) else None)"
 
 lemma encode_set:
   assumes "is_encoding e"
   shows "is_encoding (\<lambda>S. set\<^sub>S e S)"
-  apply simp
+  apply (simp add:set\<^sub>S_def)
   apply (rule encoding_compose[where f="list\<^sub>S e"])
    apply (metis assms list_encoding)
   apply (rule inj_onI, simp)
@@ -403,7 +366,7 @@ lemma set_bit_count:
   assumes "finite S"
   shows "bit_count (set\<^sub>S e S) = (\<Sum>x \<in> S. bit_count (e x)+1)+1"
   using assms sorted_list_of_set
-  by (simp add:list_bit_count sum_list_distinct_conv_sum_set)
+  by (simp add:list_bit_count sum_list_distinct_conv_sum_set set\<^sub>S_def)
 
 lemma set_bit_count_est:
   assumes "finite S"
@@ -413,7 +376,7 @@ lemma set_bit_count_est:
   shows "bit_count (set\<^sub>S f S) \<le> ereal (real m) * (a+1) + 1"
 proof -
   have "bit_count (set\<^sub>S f S) \<le> ereal (length (sorted_list_of_set S)) * (a+1) + 1"
-    using assms(4) assms(1) list_bit_count_est[where xs="sorted_list_of_set S"] by simp
+    using assms(4) assms(1) list_bit_count_est[where xs="sorted_list_of_set S"] by (simp add:set\<^sub>S_def)
   also have "... \<le> ereal (real m) * (a+1) + 1"
     apply (rule add_mono)
     apply (rule ereal_mult_right_mono)
