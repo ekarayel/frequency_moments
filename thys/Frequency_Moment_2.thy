@@ -39,62 +39,53 @@ fun f2_result :: "f2_state \<Rightarrow> rat pmf" where
 context 
   fixes p :: nat
   assumes p_prime: "Factorial_Ring.prime p"
+  assumes p_ge_2[simp]: "p > 2"
 begin
 
 interpretation carter_wegman_hash_family "mod_ring p" 4
-  apply (rule carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite])
-  using p_prime by auto
+  using carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite] p_prime by auto
 
 lemma f2_hash_exp:
   assumes "k < p"
-  assumes "p > 2" 
   shows
     "expectation (\<lambda>\<omega>. real_of_int (f2_hash p \<omega> k) ^m) = 
      ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)"
 proof -
-  have g:"p > 0" using assms(1) prime_gt_0_nat by auto
+  have [simp]:"p > 0" using p_ge_2 by linarith
 
-  have "odd p" using p_prime prime_odd_nat assms by blast
+  have "odd p" using p_prime p_ge_2 prime_odd_nat assms by blast
   then obtain t where t_def: "p=2*t+1" 
     using oddE by blast
 
-  have zero_le_4: "0 < (4::nat)" by simp
-
-  have "card ({k. even k} \<inter> {..<p}) = card ((\<lambda>x. 2*x) ` {..t})"
-    apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym)
-    apply (rule subsetI)
-     apply (simp add:t_def)
-     apply (metis evenE Suc_1 atMost_iff image_eqI less_Suc_eq_le mult_less_cancel1 not_less zero_less_Suc)
-    by (rule image_subsetI, simp add:t_def)
-  also have "... = card {..t}" 
-    apply (rule card_image)
-    by (simp add: inj_on_mult)
+  have "Collect even \<inter> {..<2 * t + 1} \<subseteq> (*) 2 ` {..<t + 1}" 
+    by (rule in_image_by_witness[where g="\<lambda>x. x div 2"], simp, linarith)
+  moreover have " (*) 2 ` {..<t + 1} \<subseteq> Collect even \<inter> {..<2 * t + 1}"
+    by (rule image_subsetI, simp)
+  ultimately have "card ({k. even k} \<inter> {..<p}) = card ((\<lambda>x. 2*x) ` {..<t+1})"
+    unfolding t_def using order_antisym by metis
+  also have "... = card {..<t+1}" 
+    by (rule card_image, simp add: inj_on_mult)
   also have "... =  t+1" by simp
-  finally have c_11: "card ({k. even k} \<inter> {..<p}) = t+1" by simp
-  hence c_1: "card ({k. even k} \<inter> {..<p}) * 2 = (p+1)" by (simp add:t_def)
+  finally have card_even: "card ({k. even k} \<inter> {..<p}) = t+1" by simp
+  hence "card ({k. even k} \<inter> {..<p}) * 2 = (p+1)" by (simp add:t_def)
+  hence prob_even: "prob {\<omega>. hash k \<omega> \<in> Collect even} = (real p + 1)/(2*real p)"
+    apply (subst prob_range, simp add:mod_ring_carr assms)
+    by (simp add:frac_eq_eq mod_ring_def lessThan_atLeast0) 
 
   have "p = card {..<p}" by simp
   also have "... = card (({k. odd k} \<inter> {..<p}) \<union> ({k. even k} \<inter> {..<p}))" 
-    apply (rule arg_cong[where f="card"])
-    by (rule order_antisym, rule subsetI, simp, rule subsetI, simp, blast)
+    by (rule arg_cong[where f="card"], auto)
   also have "... = card ({k. odd k} \<inter> {..<p}) +  card ({k. even k} \<inter> {..<p})"
     by (rule card_Un_disjoint, simp, simp, blast)
   also have "... = card ({k. odd k} \<inter> {..<p}) + t+1"
-    by (simp add:c_11)
+    by (simp add:card_even)
   finally have "p = card ({k. odd k} \<inter> {..<p}) + t+1"
     by simp
-  hence c_2: "card ({k. odd k} \<inter> {..<p}) * 2 = (p-1)" 
+  hence "card ({k. odd k} \<inter> {..<p}) * 2 = (p-1)" 
     by (simp add:t_def)
-
-  have d_1: "prob {\<omega>. hash k \<omega> \<in> Collect even} = (real p + 1)/(2*real p)"
+  hence prob_odd: "prob {\<omega>. hash k \<omega> \<in> Collect odd} = (real p - 1)/(2*real p)"
     apply (subst prob_range, simp add:mod_ring_carr assms)
-    apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
-    using c_1 by (simp add:mod_ring_def lessThan_atLeast0) 
-  have d_2: "prob {\<omega>. hash k \<omega> \<in> Collect odd} = (real p - 1)/(2*real p)"
-    apply (subst prob_range, simp add:mod_ring_carr assms)
-    apply (subst frac_eq_eq, simp add:mod_ring_def g, simp add:g)
-    using c_2 by (simp add:mod_ring_def lessThan_atLeast0 t_def)
+    by (simp add: frac_eq_eq mod_ring_def lessThan_atLeast0 t_def)
 
   have "expectation (\<lambda>x. real_of_int (f2_hash p x k) ^ m) =
     expectation (\<lambda>\<omega>. indicator {\<omega>. even (hash k \<omega>)} \<omega> * (real p - 1)^m + 
@@ -103,9 +94,9 @@ proof -
   also have "... = 
      prob {\<omega>. hash  k \<omega> \<in> Collect even}  * (real p - 1) ^ m  + 
      prob {\<omega>. hash  k \<omega> \<in> Collect odd}  * (-real p - 1) ^ m "
-    by (simp add: integrable_measure_pmf_finite M_def)
+    by (simp, simp add:M_def)
   also have "... = (real p + 1) * (real p - 1) ^ m / (2 * real p) + (real p - 1) * (- real p - 1) ^ m / (2 * real p)"
-    by (subst d_1, subst d_2, simp)
+    by (subst prob_even, subst prob_odd, simp)
   also have "... =  
     ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)"
     by (simp add:add_divide_distrib ac_simps)
@@ -114,7 +105,6 @@ proof -
 qed
 
 lemma 
-  assumes "p > 2"
   assumes "\<And>a. a \<in> set as \<Longrightarrow> a < p"
   defines "f \<equiv> (\<lambda>\<omega>. real_of_int (sum_list (map (f2_hash p \<omega>) as))^2)"
   shows var_f2:"variance f \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" (is "?A")
@@ -133,62 +123,54 @@ proof -
   have f_eq: "f = (\<lambda>\<omega>. (\<Sum>x \<in> set as. c x * h \<omega> x)^2)"
     by (simp add:f_def c_def h_def sum_list_eval del:f2_hash.simps)
 
-  have p_ge_0: "p > 0" using assms by simp
+  have p_ge_0: "p > 0" using p_ge_2 by linarith
 
-  have r_one: "r (Suc 0) = 0" by (simp add:r_def algebra_simps)
+  have r_one: "r (Suc 0) = 0"
+    by (simp add:r_def algebra_simps)
 
   have r_two: "r 2 = (real p^2-1)"
-    apply (simp add:r_def)
-    apply (subst nonzero_divide_eq_eq) using assms apply simp
-    by (simp add:algebra_simps power2_eq_square)
+    using p_ge_0 unfolding r_def power2_eq_square 
+    by (simp add:nonzero_divide_eq_eq, simp add:algebra_simps)
 
-  (* TODO: Clean up! *)
-  have r_four_est: "r 4 \<le> 3 * r 2 * r 2" 
-    apply (simp add:r_two)
-    apply (simp add:r_def)
-    apply (subst pos_divide_le_eq) using assms apply simp
-    apply (simp add:algebra_simps power2_eq_square power4_eq_xxxx)
-    apply (rule order_trans[where y="real p * 12 + real p * (real p * (real p * 16))"])
-     apply simp
-    apply (rule add_mono, simp)
-    apply (rule mult_left_mono)
-    apply (rule mult_left_mono)
-      apply (rule mult_left_mono)
-    apply simp
-    using assms 
-       apply (metis p_prime linorder_not_less num_double numeral_mult of_nat_power power2_eq_square power2_nat_le_eq_le prime_ge_2_nat real_of_nat_less_numeral_iff)
-    by simp+
+  have"(real p)^2 \<ge> 2^2"
+    by (rule power_mono, use p_ge_2 in linarith, simp)
+  hence p_square_ge_4: "(real p)^2 \<ge> 4" by simp
+
+  have "r 4 = (real p)^4+2*(real p)^2 - 3" 
+    using p_ge_0 unfolding r_def
+    by (subst nonzero_divide_eq_eq, auto simp:power4_eq_xxxx power2_eq_square algebra_simps)
+  also have "... \<le> (real p)^4+2*(real p)^2 + 3"
+    by simp
+  also have "... \<le> 3 * r 2 * r 2"
+    using p_square_ge_4
+    by (simp add:r_two power4_eq_xxxx power2_eq_square algebra_simps mult_left_mono)
+  finally have r_four_est: "r 4 \<le> 3 * r 2 * r 2"  by simp
 
   have exp_h_prod_elim: "exp_h_prod = (\<lambda>as. prod_list (map (r \<circ> count_list as) (remdups as)))" 
-    apply (simp add:exp_h_prod_def)
-    apply (rule ext)
-    apply (subst prod.set_conv_list[symmetric])
-    by (rule prod.cong, simp, simp add:comp_def)
+    by (simp add:exp_h_prod_def prod.set_conv_list[symmetric])
 
   have exp_h_prod: "\<And>x. set x \<subseteq> set as \<Longrightarrow> length x \<le> 4 \<Longrightarrow> expectation (h_prod x) = exp_h_prod x"
   proof -
     fix x 
     assume "set x \<subseteq> set as"
-    hence x_sub_p: "set x \<subseteq> {..<p}" using assms(2) atLeastLessThan_iff by blast
+    hence x_sub_p: "set x \<subseteq> {..<p}" using assms atLeastLessThan_iff by blast
     hence x_le_p: "\<And>k. k \<in> set x \<Longrightarrow> k < p" by auto
     assume "length x \<le> 4"
     hence card_x: "card (set x) \<le> 4" using card_length dual_order.trans by blast
 
-    have x_sub_p': "set x \<subseteq> carrier (mod_ring p) " apply (simp add:mod_ring_def)
-      using x_sub_p by presburger
+    have "set x \<subseteq> carrier (mod_ring p) "
+      using x_sub_p by (simp add:mod_ring_def)
+
+    hence h_indep: "indep_vars (\<lambda>_. borel) (\<lambda>i \<omega>. h \<omega> i ^ count_list x i) (set x)"
+      using k_wise_indep_vars_subset[OF k_wise_indep] card_x assms(1) h_def
+      by (auto intro:indep_vars_compose2[where X="hash" and M'=" (\<lambda>_. discrete)"])
+
     have "expectation (h_prod x) = expectation (\<lambda>\<omega>. \<Prod> i \<in> set x. h \<omega> i^(count_list x i))"
-      apply (rule arg_cong[where f="expectation"])
       by (simp add:h_prod_def prod_list_eval)
     also have "... = (\<Prod>i \<in> set x. expectation (\<lambda>\<omega>. h \<omega> i^(count_list x i)))"
-      apply (subst indep_vars_lebesgue_integral, simp)
-        apply (simp add:h_def)
-        apply (rule indep_vars_compose2[where X="hash" and M'=" (\<lambda>_. discrete)"])
-         using k_wise_indep_vars_subset[OF k_wise_indep] card_x x_sub_p' assms(1)
-         apply (simp add:M_def[symmetric])
-         by simp+
+      by (simp add: indep_vars_lebesgue_integral[OF _ h_indep])
     also have "... = (\<Prod>i \<in> set x. r (count_list x i))"
-      apply (rule prod.cong, simp)
-      using f2_hash_exp[OF x_le_p assms(1)] 
+      using f2_hash_exp[OF x_le_p] 
       by (simp add:h_def r_def M_def[symmetric] del:f2_hash.simps)
     also have "... = exp_h_prod x"
       by (simp add:exp_h_prod_def)
@@ -204,13 +186,10 @@ proof -
     have "exp_h_prod x = prod ( (\<lambda>i. r(count_list y i)) \<circ> f) (set x)"
       by (simp add:exp_h_prod_def c)
     also have "... = (\<Prod>i \<in> f ` (set x). r(count_list y i))"
-      apply (rule prod.reindex[symmetric])
-      using b bij_betw_def by blast
+      by (metis b bij_betw_def prod.reindex)
     also have "... = exp_h_prod y"
-      apply (simp add:exp_h_prod_def)
-      apply (rule prod.cong)
-       apply (metis b bij_betw_def)
-      by simp
+      unfolding exp_h_prod_def
+      by (rule prod.cong, metis b bij_betw_def) simp
     finally show "exp_h_prod x = exp_h_prod y" by simp
   qed
 
@@ -235,56 +214,39 @@ proof -
   have "expectation f = (\<Sum>i\<in>set as. (\<Sum>j\<in>set as. c i * c j * expectation (h_prod [i,j])))"
     by (simp add:f_eq h_prod_def power2_eq_square sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum algebra_simps)
   also have "... = (\<Sum>i\<in>set as. (\<Sum>j\<in>set as. c i * c j * exp_h_prod [i,j]))"
-    apply (rule sum.cong, simp)
-    apply (rule sum.cong, simp)
-    apply (subst exp_h_prod, simp, simp)
-    by simp
+    by (simp add:exp_h_prod)
   also have "... = (\<Sum>i \<in> set as. (\<Sum>j \<in> set as.  
     c i * c j * (sum_list (map (\<lambda>p. of_bool (kernel_of [i,j] = kernel_of p) * exp_h_prod p) (enum_rgfs 2)))))"
-    apply (subst exp_h_prod_cong)
-    by (subst c, simp+) 
+    by (subst exp_h_prod_cong, simp add:c)
   also have "... = (\<Sum>i\<in>set as. c i * c i * r 2)"
-    apply (simp add:numeral_eq_Suc exp_h_prod_elim r_one) 
-    by (simp add: kernel_of_eq All_less_Suc numeral_eq_Suc distrib_left sum.distrib sum_collapse)
+    by (simp add: numeral_eq_Suc kernel_of_eq All_less_Suc exp_h_prod_elim r_one distrib_left sum.distrib sum_collapse)
   also have "... = real_of_rat (F 2 as) * ((real p)^2-1)"
-    apply (subst sum_distrib_right[symmetric])
-    by (simp add:c_def F_def power2_eq_square of_rat_sum of_rat_mult r_two)
+    by (simp add: sum_distrib_right[symmetric] c_def F_def power2_eq_square of_rat_sum of_rat_mult r_two)
   finally show b:?B by simp
 
   have "expectation (\<lambda>x. (f x)\<^sup>2) = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as.
     c i1 * c i2 * c i3 * c i4 * expectation (h_prod [i1, i2, i3, i4])))))"
-    apply (simp add:f_eq h_prod_def power4_eq_xxxx sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum)
-    by (simp add:algebra_simps)
+    by (simp add:f_eq h_prod_def power4_eq_xxxx sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum algebra_simps)
   also have "... = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as. 
     c i1 * c i2 * c i3 * c i4 * exp_h_prod [i1,i2,i3,i4]))))"
-    apply (rule sum.cong, simp)
-    apply (rule sum.cong, simp)
-    apply (rule sum.cong, simp)
-    apply (rule sum.cong, simp)
-    apply (subst exp_h_prod, simp, simp)
-    by simp
+    by (simp add:exp_h_prod)
   also have "... = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as. 
     c i1 * c i2 * c i3 * c i4 * 
     (sum_list (map (\<lambda>p. of_bool (kernel_of [i1,i2,i3,i4] = kernel_of p) * exp_h_prod p) (enum_rgfs 4)))))))"
-    apply (subst exp_h_prod_cong) 
-    by (subst c, simp+) 
+    by (subst exp_h_prod_cong, simp add:c)
   also have "... = 
     3 * (\<Sum>i \<in> set as. (\<Sum>j \<in> set as. c i^2 * c j^2 * r 2 * r 2)) + ((\<Sum> i \<in> set as. c i^4 * r 4) - 3 *  (\<Sum> i \<in> set as. c i ^ 4 * r 2 * r 2))"
-    apply (simp add: numeral_eq_Suc exp_h_prod_elim r_one) 
+    apply (simp add: numeral_eq_Suc exp_h_prod_elim r_one) (* Very large intermediate terms *)
     apply (simp add: kernel_of_eq All_less_Suc numeral_eq_Suc distrib_left sum.distrib sum_collapse neq_commute)
     apply (simp add: algebra_simps sum_subtractf sum_collapse)
     by (simp add: sum_distrib_left algebra_simps)
   also have "... = 3 * (\<Sum>i \<in> set as. c i^2 * r 2)^2 + (\<Sum> i \<in> set as. c i ^ 4 * (r 4 - 3 * r 2 * r 2))"
-    apply (rule arg_cong2[where f="(+)"])
-     apply (simp add:power2_eq_square sum_distrib_left sum_distrib_right algebra_simps)
-    apply (simp add:sum_distrib_left sum_subtractf[symmetric])
-    apply (rule sum.cong, simp)
-    by (simp add:algebra_simps)
-  also have "... \<le> 3 * (\<Sum>i \<in> set as. c i^2)^2 * (r 2)^2 +  (\<Sum>i \<in> set as. c i ^ 4 * 0)"
-    apply (rule add_mono)
-     apply (simp add:power_mult_distrib sum_distrib_right[symmetric])
-    apply (rule sum_mono, rule mult_left_mono)
-    using r_four_est by simp+
+    by (simp add:power2_eq_square sum_distrib_left algebra_simps sum_subtractf)
+  also have "... = 3 * (\<Sum>i \<in> set as. c i^2)^2 * (r 2)^2 + (\<Sum>i \<in> set as. c i ^ 4 * (r 4 - 3 * r 2 * r 2))"
+    by (simp add:power_mult_distrib sum_distrib_right[symmetric])
+  also have "... \<le> 3 * (\<Sum>i \<in> set as. c i^2)^2 * (r 2)^2 + (\<Sum>i \<in> set as. c i ^ 4 * 0)"
+    using r_four_est  
+    by (auto intro!: sum_nonpos simp add:mult_nonneg_nonpos)
   also have "... = 3 * (real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" 
     by (simp add:c_def r_two F_def of_rat_sum of_rat_power)
 
@@ -292,9 +254,7 @@ proof -
     by simp
   
   show "variance f \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
-    apply (simp add: variance_eq, subst b)
-    apply (simp add:power_mult_distrib)
-    using v_1 by simp
+    using v_1 by (simp add: variance_eq, simp add:power_mult_distrib b)
 qed
 
 end
@@ -349,11 +309,10 @@ proof -
   define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
   define p where "p = find_prime_above (max n 3)"
   have p_prime: "Factorial_Ring.prime p" 
-    apply (simp add:p_def) 
-    using find_prime_above_is_prime by blast
+    unfolding p_def using find_prime_above_is_prime by blast
 
   interpret carter_wegman_hash_family "mod_ring p" 4
-    apply (rule carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite])
+    using carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite]
     using p_prime by auto
 
   define \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = prod_pmf ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) (\<lambda>_. pmf_of_set space)"
@@ -364,28 +323,29 @@ proof -
   define h_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> nat list)" where "h_from = fst \<circ> snd \<circ> snd \<circ> snd"
   define sketch_from :: "f2_state \<Rightarrow> (nat \<times> nat \<Rightarrow> int)" where "sketch_from = snd \<circ> snd \<circ> snd \<circ> snd"
 
-  have p_ge_3: "p \<ge> 3"
-    apply (simp add:p_def)
+  have "p \<ge> 3"
+    unfolding p_def
     by (meson find_prime_above_lower_bound dual_order.trans max.cobounded2)
 
   hence p_ge_2: "p > 2" by simp
-
+  have "real p * real p \<ge> 2*2" 
+    by (rule mult_mono, use p_ge_2 in auto)
   hence p_sq_ne_1: "(real p)^2 \<noteq> 1" 
-    by (metis Num.of_nat_simps(2) nat_1 nat_one_as_int nat_power_eq_Suc_0_iff not_numeral_less_one of_nat_eq_iff of_nat_power zero_neq_numeral)
+    by (simp add:power2_eq_square)
 
   have p_ge_0: "p > 0" using p_ge_2 by simp
 
   have fin_omega_2: "finite (set_pmf ( pmf_of_set (space)))" by simp
 
   have fin_omega_1: "finite (set_pmf \<Omega>\<^sub>0)"
-    apply (simp add:\<Omega>\<^sub>0_def set_prod_pmf)
-    by (rule finite_PiE, simp, simp)
+    unfolding \<Omega>\<^sub>0_def 
+    by (auto intro:finite_PiE simp:set_prod_pmf)
 
-  have as_le_p: "\<And>x. x \<in> set as \<Longrightarrow> x < p" 
-    apply (rule order_less_le_trans[where y="n"])
-     using assms(3) atLeastLessThan_iff apply blast
-    apply (simp add:p_def) 
+  have "p \<ge> n" 
+    unfolding p_def 
     by (meson find_prime_above_lower_bound max.boundedE)
+  hence as_le_p: "\<And>x. x \<in> set as \<Longrightarrow> x < p" 
+    using assms(3) by auto
 
   have fin_poly': "finite (bounded_degree_polynomials (mod_ring p) 4)"
     using fin_degree_bounded mod_ring_finite by auto

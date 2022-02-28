@@ -349,6 +349,13 @@ lemma extensional_bit_count:
   using assms 
   by (simp add:fun\<^sub>S_def list_bit_count comp_def)
 
+lemma extensional_bit_count_est:
+  assumes "f \<in> extensional (set xs)"
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> bit_count (e (f x)) \<le> a"
+  shows "bit_count  ((xs \<rightarrow>\<^sub>S e) f)  \<le> ereal (real (length xs)) * (a+1) + 1"
+  using assms list_bit_count_est[where xs="map f xs"]
+  by (simp add:fun\<^sub>S_def image_iff, blast)
+
 text \<open>Encoding for ordered sets.\<close>
 
 definition set\<^sub>S where "set\<^sub>S e S = (if finite S then list\<^sub>S e (sorted_list_of_set S) else None)"
