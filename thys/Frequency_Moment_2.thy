@@ -55,13 +55,13 @@ definition encode_f2_state :: "f2_state \<Rightarrow> bool list option" where
     (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S))))"
 
 lemma "inj_on encode_f2_state (dom encode_f2_state)"
-  apply (rule encoding_imp_inj)
-  apply (simp add:encode_f2_state_def)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, rule encode_extensional, rule list_encoding, rule nat_encoding)
-  by (metis encode_extensional int_encoding)
+proof -
+  have " is_encoding encode_f2_state"
+    unfolding encode_f2_state_def
+    by (auto intro!:dependent_encoding nat_encoding encode_extensional list_encoding int_encoding)
+  thus ?thesis
+    by (rule encoding_imp_inj)
+qed
 
 context
   fixes \<epsilon> \<delta> :: rat
@@ -75,21 +75,34 @@ context
 begin  
 
 private definition s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
+
+lemma s1_nonzero: "s\<^sub>1 > 0"
+    using \<delta>_range by (simp add:s\<^sub>1_def)
+
 private definition s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
+
+lemma s2_nonzero: "s\<^sub>2 > 0"
+    using \<epsilon>_range by (simp add:s\<^sub>2_def)
+
 private definition p where "p = find_prime_above (max n 3)"
  
 lemma p_prime: "Factorial_Ring.prime p" 
   unfolding p_def using find_prime_above_is_prime by blast
 
 lemma p_ge_2: "p > 2"
-  apply (rule order_less_le_trans[where y="3"], simp)
-  apply (simp add:p_def) using find_prime_above_lower_bound 
-  by (meson max.boundedE)
+proof -
+  have "p \<ge> 3"
+    unfolding p_def by (meson max.boundedE find_prime_above_lower_bound)
+  thus ?thesis 
+    by linarith
+qed
 
-lemma p_ge_n: "p \<ge> n"
-  apply (rule order_trans[where y="n"], simp)
-  apply (simp add:p_def) using find_prime_above_lower_bound 
-  by (meson max.boundedE)
+lemma p_ge_0: "p > 0" using p_ge_2 by linarith
+
+lemma p_ge_1: "p > 1" using p_ge_2 by simp
+
+lemma p_ge_n: "p \<ge> n" unfolding p_def
+  by (meson max.boundedE find_prime_above_lower_bound )
 
 interpretation carter_wegman_hash_family "mod_ring p" 4
   using carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite]
@@ -106,13 +119,12 @@ private definition f3 where "f3 x i\<^sub>1 i\<^sub>2 =(real_of_int (sum_list (m
 private definition f2 where "f2 x = (\<lambda>i. (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. f3 x i\<^sub>1 i) / (((real p)\<^sup>2 - 1) * real s\<^sub>1))"
 private definition f4 where "f4 \<omega> = real_of_int (sum_list (map (f2_hash p \<omega>) as))^2"
 
-lemma f2_hash_exp':
+private lemma f2_hash_pow_exp:
   assumes "k < p"
   shows
     "expectation (\<lambda>\<omega>. real_of_int (f2_hash p \<omega> k) ^m) = 
      ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)"
 proof -
-  have [simp]:"p > 0" using p_ge_2 by linarith
 
   have "odd p" using p_prime p_ge_2 prime_odd_nat assms by blast
   then obtain t where t_def: "p=2*t+1" 
@@ -131,7 +143,7 @@ proof -
   hence "card ({k. even k} \<inter> {..<p}) * 2 = (p+1)" by (simp add:t_def)
   hence prob_even: "prob {\<omega>. hash k \<omega> \<in> Collect even} = (real p + 1)/(2*real p)"
     apply (subst prob_range, simp add:mod_ring_carr assms)
-    by (simp add:frac_eq_eq mod_ring_def lessThan_atLeast0) 
+    by (simp add:frac_eq_eq p_ge_0 mod_ring_def lessThan_atLeast0) 
 
   have "p = card {..<p}" by simp
   also have "... = card (({k. odd k} \<inter> {..<p}) \<union> ({k. even k} \<inter> {..<p}))" 
@@ -177,10 +189,7 @@ proof -
   define exp_h_prod :: "nat list \<Rightarrow> real" where "exp_h_prod = (\<lambda>as. (\<Prod>i \<in> set as. r (count_list as i)))"
 
   have f_eq: "f4 = (\<lambda>\<omega>. (\<Sum>x \<in> set as. c x * h \<omega> x)^2)"
-    apply (rule ext)
-    by (simp add:f4_def c_def h_def sum_list_eval del:f2_hash.simps)
-
-  have p_ge_0: "p > 0" using p_ge_2 by linarith
+    by (rule ext, simp add:f4_def c_def h_def sum_list_eval del:f2_hash.simps)
 
   have r_one: "r (Suc 0) = 0"
     by (simp add:r_def algebra_simps)
@@ -191,12 +200,12 @@ proof -
 
   have"(real p)^2 \<ge> 2^2"
     by (rule power_mono, use p_ge_2 in linarith, simp)
-  hence p_square_ge_4: "(real p)^2 \<ge> 4" by simp
+  hence p_square_ge_4: "(real p)\<^sup>2 \<ge> 4" by simp
 
-  have "r 4 = (real p)^4+2*(real p)^2 - 3" 
+  have "r 4 = (real p)^4+2*(real p)\<^sup>2 - 3" 
     using p_ge_0 unfolding r_def
     by (subst nonzero_divide_eq_eq, auto simp:power4_eq_xxxx power2_eq_square algebra_simps)
-  also have "... \<le> (real p)^4+2*(real p)^2 + 3"
+  also have "... \<le> (real p)^4+2*(real p)\<^sup>2 + 3"
     by simp
   also have "... \<le> 3 * r 2 * r 2"
     using p_square_ge_4
@@ -227,7 +236,7 @@ proof -
     also have "... = (\<Prod>i \<in> set x. expectation (\<lambda>\<omega>. h \<omega> i^(count_list x i)))"
       by (simp add: indep_vars_lebesgue_integral[OF _ h_indep])
     also have "... = (\<Prod>i \<in> set x. r (count_list x i))"
-      using f2_hash_exp'[OF x_le_p] 
+      using f2_hash_pow_exp x_le_p 
       by (simp add:h_def r_def M_def[symmetric] del:f2_hash.simps)
     also have "... = exp_h_prod x"
       by (simp add:exp_h_prod_def)
@@ -313,13 +322,10 @@ proof -
     using v_1 by (simp add: variance_eq, simp add:power_mult_distrib b)
 qed
 
-interpretation Q: prob_space "\<Omega>\<^sub>1"
-  by (simp add:\<Omega>\<^sub>1_def prob_space_measure_pmf)
-
 lemma f2_alg_sketch_2:
   "sketch = \<Omega>\<^sub>0 \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, \<lambda>i \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (h i)) as)))"
 proof -
-  have b:"sketch =  fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
+  have "sketch =  fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
     by (simp add:sketch_def)
   also have "... = \<Omega>\<^sub>0 \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, 
       \<lambda>i \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (h i)) as)))"
@@ -339,14 +345,6 @@ proof -
   finally show ?thesis by auto
 qed
 
-lemma s1_nonzero: "s\<^sub>1 > 0"
-    using \<delta>_range by (simp add:s\<^sub>1_def)
-
-lemma s2_nonzero: "s\<^sub>2 > 0"
-    using \<epsilon>_range by (simp add:s\<^sub>2_def)
-
-lemma p_ge_1: "p > 1" using p_ge_2 by simp
-
 lemma distr:  "\<Omega> = map_pmf f \<Omega>\<^sub>0"
 proof -
   have "\<Omega> = sketch \<bind> f2_result"
@@ -360,6 +358,9 @@ qed
 
 lemma space_omega_1 [simp]:"Sigma_Algebra.space \<Omega>\<^sub>1 = UNIV"
     by (simp add:\<Omega>\<^sub>1_def)
+
+interpretation Q: prob_space "\<Omega>\<^sub>1"
+  by (simp add:\<Omega>\<^sub>1_def prob_space_measure_pmf)
 
 lemma integrable_Q:
   fixes f :: "((nat \<times> nat) \<Rightarrow> (nat list)) \<Rightarrow> real"
@@ -421,9 +422,11 @@ proof -
     using assms  s1_nonzero s2_nonzero by (auto simp add:f3_def disjoint_family_on_def)
 
   have p_sq_ne_1: "(real p)^2 \<noteq> 1" 
-    apply (simp add:power2_eq_square) 
-    using p_ge_1 
-    by (metis Num.of_nat_simps(2) less_1_mult less_irrefl of_nat_less_iff)
+    by (metis p_ge_1 less_numeral_extra(4) of_nat_power one_less_power pos2 semiring_char_0_class.of_nat_eq_1_iff)
+
+  have s1_bound: " 6 / (real_of_rat \<delta>)\<^sup>2 \<le> real s\<^sub>1"
+    unfolding s\<^sub>1_def
+    by  (metis (mono_tags, opaque_lifting) of_rat_ceiling of_rat_divide of_rat_numeral_eq of_rat_power real_nat_ceiling_ge)
 
   have "Q.variance (\<lambda>\<omega>. f2 \<omega> i) = Q.variance (\<lambda>\<omega>. \<Sum>i\<^sub>1 = 0..<s\<^sub>1. f3 \<omega> i\<^sub>1 i) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
     unfolding f2_def by (subst Q.variance_divide[OF integrable_Q], simp)
@@ -432,17 +435,11 @@ proof -
   also have "... \<le>  (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2)  / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
     by (rule divide_right_mono, rule sum_mono[OF f3_var[OF assms]], auto)
   also have "... = 2 * (real_of_rat (F 2 as)^2) / real s\<^sub>1"
-    apply (simp)
-    apply (subst frac_eq_eq, simp add:s1_nonzero, metis p_sq_ne_1, simp add:s1_nonzero)
-    by (simp add:power2_eq_square)
+    using p_sq_ne_1 s1_nonzero
+    by (subst frac_eq_eq, auto simp add:power2_eq_square)
   also have "... \<le> 2 * (real_of_rat (F 2 as)^2) / (6 / (real_of_rat \<delta>)\<^sup>2)"
-    apply (rule divide_left_mono)
-    apply (simp add:s\<^sub>1_def) 
-      apply (metis (mono_tags, opaque_lifting) of_rat_ceiling of_rat_divide of_rat_numeral_eq of_rat_power real_nat_ceiling_ge)
-     apply simp
-    apply (rule mult_pos_pos)
-    using s1_nonzero apply simp
-    using \<delta>_range by simp
+    apply (rule divide_left_mono[OF s1_bound], simp)
+    using divide_left_mono[OF s1_bound] s1_nonzero \<delta>_range mult_pos_pos by auto
   also have "... = (real_of_rat (\<delta> * F 2 as))\<^sup>2 / 3"
     by (simp add:of_rat_mult algebra_simps)
   finally show ?thesis by simp
@@ -496,8 +493,7 @@ proof -
     by simp
 
   have b: "- 18 * ln (real_of_rat \<epsilon>) \<le> real s\<^sub>2" 
-    apply (simp add:s\<^sub>2_def)
-    using of_nat_ceiling by blast
+    unfolding  s\<^sub>2_def using of_nat_ceiling by auto
 
   have "1 - of_rat \<epsilon> \<le> Q.prob {\<omega>.  \<bar>median s\<^sub>2 (f2 \<omega>) -  of_rat (F 2 as) \<bar> \<le> of_rat \<delta> * of_rat (F 2 as)}"
     using \<epsilon>_range Q.median_bound_2[OF _ a b, where \<delta>="real_of_rat \<delta> * real_of_rat (F 2 as)"
@@ -519,56 +515,60 @@ proof -
   have find_prime_above_3: "find_prime_above 3 = 3" 
     by (simp add:find_prime_above.simps)
 
-  have "p \<ge> 2" using p_def find_prime_above_min by presburger
-  hence p_ge_1: "p > 1" by simp
-
-  have p_ge_0: "p > 0" 
-    by (metis find_prime_above_min p_def gr0I not_numeral_le_zero)
   have p_le_n: "p \<le> 2 * n + 3" 
     apply (cases "n \<le> 3")
     apply (simp add: p_def find_prime_above_3) 
     apply (simp add: p_def) 
     by (metis One_nat_def find_prime_above_upper_bound Suc_1 add_Suc_right linear not_less_eq_eq numeral_3_eq_3)
+  have "bit_count (N\<^sub>S p) \<le> ereal (2 * log 2 (real p + 1) + 1)"
+    by (rule nat_bit_count)
+  also have "... \<le> ereal (2 * log 2 (2 * real n + 4) + 1)"
+    using p_le_n by simp
+  finally have p_bit_count: "bit_count (N\<^sub>S p) \<le> ereal (2 * log 2 (2 * real n + 4) + 1)"
+    by simp
 
   have a: "\<And>y. y\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (mod_ring p) 4 \<Longrightarrow>
-       bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. 
-      sum_list (map (f2_hash p (y i)) as)))
-       \<le> ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
+      bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. 
+      sum_list (map (f2_hash p (y i)) as))) \<le> ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
   proof -
     fix y
     assume a_1:"y \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (mod_ring p) 4"
-
     have a_2: "y \<in> extensional ({..<s\<^sub>1} \<times> {..<s\<^sub>2})" using a_1  PiE_iff by blast
+    have y_ext: "y \<in> extensional (set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))"
+      using a_2 by (simp add:lessThan_atLeast0)
 
-    have a_3: "\<And>x. x \<in> y ` ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) \<Longrightarrow> bit_count (list\<^sub>S N\<^sub>S x) 
-      \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
+    have h_bit_count_aux: "\<And>x. x \<in>  set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) \<Longrightarrow> bit_count (list\<^sub>S N\<^sub>S (y x)) 
+      \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))" 
     proof -
       fix x 
-      assume a_5: "x \<in> y ` ({..<s\<^sub>1} \<times> {..<s\<^sub>2})"
-      have "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal ( real 4 * (2 * log 2 (real p) + 2) + 1)"
+      assume a_5: "x \<in> set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2])"
+      have "bit_count (list\<^sub>S N\<^sub>S (y x)) \<le> ereal ( real 4 * (2 * log 2 (real p) + 2) + 1)"
         apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0]) 
-        using a_1 a_5 by blast
+        using a_1 a_5 by force
       also have "... \<le> ereal (real 4 * (2 * log 2 (3 + 2 * real n) + 2) + 1)"
         apply simp
         apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
         using p_le_n by simp
       also have "... \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
         by simp
-      finally show "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
+      finally show "bit_count (list\<^sub>S N\<^sub>S (y x)) \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
         by blast
     qed
 
-    have a_7: "\<And>x. 
-      x \<in> (\<lambda>x. sum_list (map (f2_hash p (y x)) as)) ` ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) \<Longrightarrow>
-         \<bar>x\<bar> \<le> (4 + 2 * int n) * int (length as)"
+    have h_bit_count: 
+      "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S list\<^sub>S N\<^sub>S) y) \<le> ereal (real s\<^sub>1 * real s\<^sub>2 * (10 + 8 * log 2 (4 + 2 * real n)) + 1)"
+      using extensional_bit_count_est[where e="list\<^sub>S N\<^sub>S", OF y_ext h_bit_count_aux]
+      by simp
+
+    have sketch_bit_count_aux:
+      "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<Longrightarrow>bit_count (I\<^sub>S (sum_list (map (f2_hash p (y x)) as)))
+      \<le> ereal (2 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1))" (is "\<And>x. _ \<Longrightarrow> ?lhs x \<le> ?rhs")
     proof -
       fix x
-      assume "x \<in> (\<lambda>x. sum_list (map (f2_hash p (y x)) as)) ` ({..<s\<^sub>1} \<times> {..<s\<^sub>2})"
-      then obtain i where "i \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}" and x_def: "x = sum_list (map (f2_hash p (y i)) as)"
-        by blast
-      have "abs x \<le> sum_list (map abs (map (f2_hash p (y i)) as))"
-        by (subst x_def, rule sum_list_abs)
-      also have "... \<le> sum_list (map (\<lambda>_. (int p+1)) as)"
+      assume "x \<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}"
+      have "\<bar>sum_list (map (f2_hash p (y x)) as)\<bar> \<le> sum_list (map abs (map (f2_hash p (y x)) as))" 
+        by (rule sum_list_abs)
+      also have "... \<le>  sum_list (map (\<lambda>_. (int p+1)) as)"
         apply (simp add:comp_def del:f2_hash.simps)
         apply (rule sum_list_mono)
         using p_ge_0 by simp 
@@ -578,46 +578,46 @@ proof -
         apply (rule mult_mono, simp)
         using p_le_n apply linarith
         by simp+
-      finally show "abs x \<le>  (4 + 2 * int n) * int (length as)"
-        by (simp add: mult.commute)
+      finally  have "\<bar>sum_list (map (f2_hash p (y x)) as)\<bar> \<le> int (length as) * (4 + 2 * int n)" by simp
+      hence "?lhs x \<le> ereal (2 * log 2 (real_of_int (int (length as) * (4 + 2 * int n) + 1)) + 2)"
+        by (rule int_bit_count_est) 
+      also have "... = ?rhs" by simp
+      finally show "?lhs x \<le> ?rhs" by simp
     qed
-    
-    have "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}.
-      sum_list (map (f2_hash p (y i)) as)))
-       \<le> ereal (2 * (log 2 (real s\<^sub>1 + 1)) + 1) 
-       + (ereal (2 * (log 2 (real s\<^sub>2 + 1)) + 1)
-       + (ereal (2 * (log 2 (1 + real (2*n+3))) + 1) 
-       + ((ereal (real s\<^sub>1 * real s\<^sub>2) * (10 + 8 * log 2 (4 + 2 * real n)) + 1) 
-       + (ereal (real s\<^sub>1 * real s\<^sub>2) * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1) ) + 1))))"
-      using a_2
-      apply (simp add: encode_f2_state_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] 
-         dependent_bit_count fun\<^sub>S_def lessThan_atLeast0
-          del:  plus_ereal.simps of_nat_add)
-      apply (rule add_mono, rule nat_bit_count)
-      apply (rule add_mono, rule nat_bit_count)
-      apply (rule add_mono, rule nat_bit_count_est, metis p_le_n)
-      apply (rule add_mono)
-       apply (rule list_bit_count_estI[where a="9 + 8 * log 2 (4 + 2 * real n)"], rule a_3, simp add:lessThan_atLeast0, simp add:lessThan_atLeast0)
-      apply (rule list_bit_count_estI[where a="2* log 2 (real_of_int (int ((4+2*n) * length as)+1))+2"])
-       apply (rule int_bit_count_est)
-       apply (simp add:a_7 lessThan_atLeast0)
-      by (simp add:algebra_simps lessThan_atLeast0)
+
+    have 
+      "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))
+      \<le> ereal (real (length (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))) * (ereal (2 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1)) + 1) + 1"
+      by (rule extensional_bit_count_est)  
+        (simp add:extensional_def lessThan_atLeast0 sketch_bit_count_aux del:f2_hash.simps I\<^sub>S.simps)+
+    also have "... = ereal (real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1)) + 1)"
+      by simp
+    finally have sketch_bit_count: 
+       "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as))) \<le>
+      ereal (real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1)) + 1)" by simp
+
+    have "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as))) \<le> 
+      bit_count (N\<^sub>S s\<^sub>1) + bit_count (N\<^sub>S s\<^sub>2) +bit_count (N\<^sub>S p) +
+      bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S list\<^sub>S N\<^sub>S) y) +
+      bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))"   
+      by (simp add:Let_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] encode_f2_state_def dependent_bit_count add.assoc)
+    also have "... \<le>  ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ereal (2 * log 2 (2 * real n + 4) + 1) + 
+      (ereal (real s\<^sub>1 * real s\<^sub>2) * (10 + 8 * log 2 (4 + 2 * real n)) + 1) + 
+      (ereal (real s\<^sub>1 * real s\<^sub>2) * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1) ) + 1)"
+      by (rule add_mono)+
+        (auto intro!:nat_bit_count p_bit_count h_bit_count sketch_bit_count)
     also have "... = ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
-      by (simp add:distrib_left[symmetric] s\<^sub>1_def s\<^sub>2_def p_def Let_def)
-    finally show "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}.
-      sum_list (map (f2_hash p (y i)) as)))
-       \<le> ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))" by blast
+      by (simp add:distrib_left add.commute s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] Let_def)
+    finally show "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as))) \<le>  
+      ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))" 
+      by simp
   qed
 
+  have b:"set_pmf \<Omega>\<^sub>0 = {..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (Field.mod_ring p) 4"
+    by (simp add: \<Omega>\<^sub>0_def set_prod_pmf)  (simp add: space_def)
+
   show ?thesis
-    apply (subst AE_measure_pmf_iff)
-    apply (subst f2_alg_sketch_2)
-    apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] p_def[symmetric] del:f2_space_usage.simps)
-    apply (subst \<Omega>\<^sub>0_def)
-    apply (subst set_prod_pmf, simp)
-    apply (simp add: PiE_iff  del:f2_space_usage.simps)
-    apply (subst space_def)
-    by (metis a)
+    by (simp  add:f2_alg_sketch_2 AE_measure_pmf_iff b del:f2_space_usage.simps, metis a)
 qed
 
 end

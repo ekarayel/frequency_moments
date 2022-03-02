@@ -18,8 +18,7 @@ proof -
   have "count_list xs x = length (filter ((=) x) xs)"
     by (induction xs, simp, simp)
   also have "... = card {k. k < length xs \<and> xs ! k = x}"
-    apply (subst length_filter_conv_card)
-    by metis
+    by (subst length_filter_conv_card, metis)
   finally show ?thesis by simp
 qed
 

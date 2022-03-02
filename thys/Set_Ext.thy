@@ -2,17 +2,6 @@ theory Set_Ext
 imports Main
 begin
 
-text \<open>This is like @{thm [source] card_vimage_inj} but supports @{term "inj_on"} instead.\<close>
-lemma card_vimage_inj_on:
-  assumes "inj_on f B"
-  assumes "A \<subseteq> f ` B"
-  shows "card (f -` A \<inter> B) = card A"
-proof -
-  have "A = f ` (f -` A \<inter> B)" using assms(2) by auto
-  thus ?thesis using assms card_image 
-    by (metis inf_le2 inj_on_subset)
-qed
-
 lemma card_ordered_pairs:
   fixes M :: "('a ::linorder) set" 
   assumes "finite M"

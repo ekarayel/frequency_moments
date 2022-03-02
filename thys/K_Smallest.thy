@@ -1,7 +1,7 @@
 section \<open>Ranks, $k$ smallest element and elements\<close>
 
 theory K_Smallest
-  imports Main "HOL-Library.Multiset" List_Ext Multiset_Ext Set_Ext
+  imports Main "HOL-Library.Multiset" List_Ext Multiset_Ext Set_Ext Interpolation_Polynomials_HOL_Algebra.Interpolation_Polynomial_Cardinalities
 begin
 
 text \<open>This section contains definitions and results for the selection of the $k$ smallest elements, the $k$-th smallest element, rank of an element in an ordered set.\<close>
