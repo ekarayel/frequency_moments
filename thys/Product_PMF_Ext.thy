@@ -137,6 +137,16 @@ proof -
   ultimately show ?thesis by blast
 qed
 
+lemma  indep_vars_restrict_intro_2:
+  assumes "M = measure_pmf (prod_pmf I p)"
+  assumes "\<And>\<omega> i. i \<in> J \<Longrightarrow>  X i \<omega> = X i (restrict \<omega> (f i))"
+  assumes "disjoint_family_on f J"
+  assumes "J \<noteq> {}"
+  assumes "\<And>i. i \<in> J \<Longrightarrow> f i \<subseteq> I"
+  assumes "finite I"
+  assumes "\<And>\<omega> i. i \<in> J \<Longrightarrow>  X i \<omega> \<in> space (M' i)"
+  shows "prob_space.indep_vars  M M' (\<lambda>i \<omega>. X i \<omega>) J"
+  using assms  indep_vars_restrict_intro by metis
 
 lemma has_bochner_integral_prod_pmfI:
   fixes f :: "'a \<Rightarrow> 'b \<Rightarrow> ('c :: {second_countable_topology,banach,real_normed_field})"

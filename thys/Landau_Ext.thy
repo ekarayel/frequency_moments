@@ -167,6 +167,18 @@ lemma landau_ceil:
    apply (rule always_eventually, rule allI, simp, linarith)
   by (rule sum_in_bigo[OF assms(1)], simp add:assms)
 
+lemma landau_rat_ceil:
+  assumes "(\<lambda>_. 1) \<in> O[F'](g)"
+  assumes "(\<lambda>x. real_of_rat (f x)) \<in> O[F'](g)"
+  shows "(\<lambda>x. real_of_int \<lceil>f x\<rceil>) \<in> O[F'](g)"
+  apply (rule landau_o.big_trans[where g="\<lambda>x. 1 + abs (real_of_rat (f x))"])
+   apply (rule landau_o.big_mono)
+   apply (rule always_eventually, rule allI, simp) 
+  apply (smt (verit) abs_ge_self abs_of_nonpos abs_of_rat le_of_int_ceiling of_int_ceiling_le_add_one of_rat_ceiling)
+  apply (rule sum_in_bigo[OF assms(1)])
+  using assms(2) 
+  by (metis landau_o.big.abs_in_iff)
+
 lemma landau_nat_ceil:
   assumes "(\<lambda>_. 1) \<in> O[F'](g)"
   assumes "f \<in> O[F'](g)"

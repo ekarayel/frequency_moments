@@ -3,7 +3,7 @@ section \<open>Frequency Moment $2$\<close>
 theory Frequency_Moment_2
   imports Main Median_Method.Median Primes_Ext Encoding List_Ext 
     Universal_Hash_Families.Carter_Wegman_Hash_Family Frequency_Moments Landau_Ext
-    Universal_Hash_Families.Field
+    Universal_Hash_Families.Field Landau_Symbols.Landau_More
     Equivalence_Relation_Enumeration.Equivalence_Relation_Enumeration Product_PMF_Ext
 begin
 
@@ -58,7 +58,7 @@ lemma "inj_on encode_f2_state (dom encode_f2_state)"
 proof -
   have " is_encoding encode_f2_state"
     unfolding encode_f2_state_def
-    by (auto intro!:dependent_encoding nat_encoding encode_extensional list_encoding int_encoding)
+    by (intro dependent_encoding nat_encoding encode_extensional list_encoding int_encoding)
   thus ?thesis
     by (rule encoding_imp_inj)
 qed
@@ -76,12 +76,12 @@ begin
 
 private definition s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
 
-lemma s1_nonzero: "s\<^sub>1 > 0"
+lemma s1_gt_0: "s\<^sub>1 > 0"
     using \<delta>_range by (simp add:s\<^sub>1_def)
 
 private definition s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18* ln (real_of_rat \<epsilon>))\<rceil>"
 
-lemma s2_nonzero: "s\<^sub>2 > 0"
+lemma s2_gt_0: "s\<^sub>2 > 0"
     using \<epsilon>_range by (simp add:s\<^sub>2_def)
 
 private definition p where "p = find_prime_above (max n 3)"
@@ -89,17 +89,12 @@ private definition p where "p = find_prime_above (max n 3)"
 lemma p_prime: "Factorial_Ring.prime p" 
   unfolding p_def using find_prime_above_is_prime by blast
 
-lemma p_ge_2: "p > 2"
-proof -
-  have "p \<ge> 3"
+lemma p_ge_3: "p \<ge> 3"
     unfolding p_def by (meson max.boundedE find_prime_above_lower_bound)
-  thus ?thesis 
-    by linarith
-qed
 
-lemma p_ge_0: "p > 0" using p_ge_2 by linarith
+lemma p_gt_0: "p > 0" using p_ge_3 by linarith
 
-lemma p_ge_1: "p > 1" using p_ge_2 by simp
+lemma p_gt_1: "p > 1" using p_ge_3 by simp
 
 lemma p_ge_n: "p \<ge> n" unfolding p_def
   by (meson max.boundedE find_prime_above_lower_bound )
@@ -115,9 +110,9 @@ private definition f where "f x = median s\<^sub>2 (\<lambda>i\<in>{..<s\<^sub>2
 definition sketch where "sketch = fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
 private definition \<Omega>\<^sub>0 where"\<Omega>\<^sub>0 = prod_pmf ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) (\<lambda>_. pmf_of_set space)" 
 private definition \<Omega>\<^sub>1 where"\<Omega>\<^sub>1 = measure_pmf \<Omega>\<^sub>0" 
+private definition f4 where "f4 \<omega> = real_of_int (sum_list (map (f2_hash p \<omega>) as))^2"
 private definition f3 where "f3 x i\<^sub>1 i\<^sub>2 =(real_of_int (sum_list (map (f2_hash p (x (i\<^sub>1, i\<^sub>2))) as)))\<^sup>2"
 private definition f2 where "f2 x = (\<lambda>i. (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. f3 x i\<^sub>1 i) / (((real p)\<^sup>2 - 1) * real s\<^sub>1))"
-private definition f4 where "f4 \<omega> = real_of_int (sum_list (map (f2_hash p \<omega>) as))^2"
 
 private lemma f2_hash_pow_exp:
   assumes "k < p"
@@ -126,7 +121,7 @@ private lemma f2_hash_pow_exp:
      ((real p - 1) ^ m * (real p + 1) + (- real p - 1) ^ m * (real p - 1)) / (2 * real p)"
 proof -
 
-  have "odd p" using p_prime p_ge_2 prime_odd_nat assms by blast
+  have "odd p" using p_prime p_ge_3 prime_odd_nat assms by simp
   then obtain t where t_def: "p=2*t+1" 
     using oddE by blast
 
@@ -143,7 +138,7 @@ proof -
   hence "card ({k. even k} \<inter> {..<p}) * 2 = (p+1)" by (simp add:t_def)
   hence prob_even: "prob {\<omega>. hash k \<omega> \<in> Collect even} = (real p + 1)/(2*real p)"
     apply (subst prob_range, simp add:mod_ring_carr assms)
-    by (simp add:frac_eq_eq p_ge_0 mod_ring_def lessThan_atLeast0) 
+    by (simp add:frac_eq_eq p_gt_0 mod_ring_def lessThan_atLeast0) 
 
   have "p = card {..<p}" by simp
   also have "... = card (({k. odd k} \<inter> {..<p}) \<union> ({k. even k} \<inter> {..<p}))" 
@@ -195,15 +190,15 @@ proof -
     by (simp add:r_def algebra_simps)
 
   have r_two: "r 2 = (real p^2-1)"
-    using p_ge_0 unfolding r_def power2_eq_square 
+    using p_gt_0 unfolding r_def power2_eq_square 
     by (simp add:nonzero_divide_eq_eq, simp add:algebra_simps)
 
   have"(real p)^2 \<ge> 2^2"
-    by (rule power_mono, use p_ge_2 in linarith, simp)
+    by (rule power_mono, use p_gt_1 in linarith, simp)
   hence p_square_ge_4: "(real p)\<^sup>2 \<ge> 4" by simp
 
   have "r 4 = (real p)^4+2*(real p)\<^sup>2 - 3" 
-    using p_ge_0 unfolding r_def
+    using p_gt_0 unfolding r_def
     by (subst nonzero_divide_eq_eq, auto simp:power4_eq_xxxx power2_eq_square algebra_simps)
   also have "... \<le> (real p)^4+2*(real p)\<^sup>2 + 3"
     by simp
@@ -263,14 +258,9 @@ proof -
     of_bool (kernel_of x = kernel_of p) * exp_h_prod x" 
     by (metis (full_types) of_bool_eq_0_iff vector_space_over_itself.scale_zero_left)
 
-  have c:"\<And>(xs :: nat list) n r. length xs = n \<Longrightarrow> 
-    (\<Sum>p\<leftarrow>enum_rgfs n. of_bool (kernel_of xs = kernel_of p) * r) = (r::real)"
+  have c:"(\<Sum>p\<leftarrow>enum_rgfs n. of_bool (kernel_of xs = kernel_of p) * r) = r"
+    if a:"length xs = n" for xs :: "nat list" and n and r :: real
   proof -
-    fix xs :: "nat list"
-    fix n 
-    fix r :: real
-    assume a:"length xs = n"
-
     have "(\<Sum>p\<leftarrow>enum_rgfs n. of_bool (kernel_of xs = kernel_of p) * 1) = (1::real)"
       using equiv_rels_2[OF a[symmetric]] by (simp add:equiv_rels_def comp_def) 
     thus "(\<Sum>p\<leftarrow>enum_rgfs n. of_bool (kernel_of xs = kernel_of p) * r) = (r::real)" 
@@ -315,11 +305,11 @@ proof -
     by (auto intro!: sum_nonpos simp add:mult_nonneg_nonpos)
   also have "... = 3 * (real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" 
     by (simp add:c_def r_two F_def of_rat_sum of_rat_power)
-  finally have v_1: "expectation (\<lambda>x. (f4 x)\<^sup>2) \<le> 3 * (real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
+  finally have "expectation (\<lambda>x. (f4 x)\<^sup>2) \<le> 3 * (real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
     by simp
   
-  show "variance f4 \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
-    using v_1 by (simp add: variance_eq, simp add:power_mult_distrib b)
+  thus "variance f4 \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
+     by (simp add: variance_eq, simp add:power_mult_distrib b)
 qed
 
 lemma f2_alg_sketch_2:
@@ -400,14 +390,14 @@ lemma Q_exp:
   assumes "i < s\<^sub>2"
   shows "Q.expectation (\<lambda>\<omega>. f2 \<omega> i) = real_of_rat (F 2 as)"
 proof -
-  have a:"(real p)\<^sup>2 > 1" using p_ge_1 by simp
+  have a:"(real p)\<^sup>2 > 1" using p_gt_1 by simp
 
   have "Q.expectation (\<lambda>\<omega>. f2 \<omega> i) = (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. Q.expectation (\<lambda>\<omega>. f3 \<omega> i\<^sub>1 i)) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)"
     using assms integrable_Q by (simp add:f2_def)
   also have "... = (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. real_of_rat (F 2 as) * ((real p)\<^sup>2 - 1)) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)" 
     using f3_exp[OF assms] by simp
   also have "... = real_of_rat (F 2 as)"
-    using s1_nonzero a by simp
+    using s1_gt_0 a by simp
   finally show ?thesis by simp
 qed
 
@@ -416,13 +406,11 @@ lemma Q_var:
   shows "Q.variance (\<lambda>\<omega>. f2 \<omega> i) \<le> (real_of_rat (\<delta> * F 2 as))\<^sup>2 / 3"
 proof -
   have a: "Q.indep_vars (\<lambda>_. borel) (\<lambda>i\<^sub>1 x. f3 x i\<^sub>1 i) {0..<s\<^sub>1}"
-      (* TODO indep_vars_restrict_intro should be replace with a new version that has M = measure_pmf p as precondition
-      similar to indep_vars_pmf *)
-    apply (simp add:\<Omega>\<^sub>0_def \<Omega>\<^sub>1_def, rule indep_vars_restrict_intro [where f="\<lambda>j. {(j,i)}"])
-    using assms  s1_nonzero s2_nonzero by (auto simp add:f3_def disjoint_family_on_def)
+    by (rule indep_vars_restrict_intro_2[where f="\<lambda>j. {(j,i)}"]) 
+      (auto simp:f3_def disjoint_family_on_def \<Omega>\<^sub>0_def \<Omega>\<^sub>1_def assms s1_gt_0  s2_gt_0)
 
   have p_sq_ne_1: "(real p)^2 \<noteq> 1" 
-    by (metis p_ge_1 less_numeral_extra(4) of_nat_power one_less_power pos2 semiring_char_0_class.of_nat_eq_1_iff)
+    by (metis p_gt_1 less_numeral_extra(4) of_nat_power one_less_power pos2 semiring_char_0_class.of_nat_eq_1_iff)
 
   have s1_bound: " 6 / (real_of_rat \<delta>)\<^sup>2 \<le> real s\<^sub>1"
     unfolding s\<^sub>1_def
@@ -435,11 +423,11 @@ proof -
   also have "... \<le>  (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2)  / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
     by (rule divide_right_mono, rule sum_mono[OF f3_var[OF assms]], auto)
   also have "... = 2 * (real_of_rat (F 2 as)^2) / real s\<^sub>1"
-    using p_sq_ne_1 s1_nonzero
+    using p_sq_ne_1 s1_gt_0
     by (subst frac_eq_eq, auto simp add:power2_eq_square)
   also have "... \<le> 2 * (real_of_rat (F 2 as)^2) / (6 / (real_of_rat \<delta>)\<^sup>2)"
-    apply (rule divide_left_mono[OF s1_bound], simp)
-    using divide_left_mono[OF s1_bound] s1_nonzero \<delta>_range mult_pos_pos by auto
+    apply (rule divide_left_mono[OF s1_bound])
+    using divide_left_mono[OF s1_bound] s1_gt_0 \<delta>_range mult_pos_pos by auto
   also have "... = (real_of_rat (\<delta> * F 2 as))\<^sup>2 / 3"
     by (simp add:of_rat_mult algebra_simps)
   finally show ?thesis by simp
@@ -454,43 +442,30 @@ proof (cases "as = []")
     using assms by (subst f2_def, subst f3_def, simp add:F_def)
 next
   case False
-  hence F_2_nonzero: "F 2 as > 0" using F_gr_0 by auto
+  hence "F 2 as > 0" using F_gr_0 by auto
 
-  have b_1: "real_of_rat (F 2 as) = Q.expectation (\<lambda>\<omega>. f2 \<omega> i)" 
-    using Q_exp assms by metis
-  have b_2: "0 < real_of_rat (\<delta> * F 2 as)"
-    using \<delta>_range F_2_nonzero by simp
-  have b_4: "(\<lambda>\<omega>. f2 \<omega> i) \<in> borel_measurable \<Omega>\<^sub>1"
+  hence a: "0 < real_of_rat (\<delta> * F 2 as)"
+    using \<delta>_range by simp
+  have [simp]: "(\<lambda>\<omega>. f2 \<omega> i) \<in> borel_measurable \<Omega>\<^sub>1"
     by (simp add:\<Omega>\<^sub>0_def \<Omega>\<^sub>1_def)
   have "Q.prob {\<omega>. real_of_rat \<delta> * real_of_rat (F 2 as) < \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>} \<le> 
       Q.prob {\<omega>. real_of_rat (\<delta> * F 2 as) \<le> \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>}"
     by (rule Q.pmf_mono'[OF \<Omega>\<^sub>1_def], simp add:of_rat_mult)
   also have "... \<le>  Q.variance (\<lambda>\<omega>. f2 \<omega> i) / (real_of_rat (\<delta> * F 2 as))\<^sup>2"
-    using Q.Chebyshev_inequality[where a="real_of_rat (\<delta> * F 2 as)"
-        and f="\<lambda>\<omega>. f2 \<omega> i",simplified] \<delta>_range prob_space_measure_pmf[where p="\<Omega>\<^sub>0"] F_2_nonzero
-      b_1 integrable_Q b_4 by simp
+    using Q.Chebyshev_inequality[where a="real_of_rat (\<delta> * F 2 as)" and f="\<lambda>\<omega>. f2 \<omega> i",simplified] 
+      a prob_space_measure_pmf[where p="\<Omega>\<^sub>0"] Q_exp[OF assms] integrable_Q by simp
   also have "... \<le> ((real_of_rat (\<delta> * F 2 as))\<^sup>2/3) / (real_of_rat (\<delta> * F 2 as))\<^sup>2"
     by (rule divide_right_mono, rule Q_var[OF assms], simp)
-  also  have "... = 1/3"
-    using b_2 by force
-  finally show ?thesis
-    by blast
+  also  have "... = 1/3" using a by force
+  finally show ?thesis by blast
 qed
 
 lemma f2_alg_correct':
    "\<P>(\<omega> in measure_pmf \<Omega>. \<bar>\<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as) \<ge> 1-of_rat \<epsilon>"
 proof -
   have a: "Q.indep_vars (\<lambda>_. borel) (\<lambda>i \<omega>. f2 \<omega> i) {0..<s\<^sub>2}" 
-    apply (subst \<Omega>\<^sub>1_def, subst \<Omega>\<^sub>0_def)
-    apply (rule indep_vars_restrict_intro [where f="\<lambda>j. {..<s\<^sub>1} \<times> {j}"]) 
-      (* TODO indep_vars_restrict_intro should be replace with a new version that has M = measure_pmf p as precondition
-      similar to indep_vars_pmf *)
-         apply (simp add:f2_def f3_def)
-        apply (simp add:disjoint_family_on_def, fastforce)
-       using s2_nonzero  apply simp
-      apply (rule subsetI, simp add:mem_Times_iff)
-     apply simp
-    by simp
+    by (rule indep_vars_restrict_intro_2[where f="\<lambda>j. {..<s\<^sub>1} \<times> {j}"]) 
+     (auto simp: \<Omega>\<^sub>1_def \<Omega>\<^sub>0_def f2_def f3_def disjoint_family_on_def s2_gt_0)
 
   have b: "- 18 * ln (real_of_rat \<epsilon>) \<le> real s\<^sub>2" 
     unfolding  s\<^sub>2_def using of_nat_ceiling by auto
@@ -500,7 +475,7 @@ proof -
         and \<mu>="real_of_rat (F 2 as)"] f2_alg_per_mean
     by simp
   also have "... = Q.prob {\<omega>.  \<bar>real_of_rat (f \<omega>) - of_rat (F 2 as) \<bar> \<le> of_rat \<delta> * of_rat (F 2 as)}"
-    by (simp add:f_def median_restrict lessThan_atLeast0 median_rat[OF s2_nonzero]
+    by (simp add:f_def median_restrict lessThan_atLeast0 median_rat[OF s2_gt_0]
         f2_def f3_def of_rat_divide of_rat_sum of_rat_mult of_rat_diff of_rat_power)
   also have "... = Q.prob {\<omega>. \<bar>f \<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as} " 
     by (simp add:of_rat_less_eq of_rat_mult[symmetric]  of_rat_diff[symmetric] set_eq_iff)
@@ -512,43 +487,42 @@ qed
 lemma f2_exact_space_usage':
    "AE \<omega> in sketch . bit_count (encode_f2_state \<omega>) \<le> f2_space_usage (n, length as, \<epsilon>, \<delta>)"
 proof -
-  have find_prime_above_3: "find_prime_above 3 = 3" 
-    by (simp add:find_prime_above.simps)
+  have p_bound: "p \<le> 2 * n + 3" 
+  proof (cases "n \<le> 3")
+    case True
+    then show ?thesis by (simp add:p_def find_prime_above.simps)
+  next
+    case False
+    hence "p = find_prime_above n" by (simp add: p_def) 
+    also have "... \<le> 2 * n + 2" by (rule find_prime_above_upper_bound)
+    also have "... \<le> 2* n + 3" by simp
+    finally show ?thesis by simp
+  qed
 
-  have p_le_n: "p \<le> 2 * n + 3" 
-    apply (cases "n \<le> 3")
-    apply (simp add: p_def find_prime_above_3) 
-    apply (simp add: p_def) 
-    by (metis One_nat_def find_prime_above_upper_bound Suc_1 add_Suc_right linear not_less_eq_eq numeral_3_eq_3)
   have "bit_count (N\<^sub>S p) \<le> ereal (2 * log 2 (real p + 1) + 1)"
     by (rule nat_bit_count)
   also have "... \<le> ereal (2 * log 2 (2 * real n + 4) + 1)"
-    using p_le_n by simp
+    using p_bound by simp
   finally have p_bit_count: "bit_count (N\<^sub>S p) \<le> ereal (2 * log 2 (2 * real n + 4) + 1)"
     by simp
 
-  have a: "\<And>y. y\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (mod_ring p) 4 \<Longrightarrow>
-      bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. 
+  have a: "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. 
       sum_list (map (f2_hash p (y i)) as))) \<le> ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
+    if a:"y\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (mod_ring p) 4" for y
   proof -
-    fix y
-    assume a_1:"y \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (mod_ring p) 4"
-    have a_2: "y \<in> extensional ({..<s\<^sub>1} \<times> {..<s\<^sub>2})" using a_1  PiE_iff by blast
-    have y_ext: "y \<in> extensional (set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))"
-      using a_2 by (simp add:lessThan_atLeast0)
+    have "y \<in> extensional ({..<s\<^sub>1} \<times> {..<s\<^sub>2})" using a PiE_iff by blast
+    hence y_ext: "y \<in> extensional (set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))"
+      by (simp add:lessThan_atLeast0)
 
-    have h_bit_count_aux: "\<And>x. x \<in>  set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]) \<Longrightarrow> bit_count (list\<^sub>S N\<^sub>S (y x)) 
-      \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))" 
+    have h_bit_count_aux: "bit_count (list\<^sub>S N\<^sub>S (y x)) \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
+      if b:"x \<in>  set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2])" for x
     proof -
-      fix x 
-      assume a_5: "x \<in> set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2])"
-      have "bit_count (list\<^sub>S N\<^sub>S (y x)) \<le> ereal ( real 4 * (2 * log 2 (real p) + 2) + 1)"
-        apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0]) 
-        using a_1 a_5 by force
+      have "y x \<in> bounded_degree_polynomials (Field.mod_ring p) 4"
+        using b a by force
+      hence "bit_count (list\<^sub>S N\<^sub>S (y x)) \<le> ereal ( real 4 * (2 * log 2 (real p) + 2) + 1)"
+        by (rule bounded_degree_polynomial_bit_count[OF p_gt_0]) 
       also have "... \<le> ereal (real 4 * (2 * log 2 (3 + 2 * real n) + 2) + 1)"
-        apply simp
-        apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
-        using p_le_n by simp
+        using p_gt_0 p_bound by simp
       also have "... \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
         by simp
       finally show "bit_count (list\<^sub>S N\<^sub>S (y x)) \<le> ereal (9 + 8 * log 2 (4 + 2 * real n))"
@@ -561,23 +535,17 @@ proof -
       by simp
 
     have sketch_bit_count_aux:
-      "\<And>x. x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<Longrightarrow>bit_count (I\<^sub>S (sum_list (map (f2_hash p (y x)) as)))
-      \<le> ereal (2 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1))" (is "\<And>x. _ \<Longrightarrow> ?lhs x \<le> ?rhs")
+      "bit_count (I\<^sub>S (sum_list (map (f2_hash p (y x)) as))) \<le> ereal (2 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1))" (is "?lhs x \<le> ?rhs")
+      if " x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}" for x
     proof -
-      fix x
-      assume "x \<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}"
-      have "\<bar>sum_list (map (f2_hash p (y x)) as)\<bar> \<le> sum_list (map abs (map (f2_hash p (y x)) as))" 
-        by (rule sum_list_abs)
+      have "\<bar>sum_list (map (f2_hash p (y x)) as)\<bar> \<le> sum_list (map (abs \<circ> (f2_hash p (y x))) as)" 
+        by (subst map_map[symmetric])  (rule sum_list_abs)
       also have "... \<le>  sum_list (map (\<lambda>_. (int p+1)) as)"
-        apply (simp add:comp_def del:f2_hash.simps)
-        apply (rule sum_list_mono)
-        using p_ge_0 by simp 
+        by (rule sum_list_mono) (simp add:p_gt_0) 
       also have "... = int (length as) * (int p+1)"
         by (simp add: sum_list_triv)
       also have "... \<le> int (length as) * (4+2*(int n))"
-        apply (rule mult_mono, simp)
-        using p_le_n apply linarith
-        by simp+
+        using p_bound by (auto intro:mult_mono)
       finally  have "\<bar>sum_list (map (f2_hash p (y x)) as)\<bar> \<le> int (length as) * (4 + 2 * int n)" by simp
       hence "?lhs x \<le> ereal (2 * log 2 (real_of_int (int (length as) * (4 + 2 * int n) + 1)) + 2)"
         by (rule int_bit_count_est) 
@@ -589,7 +557,7 @@ proof -
       "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))
       \<le> ereal (real (length (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))) * (ereal (2 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1)) + 1) + 1"
       by (rule extensional_bit_count_est)  
-        (simp add:extensional_def lessThan_atLeast0 sketch_bit_count_aux del:f2_hash.simps I\<^sub>S.simps)+
+        (simp_all add:extensional_def lessThan_atLeast0 sketch_bit_count_aux del:f2_hash.simps I\<^sub>S.simps)
     also have "... = ereal (real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1)) + 1)"
       by simp
     finally have sketch_bit_count: 
@@ -600,24 +568,22 @@ proof -
       bit_count (N\<^sub>S s\<^sub>1) + bit_count (N\<^sub>S s\<^sub>2) +bit_count (N\<^sub>S p) +
       bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S list\<^sub>S N\<^sub>S) y) +
       bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))"   
-      by (simp add:Let_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] encode_f2_state_def dependent_bit_count add.assoc)
-    also have "... \<le>  ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ereal (2 * log 2 (2 * real n + 4) + 1) + 
+      by (simp add:Let_def s\<^sub>1_def s\<^sub>2_def encode_f2_state_def dependent_bit_count add.assoc)
+    also have "... \<le> ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ereal (2 * log 2 (2 * real n + 4) + 1) + 
       (ereal (real s\<^sub>1 * real s\<^sub>2) * (10 + 8 * log 2 (4 + 2 * real n)) + 1) + 
       (ereal (real s\<^sub>1 * real s\<^sub>2) * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1) ) + 1)"
-      by (rule add_mono)+
-        (auto intro!:nat_bit_count p_bit_count h_bit_count sketch_bit_count)
+      by (intro add_mono nat_bit_count p_bit_count, auto intro: h_bit_count sketch_bit_count)
     also have "... = ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
-      by (simp add:distrib_left add.commute s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] Let_def)
+      by (simp add:distrib_left add.commute s\<^sub>1_def s\<^sub>2_def Let_def)
     finally show "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as))) \<le>  
       ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))" 
       by simp
   qed
 
-  have b:"set_pmf \<Omega>\<^sub>0 = {..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (Field.mod_ring p) 4"
+  have "set_pmf \<Omega>\<^sub>0 = {..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (Field.mod_ring p) 4"
     by (simp add: \<Omega>\<^sub>0_def set_prod_pmf)  (simp add: space_def)
-
-  show ?thesis
-    by (simp  add:f2_alg_sketch_2 AE_measure_pmf_iff b del:f2_space_usage.simps, metis a)
+  thus ?thesis
+    by (simp  add:f2_alg_sketch_2 AE_measure_pmf_iff del:f2_space_usage.simps, metis a)
 qed
 
 end
@@ -628,7 +594,7 @@ theorem f2_alg_correct:
   assumes "set as \<subseteq> {..<n}"
   defines "\<Omega> \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n) \<bind> f2_result"
   shows "\<P>(\<omega> in measure_pmf \<Omega>. \<bar>\<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as) \<ge> 1-of_rat \<epsilon>"
-  using f2_alg_correct'[OF assms(1) assms(2) assms(3)] \<Omega>_def by auto
+  using f2_alg_correct'[OF assms(1,2,3)] \<Omega>_def by auto
 
 theorem f2_exact_space_usage:
   assumes "\<epsilon> \<in> {0<..<1}"
@@ -636,8 +602,8 @@ theorem f2_exact_space_usage:
   assumes "set as \<subseteq> {..<n}"
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
   shows "AE \<omega> in M. bit_count (encode_f2_state \<omega>) \<le> f2_space_usage (n, length as, \<epsilon>, \<delta>)"
-  using f2_exact_space_usage'[OF assms(1) assms(2) assms(3)]
-  by (subst (asm)  sketch_def[OF assms(1,2,3)], subst M_def, simp)
+  using f2_exact_space_usage'[OF assms(1,2,3)]
+  by (subst (asm) sketch_def[OF assms(1,2,3)], subst M_def, simp)
 
 theorem f2_asympotic_space_complexity:
   "f2_space_usage \<in> O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda> (n, m, \<epsilon>, \<delta>). 
@@ -649,7 +615,7 @@ proof -
   define \<epsilon>_of :: "nat \<times> nat \<times> rat \<times> rat \<Rightarrow> rat" where "\<epsilon>_of = (\<lambda>(n, m, \<epsilon>, \<delta>). \<epsilon>)"
   define \<delta>_of :: "nat \<times> nat \<times> rat \<times> rat \<Rightarrow> rat" where "\<delta>_of = (\<lambda>(n, m, \<epsilon>, \<delta>). \<delta>)"
 
-  define g where "g = (\<lambda>x. (ln (1 / of_rat (\<epsilon>_of x))) / (of_rat (\<delta>_of x))\<^sup>2 * (ln (real (n_of x)) + ln (real (m_of x))))"
+  define g where "g = (\<lambda>x. (1/ (of_rat (\<delta>_of x))\<^sup>2) * (ln (1 / of_rat (\<epsilon>_of x))) * (ln (real (n_of x)) + ln (real (m_of x))))"
 
   have n_inf: "\<And>c. eventually (\<lambda>x. c \<le> (real (n_of x))) ?F" 
     apply (simp add:n_of_def case_prod_beta')
@@ -664,41 +630,33 @@ proof -
 
   have eps_inf: "\<And>c. eventually (\<lambda>x. c \<le> 1 / (real_of_rat (\<epsilon>_of x))) ?F"
     apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     apply (subst eventually_prod1', simp)
     by (rule inv_at_right_0_inf)
 
   have delta_inf: "\<And>c. eventually (\<lambda>x. c \<le> 1 / (real_of_rat (\<delta>_of x))) ?F"
     apply (simp add:\<delta>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     by (rule inv_at_right_0_inf)
 
   have zero_less_eps: "eventually (\<lambda>x. 0 < (real_of_rat (\<epsilon>_of x))) ?F"
     apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     apply (subst eventually_prod1', simp)
     by (rule eventually_at_rightI[where b="1"], simp, simp)
 
   have zero_less_delta: "eventually (\<lambda>x. 0 < (real_of_rat (\<delta>_of x))) ?F"
     apply (simp add:\<delta>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     by (rule eventually_at_rightI[where b="1"], simp, simp)
 
   have unit_1: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
-    apply (rule landau_o.big_mono, simp)
-    apply (rule eventually_mono[OF eventually_conj[OF zero_less_delta delta_inf[where c="1"]]])
-    by (metis one_le_power power_one_over)
+    by (intro landau_o.big_mono eventually_mono[OF eventually_conj[OF zero_less_delta delta_inf[where c="1"]]])
+     (simp, meson le_divide_eq_1_pos order_le_less power_le_one zero_less_of_rat_iff)
 
   have unit_2: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
-    apply (rule landau_o.big_mono, simp)
-    apply (rule eventually_mono[OF eventually_conj[OF zero_less_eps eps_inf[where c="exp 1"]]])
-    by (meson abs_ge_self dual_order.trans exp_gt_zero ln_ge_iff order_trans_rules(22))
+    by (intro landau_o.big_mono  eventually_mono[OF eventually_conj[OF zero_less_eps eps_inf[where c="exp 1"]]])
+     (simp, meson abs_ge_self dual_order.trans exp_gt_zero ln_ge_iff order_trans_rules(22))
 
   have unit_3: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x))"
     by (rule landau_o.big_mono, simp, rule n_inf)
@@ -707,128 +665,84 @@ proof -
     by (rule landau_o.big_mono, simp, rule m_inf)
 
   have unit_5: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)))"
-    apply (rule landau_o.big_mono, simp)
-    apply (rule eventually_mono [OF n_inf[where c="exp 1"]]) 
-    by (metis abs_ge_self linorder_not_le ln_ge_iff not_exp_le_zero order.trans)
+    (*    apply (rule landau_o.big.compose[where h'="\<lambda>x. real (n_of x)" and F="at_top"], simp)
+    apply (simp add:n_of_def case_prod_beta) *)
+    by (auto intro!: landau_o.big_mono eventually_mono [OF n_inf[where c="exp 1"]])
+      (metis abs_ge_self linorder_not_le ln_ge_iff not_exp_le_zero order.trans)
 
   have unit_6: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
-    apply (rule landau_sum_1)
-      apply (rule eventually_ln_ge_iff[OF n_inf])
-     apply (rule eventually_ln_ge_iff[OF m_inf])
-    by (rule unit_5)
+    by (intro landau_sum_1 eventually_ln_ge_iff n_inf m_inf unit_5)
 
   have unit_7: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. 1 / real_of_rat (\<epsilon>_of x))"
-    apply (rule landau_o.big_mono, simp)
-    apply (rule eventually_mono [OF eventually_conj[OF zero_less_eps eps_inf[where c="1"]]])
-    by simp
+    by (intro landau_o.big_mono  eventually_mono [OF eventually_conj[OF zero_less_eps eps_inf[where c="1"]]])
+     simp
 
-  have unit_8: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)) *
-    (ln (real (n_of x)) + ln (real (m_of x))) / (real_of_rat (\<delta>_of x))\<^sup>2)" 
-    apply (subst (2) div_commute)
-    apply (rule landau_o.big_mult_1[OF unit_1])
-    by (rule landau_o.big_mult_1[OF unit_2 unit_6]) 
+  have unit_8: "(\<lambda>_. 1) \<in> O[?F](g)" 
+    unfolding g_def
+    by (intro landau_o.big_mult_1 unit_1 unit_2 unit_6)
 
   have unit_9: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x) * real (m_of x))"
-    by (rule landau_o.big_mult_1'[OF unit_3 unit_4])
+    by (intro landau_o.big_mult_1 unit_3 unit_4)
 
   have zero_less_eps: "eventually (\<lambda>x. 0 < (real_of_rat (\<epsilon>_of x))) ?F"
     apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     apply (subst eventually_prod1', simp)
     by (rule eventually_at_rightI[where b="1"], simp, simp)
 
   have l1: "(\<lambda>x. real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>)) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
-    apply (rule landau_real_nat)
-    apply (subst landau_o.big.in_cong[where g="\<lambda>x. real_of_int \<lceil>6 / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>"])
-    apply (rule always_eventually, rule allI, rule arg_cong[where f="real_of_int"]) 
-     apply (metis (no_types, opaque_lifting) of_rat_ceiling of_rat_divide of_rat_numeral_eq of_rat_power)
-    apply (rule landau_ceil[OF unit_1])
-    by (rule landau_const_inv, simp, simp)
+    by (intro landau_real_nat  landau_rat_ceil[OF unit_1]) (simp add:of_rat_divide of_rat_power)
 
-  have l2: "(\<lambda>x. real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>)) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
-    apply (rule landau_real_nat, rule landau_ceil, simp add:unit_2)
-    apply (subst minus_mult_right)
-    apply (subst cmult_in_bigo_iff, rule disjI2)
-    apply (rule landau_o.big_mono)
-    apply (rule eventually_mono[OF zero_less_eps])
-    by (subst ln_div, simp+)
+  have "(\<lambda>x. - ( ln (real_of_rat (\<epsilon>_of x)))) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
+    by (intro landau_o.big_mono eventually_mono[OF zero_less_eps]) (subst ln_div, auto)
+  hence l2: "(\<lambda>x. real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>)) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
+    by (intro landau_real_nat landau_ceil[OF unit_2], simp)
 
-  have l3: "(\<lambda>x. log 2 (real (m_of x) * (4 + 2 * real (n_of x)) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
-    apply (simp add:log_def)
-    apply (rule landau_o.big_trans[where g="\<lambda>x. ln (real (n_of x) * real (m_of x))"])
+  have l3_aux: " (\<lambda>x. real (m_of x) * (4 + 2 * real (n_of x)) + 1) \<in> O[?F](\<lambda>x. real (n_of x) * real (m_of x))"
+    by (rule sum_in_bigo[OF _unit_9], subst mult.commute)
+      (intro landau_o.mult sum_in_bigo, auto simp:unit_3)
+
+  have "(\<lambda>x. ln (real (m_of x) * (4 + 2 * real (n_of x)) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x) * real (m_of x)))"
      apply (rule landau_ln_2[where a="2"], simp, simp)
       apply (rule eventually_mono[OF eventually_conj[OF m_inf[where c="2"] n_inf[where c="1"]]])
-      apply (metis dual_order.trans mult_left_mono mult_of_nat_commute of_nat_0_le_iff verit_prod_simplify(1))
-     apply (rule sum_in_bigo)
-      apply (subst mult.commute)
-      apply (rule landau_o.mult)
-      apply (rule sum_in_bigo, simp add:unit_3, simp)
-      apply simp
-      apply (simp add:unit_9)
-    apply (subst landau_o.big.in_cong[where g="\<lambda>x. ln (real (n_of x)) + ln (real (m_of x))"])
-     apply (rule eventually_mono[OF eventually_conj[OF m_inf[where c="1"] n_inf[where c="1"]]])
-    by (subst ln_mult, simp+)
+     apply (metis dual_order.trans mult_left_mono mult_of_nat_commute of_nat_0_le_iff verit_prod_simplify(1))
+    using l3_aux by simp
+  also have "(\<lambda>x. ln (real (n_of x) * real (m_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln(real (m_of x)))"
+    by (intro landau_o.big_mono eventually_mono[OF eventually_conj[OF m_inf[where c="1"] n_inf[where c="1"]]])
+     (simp add:ln_mult)
+  finally have l3: "(\<lambda>x. ln (real (m_of x) * (4 + 2 * real (n_of x)) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
+    using  landau_o.big_trans by simp
 
-  have l4: "(\<lambda>x. log 2 (4 + 2 * real (n_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
-    apply (rule landau_sum_1)
-      apply (rule eventually_ln_ge_iff[OF n_inf])
-     apply (rule eventually_ln_ge_iff[OF m_inf])
-    apply (simp add:log_def)
-    apply (rule landau_ln_2[where a="2"], simp, simp, rule n_inf)
-    apply (rule sum_in_bigo, simp, simp add:unit_3)
-    by simp
+  have l4: "(\<lambda>x. ln (4 + 2 * real (n_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
+    by (intro landau_sum_1  eventually_ln_ge_iff n_inf m_inf landau_ln_2[where a="2"])
+      (auto intro!: sum_in_bigo simp add:unit_3)
 
-  have l5: "(\<lambda>x. ln (real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>) + 1)) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)) *
-    (ln (real (n_of x)) + ln (real (m_of x))) / (real_of_rat (\<delta>_of x))\<^sup>2)"
-    apply (subst (2) div_commute)
-    apply (rule landau_o.big_mult_1)
-     apply (rule landau_ln_3, simp)
-     apply (rule sum_in_bigo, rule l1, rule unit_1)
-    by (rule landau_o.big_mult_1[OF unit_2 unit_6])
+  have l5: "(\<lambda>x. ln (real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>) + 1)) \<in> O[?F](g)"
+    unfolding g_def
+    by (intro landau_o.big_mult_1 landau_ln_3 sum_in_bigo unit_6 unit_2 l1 unit_1, simp)
 
-  have l6: "(\<lambda>x. ln (4 + 2 * real (n_of x))) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)) * 
-    (ln (real (n_of x)) + ln (real (m_of x))) / (real_of_rat (\<delta>_of x))\<^sup>2)"
-    apply (subst (2) div_commute)
-    apply (rule landau_o.big_mult_1'[OF unit_1])
-    apply (rule landau_o.big_mult_1'[OF unit_2])
-    using l4 by (simp add:log_def)
+  have l6: "(\<lambda>x. ln (4 + 2 * real (n_of x))) \<in> O[?F](g)"
+    unfolding g_def
+    by (intro landau_o.big_mult_1' unit_1 unit_2 l4)
 
-  have l7: "(\<lambda>x. ln (real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) + 1)) \<in> O[?F](\<lambda>x. 
-    ln (1 / real_of_rat (\<epsilon>_of x)) * (ln (real (n_of x)) + ln (real (m_of x))) / (real_of_rat (\<delta>_of x))\<^sup>2)"
-    apply (subst (2) div_commute)
-    apply (rule landau_o.big_mult_1'[OF unit_1])
-    apply (rule landau_o.big_mult_1)
-     apply (rule landau_ln_2[where a="2"], simp, simp, simp add:eps_inf)
-     apply (rule sum_in_bigo)
-      apply (rule landau_nat_ceil[OF unit_7])
-    apply (subst minus_mult_right)
-      apply (subst cmult_in_bigo_iff, rule disjI2)
-      apply (subst landau_o.big.in_cong[where g="\<lambda>x. ln( 1 / (real_of_rat (\<epsilon>_of x)))"])
-       apply (rule eventually_mono[OF zero_less_eps])
-       apply (subst ln_div, simp, simp, simp)
-      apply (rule landau_ln_3[OF eps_inf], simp)
-    apply (rule  unit_7)
-    by (rule unit_6)
+  have l7: "(\<lambda>x. ln (real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) + 1) ) \<in> O[?F](g)"
+    unfolding g_def
+    by (intro landau_o.big_mult_1 unit_6 landau_o.big_mult_1' unit_1 landau_ln_3  sum_in_bigo l2 unit_2) simp
+
+  have l9: "(\<lambda>x. 13 + 8 * ln (4 + 2 * real (n_of x)) / ln 2 + 2 * ln (real (m_of x) * (4 + 2 * real (n_of x)) + 1) / ln 2)
+      \<in> O[sequentially \<times>\<^sub>F sequentially \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
+    by (intro sum_in_bigo, auto simp: l3 l4 unit_6)
+
+  have l8: "(\<lambda>x. real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>) * real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) * 
+      (13 + 8 * ln (4 + 2 * real (n_of x)) / ln 2 + 2 * ln(real (m_of x) * (4 + 2 * real (n_of x)) + 1) / ln 2))
+      \<in> O[sequentially \<times>\<^sub>F sequentially \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](g)"
+    unfolding g_def by (intro landau_o.mult, auto simp: l1 l2 l9)
 
   have "f2_space_usage = (\<lambda>x. f2_space_usage (n_of x, m_of x, \<epsilon>_of x, \<delta>_of x))"
-    apply (rule ext)
     by (simp add:case_prod_beta' n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def)
   also have "... \<in> O[?F](g)"
-    apply (simp add:g_def Let_def)
-    apply (rule sum_in_bigo_r)
-     apply (subst (2) div_commute, subst mult.assoc)
-     apply (rule landau_o.mult, simp add:l1)
-     apply (rule landau_o.mult, simp add:l2)
-     apply (rule sum_in_bigo_r, simp add:l3)
-     apply (rule sum_in_bigo_r, simp add:l4, simp add:unit_6)
-    apply (rule sum_in_bigo_r, simp add:log_def l6)
-    apply (rule sum_in_bigo_r, simp add:log_def l7)
-    apply (rule sum_in_bigo_r, simp add:log_def l5)
-    by (simp add:unit_8)
+    by (auto intro!:sum_in_bigo simp:Let_def log_def l5 l6 l7 l8 unit_8)
   also have "... = O[?F](?rhs)"
-    apply (rule arg_cong2[where f="bigo"], simp)
-    apply (rule ext)
     by (simp add:case_prod_beta' g_def n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def)
   finally show ?thesis by simp
 qed
