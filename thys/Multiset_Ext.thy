@@ -93,7 +93,7 @@ proof -
   next
     case (2 n M x)
     have a:"\<And>y. y \<in> set_mset M \<Longrightarrow> y \<noteq> x" using 2(2) by blast
-    have b:"count M x = 0" apply (subst  count_eq_zero_iff) using 2 by blast 
+    have b:"count M x = 0" using 2 by (subst  count_eq_zero_iff) blast 
     show ?case using 2  by (simp add:a b mult.commute)
   qed
   moreover have "\<And>x. count_list xs x = count (mset xs) x" 
@@ -103,13 +103,13 @@ proof -
 qed
 
 lemma sorted_sorted_list_of_multiset: "sorted (sorted_list_of_multiset M)"
-  by (induction M, simp, simp add:sorted_insort) 
+  by (induction M, auto simp:sorted_insort) 
 
 lemma count_mset: "count (mset xs) a = count_list xs a"
-  by (induction xs, simp, simp)
+  by (induction xs, auto)
 
 lemma swap_filter_image: "filter_mset g (image_mset f A) = image_mset f (filter_mset (g \<circ> f) A)"
-  by (induction A, simp, simp)
+  by (induction A, auto)
 
 lemma list_eq_iff:
   assumes "mset xs = mset ys"
@@ -120,10 +120,17 @@ lemma list_eq_iff:
 
 lemma sorted_list_of_multiset_image_commute:
   assumes "mono f"
-  shows "sorted_list_of_multiset (image_mset f M) = map f (sorted_list_of_multiset M)" (is "?A = ?B")
-  apply (rule list_eq_iff, simp)
-   apply (simp add:sorted_sorted_list_of_multiset)
-  apply (subst sorted_wrt_map)
-  by (metis (no_types, lifting) monoE sorted_sorted_list_of_multiset sorted_wrt_mono_rel assms)
+  shows "sorted_list_of_multiset (image_mset f M) = map f (sorted_list_of_multiset M)"
+proof -
+  have "sorted (sorted_list_of_multiset (image_mset f M))" 
+    by (simp add:sorted_sorted_list_of_multiset)
+  moreover have " sorted_wrt (\<lambda>x y. f x \<le> f y) (sorted_list_of_multiset M)"
+    by (rule sorted_wrt_mono_rel[where P="\<lambda>x y. x \<le> y"]) 
+      (auto intro: monoD[OF assms] sorted_sorted_list_of_multiset)
+  hence "sorted (map f (sorted_list_of_multiset M))"
+    by (subst sorted_wrt_map)
+  ultimately show ?thesis
+    by (intro list_eq_iff, auto)
+qed
 
 end

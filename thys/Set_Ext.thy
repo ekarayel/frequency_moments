@@ -2,53 +2,38 @@ theory Set_Ext
 imports Main
 begin
 
+lemma inj_on_if_inj: "inj f \<Longrightarrow> inj_on f M"
+  by (simp add: inj_on_def)
+
+lemma inj_swap: "inj (\<lambda>x. (snd x, fst x))"
+  by (rule inj_onI, simp add: prod_eq_iff)
+
 lemma card_ordered_pairs:
   fixes M :: "('a ::linorder) set" 
   assumes "finite M"
   shows "2 * card {(x,y) \<in> M \<times> M. x < y} = card M * (card M - 1)"
 proof -
+  have a: "finite (M \<times> M)" using assms by simp
+
   have "2 * card {(x,y) \<in> M \<times> M. x < y} =
     card {(x,y) \<in> M \<times> M. x < y} + card ((\<lambda>x. (snd x, fst x))`{(x,y) \<in> M \<times> M. x < y})"
-    apply (subst card_image)
-    apply (rule inj_onI, simp add:case_prod_beta prod_eq_iff)
-    by simp
+    by (simp add: card_image[OF inj_on_if_inj[OF inj_swap]])
   also have "... = card {(x,y) \<in> M \<times> M. x < y} + card {(x,y) \<in> M \<times> M. y < x}"
-    apply (rule arg_cong2[where f="(+)"], simp)
-    apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym)
-     apply (rule image_subsetI, simp add:case_prod_beta)
-    apply (rule subsetI, simp) 
-    using image_iff by fastforce 
+    by (auto intro: arg_cong[where f="card"] simp add:set_eq_iff image_iff)
   also have "... = card ({(x,y) \<in> M \<times> M. x < y} \<union> {(x,y) \<in> M \<times> M. y < x})"
-    apply (rule card_Un_disjoint[symmetric])
-    apply (rule finite_subset[where B="M \<times> M"], rule subsetI, simp add:case_prod_beta mem_Times_iff)
-    using assms apply simp
-    apply (rule finite_subset[where B="M \<times> M"], rule subsetI, simp add:case_prod_beta mem_Times_iff)
-    using assms apply simp
-    apply (rule order_antisym, rule subsetI, simp add:case_prod_beta, force) 
-    by simp
+    by (intro card_Un_disjoint[symmetric] a finite_subset[where B="M \<times> M"] subsetI) auto
   also have "... = card ((M \<times> M) - {(x,y) \<in> M \<times> M. x = y})"
-    apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym, rule subsetI, simp add:case_prod_beta, force)
-    by (rule subsetI, simp add:case_prod_beta, force)
+    by (auto intro: arg_cong[where f="card"] simp add:set_eq_iff) 
   also have "... = card (M \<times> M) - card {(x,y) \<in> M \<times> M. x = y}"
-    apply (rule card_Diff_subset)
-    apply (rule finite_subset[where B="M \<times> M"], rule subsetI, simp add:case_prod_beta mem_Times_iff)
-    using assms apply simp
-    by (rule subsetI, simp add:case_prod_beta mem_Times_iff)
+    by (intro card_Diff_subset a finite_subset[where B="M \<times> M"] subsetI) auto
   also have "... = card M ^ 2 - card ((\<lambda>x. (x,x)) ` M)"
-    apply (rule arg_cong2[where f="(-)"])
-    using assms apply (simp add:power2_eq_square)
-    apply (rule arg_cong[where f="card"])
-    apply (rule order_antisym, rule subsetI, simp add:case_prod_beta, force)
-    by (rule image_subsetI, simp)
+    using assms
+    by (intro arg_cong2[where f="(-)"] arg_cong[where f="card"])
+      (auto simp:power2_eq_square set_eq_iff image_iff)
   also have "... = card M ^ 2 - card M"
-    apply (rule arg_cong2[where f="(-)"], simp)
-    apply (rule card_image)
-    by (rule inj_onI, simp)
+    by (intro arg_cong2[where f="(-)"] card_image inj_onI, auto)
   also have "... = card M * (card M - 1)"
-    apply (cases "card M \<ge> 0", simp add:power2_eq_square algebra_simps)
-    by simp
+    by (cases "card M \<ge> 0", auto simp:power2_eq_square algebra_simps)
   finally show ?thesis by simp
 qed
 

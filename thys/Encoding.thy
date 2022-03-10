@@ -18,11 +18,19 @@ type_synonym 'a encoding = "'a \<rightharpoonup> bool list"
 definition is_encoding :: "'a encoding \<Rightarrow> bool"
   where "is_encoding f = (\<forall>x y. is_prefix (f x) (f y) \<longrightarrow> x = y)"
 
+definition is_comparable where "is_comparable x  y = (is_prefix x y \<or> is_prefix y x)" (* TODO *)
+
+lemma eq_if_comparable: (* TODO *)
+  assumes "is_encoding e"
+  assumes "is_comparable (e x) (e y)"
+  shows "x = y"
+  using is_encoding_def is_comparable_def assms by metis
+
 lemma encoding_imp_inj:
   assumes "is_encoding f"
   shows "inj_on f (dom f)"
-  apply (rule inj_onI)
-  using assms by (simp add:is_encoding_def, force)
+  using assms
+  by (intro inj_onI, simp add:is_encoding_def, force)
 
 definition decode where 
   "decode f t = (
@@ -114,6 +122,7 @@ fun append_encoding :: "bool list option \<Rightarrow> bool list option \<Righta
     "append_encoding (Some x) (Some y) = Some (x@y)" |
     "append_encoding _ _ = None"
 
+
 lemma bit_count_append: "bit_count (x1@\<^sub>Sx2) = bit_count x1 + bit_count x2"
   by (cases x1, simp, cases x2, simp, simp)
 
@@ -146,20 +155,25 @@ lemma list_bit_count:
   apply (induction xs, simp, simp add:bit_count_append) 
   by (metis add.commute add.left_commute one_ereal_def)
 
+lemma sum_list_triv_ereal:
+  fixes a :: ereal
+  shows "sum_list (map (\<lambda>_. a) xs) = length xs * a"
+  apply (cases a, simp add:sum_list_triv)
+  by (induction xs, simp, simp)+
+
 lemma list_bit_count_est:
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> bit_count (f x) \<le> a"
   shows "bit_count (list\<^sub>S f xs) \<le> ereal (length xs) * (a+1) + 1"
 proof -
-  have a:"sum_list (map (\<lambda>_. (a+1)) xs) = length xs * (a+1)"
-    apply (induction xs, simp)
-    by (simp, subst plus_ereal.simps(1)[symmetric], subst ereal_left_distrib, simp+)
-
-  have b: "\<And>x. x \<in> set xs \<Longrightarrow> bit_count (f x) +1 \<le> a+1"
+  have "\<And>x. x \<in> set xs \<Longrightarrow> bit_count (f x) +1 \<le> a+1"
     using assms add_right_mono by blast
-
-  show ?thesis  
-    using assms a  b sum_list_mono[where g="\<lambda>_. a+1" and f="\<lambda>x. bit_count (f x)+1" and xs="xs"]
-    by (simp add:list_bit_count ereal_add_le_add_iff2)
+  have "bit_count (list\<^sub>S f xs) = sum_list (map (\<lambda>x. bit_count (f x) + 1) xs) + 1"
+    by (simp add:list_bit_count)
+  also have "... \<le> sum_list (map (\<lambda>_. a + 1) xs) + 1"
+    by (intro add_mono sum_list_mono assms, auto)
+  also have "... =  length xs * (a+1) + 1"
+    by (simp add:sum_list_triv_ereal)
+  finally show ?thesis   by simp
 qed
 
 lemma list_bit_count_estI:
@@ -219,8 +233,7 @@ proof (induction n rule:nat_encoding_aux.induct)
 next
   case (2 n)
   have "log 2 2 + log 2 (1 + real (n div 2)) \<le> log 2 (2 + real n)"
-    apply (subst log_mult[symmetric], simp, simp, simp)
-    by (subst log_le_cancel_iff, simp+)
+    by (subst log_mult[symmetric], auto)
   hence "1 + 2 * log 2 (1 + real (n div 2)) + 1 \<le> 2 * log 2 (2 + real n)"
     by simp
   thus ?case using 2 by (simp add:add.commute N\<^sub>S_def) 
@@ -337,11 +350,8 @@ definition fun\<^sub>S :: "'a list \<Rightarrow> 'b encoding \<Rightarrow> ('a \
 lemma encode_extensional:
   assumes "is_encoding e"
   shows "is_encoding (\<lambda>x. (xs \<rightarrow>\<^sub>S e) x)"
-  apply (simp add:fun\<^sub>S_def)
-  apply (rule encoding_compose[where f="list\<^sub>S e"])
-   apply (metis list_encoding assms)
-  apply (rule inj_onI, simp)
-  using extensionalityI by fastforce
+  unfolding fun\<^sub>S_def using extensionalityI
+  by (intro encoding_compose[where f="list\<^sub>S e"]  list_encoding assms inj_onI, auto)
 
 lemma extensional_bit_count:
   assumes "f \<in> extensional (set xs)"
@@ -363,11 +373,9 @@ definition set\<^sub>S where "set\<^sub>S e S = (if finite S then list\<^sub>S e
 lemma encode_set:
   assumes "is_encoding e"
   shows "is_encoding (\<lambda>S. set\<^sub>S e S)"
-  apply (simp add:set\<^sub>S_def)
-  apply (rule encoding_compose[where f="list\<^sub>S e"])
-   apply (metis assms list_encoding)
-  apply (rule inj_onI, simp)
-  by (metis sorted_list_of_set.set_sorted_key_list_of_set)
+  unfolding set\<^sub>S_def
+  by (intro encoding_compose[where f="list\<^sub>S e"]  assms list_encoding inj_onI)
+   (simp, metis sorted_list_of_set.set_sorted_key_list_of_set)
 
 lemma set_bit_count:
   assumes "finite S"
@@ -385,9 +393,8 @@ proof -
   have "bit_count (set\<^sub>S f S) \<le> ereal (length (sorted_list_of_set S)) * (a+1) + 1"
     using assms(4) assms(1) list_bit_count_est[where xs="sorted_list_of_set S"] by (simp add:set\<^sub>S_def)
   also have "... \<le> ereal (real m) * (a+1) + 1"
-    apply (rule add_mono)
-    apply (rule ereal_mult_right_mono)
-    using assms by simp+
+    using assms
+    by (intro add_mono  ereal_mult_right_mono, auto)
   finally show ?thesis by simp
 qed
 

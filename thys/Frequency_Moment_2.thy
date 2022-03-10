@@ -67,11 +67,11 @@ context
   fixes \<epsilon> \<delta> :: rat
   fixes n :: nat
   fixes as :: "nat list"
-  fixes \<Omega>
+  fixes result
   assumes \<epsilon>_range: "\<epsilon> \<in> {0<..<1}"
   assumes \<delta>_range: "\<delta> > 0"
   assumes as_range: "set as \<subseteq> {..<n}"
-  defines "\<Omega> \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n) \<bind> f2_result"
+  defines "result \<equiv> fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n) \<bind> f2_result"
 begin  
 
 private definition s\<^sub>1 where "s\<^sub>1 = nat \<lceil>6 / \<delta>\<^sup>2\<rceil>"
@@ -104,12 +104,45 @@ interpretation carter_wegman_hash_family "mod_ring p" 4
   using p_prime by auto
 
 definition sketch where "sketch = fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
-private definition \<Omega>\<^sub>0 where"\<Omega>\<^sub>0 = prod_pmf ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) (\<lambda>_. pmf_of_set space)" 
-private definition \<Omega>\<^sub>1 where"\<Omega>\<^sub>1 = measure_pmf \<Omega>\<^sub>0" 
-private definition f4 where "f4 \<omega> = of_int (sum_list (map (f2_hash p \<omega>) as))^2"
-private definition f2 where "f2 \<omega> = (\<lambda>i\<^sub>2. (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. f4 (\<omega> (i\<^sub>1, i\<^sub>2))) / (((of_nat p)\<^sup>2 - 1) * of_nat s\<^sub>1))"
+private definition \<Omega> where"\<Omega> = prod_pmf ({..<s\<^sub>1} \<times> {..<s\<^sub>2}) (\<lambda>_. pmf_of_set space)" 
+private definition \<Omega>\<^sub>p where"\<Omega>\<^sub>p = measure_pmf \<Omega>" 
+private definition sketch_rv where "sketch_rv \<omega> = of_int (sum_list (map (f2_hash p \<omega>) as))^2"
+private definition mean_rv where "mean_rv \<omega> = (\<lambda>i\<^sub>2. (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. sketch_rv (\<omega> (i\<^sub>1, i\<^sub>2))) / (((of_nat p)\<^sup>2 - 1) * of_nat s\<^sub>1))"
+private definition result_rv where "result_rv \<omega> = median s\<^sub>2 (\<lambda>i\<^sub>2\<in>{..<s\<^sub>2}. mean_rv \<omega> i\<^sub>2)"
 
-private definition f where "f \<omega> = median s\<^sub>2 (\<lambda>i\<^sub>2\<in>{..<s\<^sub>2}. f2 \<omega> i\<^sub>2)"
+lemma mean_rv_alg_sketch:
+  "sketch = \<Omega> \<bind> (\<lambda>\<omega>. return_pmf (s\<^sub>1, s\<^sub>2, p, \<omega>, \<lambda>i \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (\<omega> i)) as)))"
+proof -
+  have "sketch =  fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
+    by (simp add:sketch_def)
+  also have "... = \<Omega> \<bind> (\<lambda>\<omega>. return_pmf (s\<^sub>1, s\<^sub>2, p, \<omega>, 
+      \<lambda>i \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (\<omega> i)) as)))"
+  proof (induction as rule:rev_induct)
+    case Nil
+    then show ?case 
+      by (simp add:s\<^sub>1_def s\<^sub>2_def space_def p_def[symmetric] \<Omega>_def restrict_def Let_def) 
+  next
+    case (snoc a as)
+    show ?case
+      using snoc apply (simp del:f2_hash.simps f2_init.simps)
+      apply (subst bind_assoc_pmf)
+      apply (subst bind_return_pmf)
+      apply (simp add:restrict_def del:f2_hash.simps f2_init.simps cong:restrict_cong)
+      by (subst add.commute, simp)
+  qed
+  finally show ?thesis by auto
+qed
+
+lemma distr:  "result = map_pmf result_rv \<Omega>"
+proof -
+  have "result = sketch \<bind> f2_result"
+    by (simp add:result_def sketch_def)
+  also have "... = \<Omega> \<bind> (\<lambda>x. f2_result (s\<^sub>1, s\<^sub>2, p, x, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (x i)) as)))"
+    by (simp add: mean_rv_alg_sketch  bind_assoc_pmf bind_return_pmf)
+  also have "... = map_pmf result_rv \<Omega>"
+    by (simp add:map_pmf_def result_rv_def mean_rv_def sketch_rv_def lessThan_atLeast0 cong:restrict_cong)
+  finally show ?thesis by simp
+qed
 
 private lemma f2_hash_pow_exp:
   assumes "k < p"
@@ -170,8 +203,8 @@ proof -
 qed
 
 lemma 
-  shows var_f4:"variance f4 \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" (is "?A")
-  and exp_f4:"expectation f4 = real_of_rat (F 2 as) * ((real p)\<^sup>2-1)" (is "?B")
+  shows var_sketch_rv:"variance sketch_rv \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" (is "?A")
+  and exp_sketch_rv:"expectation sketch_rv = real_of_rat (F 2 as) * ((real p)\<^sup>2-1)" (is "?B")
 proof -
   define h where "h = (\<lambda>\<omega> x. real_of_int (f2_hash p \<omega> x))"
   define c where "c = (\<lambda>x. real (count_list as x))"
@@ -180,8 +213,8 @@ proof -
 
   define exp_h_prod :: "nat list \<Rightarrow> real" where "exp_h_prod = (\<lambda>as. (\<Prod>i \<in> set as. r (count_list as i)))"
 
-  have f_eq: "f4 = (\<lambda>\<omega>. (\<Sum>x \<in> set as. c x * h \<omega> x)^2)"
-    by (rule ext, simp add:f4_def c_def h_def sum_list_eval del:f2_hash.simps)
+  have f_eq: "sketch_rv = (\<lambda>\<omega>. (\<Sum>x \<in> set as. c x * h \<omega> x)^2)"
+    by (rule ext, simp add:sketch_rv_def c_def h_def sum_list_eval del:f2_hash.simps)
 
   have r_one: "r (Suc 0) = 0"
     by (simp add:r_def algebra_simps)
@@ -264,7 +297,7 @@ proof -
       by (simp add:sum_list_mult_const)
   qed
 
-  have "expectation f4 = (\<Sum>i\<in>set as. (\<Sum>j\<in>set as. c i * c j * expectation (h_prod [i,j])))"
+  have "expectation sketch_rv = (\<Sum>i\<in>set as. (\<Sum>j\<in>set as. c i * c j * expectation (h_prod [i,j])))"
     by (simp add:f_eq h_prod_def power2_eq_square sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum algebra_simps)
   also have "... = (\<Sum>i\<in>set as. (\<Sum>j\<in>set as. c i * c j * exp_h_prod [i,j]))"
     by (simp add:exp_h_prod)
@@ -277,7 +310,7 @@ proof -
     by (simp add: sum_distrib_right[symmetric] c_def F_def power2_eq_square of_rat_sum of_rat_mult r_two)
   finally show b:?B by simp
 
-  have "expectation (\<lambda>x. (f4 x)\<^sup>2) = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as.
+  have "expectation (\<lambda>x. (sketch_rv x)\<^sup>2) = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as.
     c i1 * c i2 * c i3 * c i4 * expectation (h_prod [i1, i2, i3, i4])))))"
     by (simp add:f_eq h_prod_def power4_eq_xxxx sum_distrib_left sum_distrib_right Bochner_Integration.integral_sum algebra_simps)
   also have "... = (\<Sum>i1 \<in> set as. (\<Sum>i2 \<in> set as. (\<Sum>i3 \<in> set as. (\<Sum>i4 \<in> set as. 
@@ -302,109 +335,77 @@ proof -
     by (auto intro!: sum_nonpos simp add:mult_nonneg_nonpos)
   also have "... = 3 * (real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2" 
     by (simp add:c_def r_two F_def of_rat_sum of_rat_power)
-  finally have "expectation (\<lambda>x. (f4 x)\<^sup>2) \<le> 3 * (real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
+  finally have "expectation (\<lambda>x. (sketch_rv x)\<^sup>2) \<le> 3 * (real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
     by simp
   
-  thus "variance f4 \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
+  thus "variance sketch_rv \<le> 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2"
      by (simp add: variance_eq, simp add:power_mult_distrib b)
 qed
 
-lemma f2_alg_sketch:
-  "sketch = \<Omega>\<^sub>0 \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, \<lambda>i \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (h i)) as)))"
-proof -
-  have "sketch =  fold (\<lambda>a state. state \<bind> f2_update a) as (f2_init \<delta> \<epsilon> n)"
-    by (simp add:sketch_def)
-  also have "... = \<Omega>\<^sub>0 \<bind> (\<lambda>h. return_pmf (s\<^sub>1, s\<^sub>2, p, h, 
-      \<lambda>i \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (h i)) as)))"
-  proof (induction as rule:rev_induct)
-    case Nil
-    then show ?case 
-      by (simp add:s\<^sub>1_def s\<^sub>2_def space_def p_def[symmetric] \<Omega>\<^sub>0_def restrict_def Let_def) 
-  next
-    case (snoc a as)
-    show ?case
-      using snoc apply (simp del:f2_hash.simps f2_init.simps)
-      apply (subst bind_assoc_pmf)
-      apply (subst bind_return_pmf)
-      apply (simp add:restrict_def del:f2_hash.simps f2_init.simps cong:restrict_cong)
-      by (subst add.commute, simp)
-  qed
-  finally show ?thesis by auto
-qed
 
-lemma distr:  "\<Omega> = map_pmf f \<Omega>\<^sub>0"
-proof -
-  have "\<Omega> = sketch \<bind> f2_result"
-    by (simp add:\<Omega>_def sketch_def)
-  also have "... = \<Omega>\<^sub>0 \<bind> (\<lambda>x. f2_result (s\<^sub>1, s\<^sub>2, p, x, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (x i)) as)))"
-    by (simp add: f2_alg_sketch  bind_assoc_pmf bind_return_pmf)
-  also have "... = map_pmf f \<Omega>\<^sub>0"
-    by (simp add:map_pmf_def f_def f2_def f4_def lessThan_atLeast0 cong:restrict_cong)
-  finally show ?thesis by simp
-qed
+lemma space_omega_1 [simp]: "Sigma_Algebra.space \<Omega>\<^sub>p = UNIV"
+    by (simp add:\<Omega>\<^sub>p_def)
 
-lemma space_omega_1 [simp]: "Sigma_Algebra.space \<Omega>\<^sub>1 = UNIV"
-    by (simp add:\<Omega>\<^sub>1_def)
+interpretation \<Omega>: prob_space "\<Omega>\<^sub>p"
+  by (simp add:\<Omega>\<^sub>p_def prob_space_measure_pmf)
 
-interpretation Q: prob_space "\<Omega>\<^sub>1"
-  by (simp add:\<Omega>\<^sub>1_def prob_space_measure_pmf)
-
-lemma integrable_Q:
+lemma integrable_\<Omega>:
   fixes f :: "((nat \<times> nat) \<Rightarrow> (nat list)) \<Rightarrow> real"
-  shows "integrable \<Omega>\<^sub>1 f"
-  unfolding \<Omega>\<^sub>1_def \<Omega>\<^sub>0_def
+  shows "integrable \<Omega>\<^sub>p f"
+  unfolding \<Omega>\<^sub>p_def \<Omega>_def
   by (rule integrable_measure_pmf_finite, auto intro:finite_PiE simp:set_prod_pmf)
 
-lemma f3_exp:
+lemma sketch_rv_exp:
   assumes "i\<^sub>2 < s\<^sub>2"
   assumes "i\<^sub>1 \<in> {0..<s\<^sub>1}"
-  shows "Q.expectation (\<lambda>\<omega>. f4 (\<omega> (i\<^sub>1, i\<^sub>2))) = real_of_rat (F 2 as) * ((real p)\<^sup>2 - 1)"
+  shows "\<Omega>.expectation (\<lambda>\<omega>. sketch_rv (\<omega> (i\<^sub>1, i\<^sub>2))) = real_of_rat (F 2 as) * ((real p)\<^sup>2 - 1)"
 proof -
-  have "Q.expectation (\<lambda>\<omega>.  (f4 (\<omega> (i\<^sub>1, i\<^sub>2))) :: real) = expectation f4"
-    using integrable_Q integrable_M assms
-    unfolding \<Omega>\<^sub>0_def \<Omega>\<^sub>1_def M_def
-    by (subst integral_prod_pmf_slice, auto)
+  have "\<Omega>.expectation (\<lambda>\<omega>.  (sketch_rv (\<omega> (i\<^sub>1, i\<^sub>2))) :: real) = expectation sketch_rv"
+    using integrable_\<Omega> integrable_M assms
+    unfolding \<Omega>_def \<Omega>\<^sub>p_def M_def
+    by (subst expectation_Pi_pmf_slice, auto)
   also have "... = (real_of_rat (F 2 as)) * ((real p)\<^sup>2 - 1)"
-    using exp_f4 by simp
+    using exp_sketch_rv by simp
   finally show ?thesis by simp
 qed
 
-lemma f3_var:
+lemma sketch_rv_var:
   assumes "i\<^sub>2 < s\<^sub>2"
   assumes "i\<^sub>1 \<in> {0..<s\<^sub>1}"
-  shows "Q.variance (\<lambda>\<omega>. f4 (\<omega> (i\<^sub>1, i\<^sub>2))) \<le> 2 * (real_of_rat (F 2 as))\<^sup>2 * ((real p)\<^sup>2 - 1)\<^sup>2"
+  shows "\<Omega>.variance (\<lambda>\<omega>. sketch_rv (\<omega> (i\<^sub>1, i\<^sub>2))) \<le> 2 * (real_of_rat (F 2 as))\<^sup>2 * ((real p)\<^sup>2 - 1)\<^sup>2"
 proof -
-  have "Q.variance (\<lambda>\<omega>. (f4 (\<omega> (i\<^sub>1, i\<^sub>2)) :: real)) = variance f4"
-    using integrable_Q integrable_M assms
-    unfolding \<Omega>\<^sub>0_def \<Omega>\<^sub>1_def M_def
+  have "\<Omega>.variance (\<lambda>\<omega>. (sketch_rv (\<omega> (i\<^sub>1, i\<^sub>2)) :: real)) = variance sketch_rv"
+    using integrable_\<Omega> integrable_M assms
+    unfolding \<Omega>_def \<Omega>\<^sub>p_def M_def
     by (subst variance_prod_pmf_slice, auto)
   also have "... \<le>  2 * (real_of_rat (F 2 as))\<^sup>2 * ((real p)\<^sup>2 - 1)\<^sup>2"
-    using var_f4 by simp
+    using var_sketch_rv by simp
   finally show ?thesis by simp
 qed
 
-lemma Q_exp:
+lemma mean_rv_exp:
   assumes "i < s\<^sub>2"
-  shows "Q.expectation (\<lambda>\<omega>. f2 \<omega> i) = real_of_rat (F 2 as)"
+  shows "\<Omega>.expectation (\<lambda>\<omega>. mean_rv \<omega> i) = real_of_rat (F 2 as)"
 proof -
   have a:"(real p)\<^sup>2 > 1" using p_gt_1 by simp
 
-  have "Q.expectation (\<lambda>\<omega>. f2 \<omega> i) = (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. Q.expectation (\<lambda>\<omega>. f4 (\<omega> (i\<^sub>1, i)))) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)"
-    using assms integrable_Q by (simp add:f2_def)
+  have "\<Omega>.expectation (\<lambda>\<omega>. mean_rv \<omega> i) = (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. \<Omega>.expectation (\<lambda>\<omega>. sketch_rv (\<omega> (i\<^sub>1, i)))) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)"
+    using assms integrable_\<Omega> by (simp add:mean_rv_def)
   also have "... = (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. real_of_rat (F 2 as) * ((real p)\<^sup>2 - 1)) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)" 
-    using f3_exp[OF assms] by simp
+    using sketch_rv_exp[OF assms] by simp
   also have "... = real_of_rat (F 2 as)"
     using s1_gt_0 a by simp
   finally show ?thesis by simp
 qed
 
-lemma Q_var:
+lemma mean_rv_var:
   assumes "i < s\<^sub>2"
-  shows "Q.variance (\<lambda>\<omega>. f2 \<omega> i) \<le> (real_of_rat (\<delta> * F 2 as))\<^sup>2 / 3"
+  shows "\<Omega>.variance (\<lambda>\<omega>. mean_rv \<omega> i) \<le> (real_of_rat (\<delta> * F 2 as))\<^sup>2 / 3"
 proof -
-  have a: "Q.indep_vars (\<lambda>_. borel) (\<lambda>i\<^sub>1 x. f4 (x (i\<^sub>1, i))) {0..<s\<^sub>1}"
-    by (rule indep_vars_restrict_intro_2[where f="\<lambda>j. {(j,i)}"]) 
-      (auto simp: disjoint_family_on_def \<Omega>\<^sub>0_def \<Omega>\<^sub>1_def assms s1_gt_0  s2_gt_0)
+  have a: "\<Omega>.indep_vars (\<lambda>_. borel) (\<lambda>i\<^sub>1 x. sketch_rv (x (i\<^sub>1, i))) {0..<s\<^sub>1}"
+    using assms
+    by (intro indep_vars_restrict_intro'[where f="fst"])
+     (auto simp add:\<Omega>\<^sub>p_def \<Omega>_def restrict_dfl_def case_prod_beta lessThan_atLeast0)
 
   have p_sq_ne_1: "(real p)^2 \<noteq> 1" 
     by (metis p_gt_1 less_numeral_extra(4) of_nat_power one_less_power pos2 semiring_char_0_class.of_nat_eq_1_iff)
@@ -413,12 +414,12 @@ proof -
     unfolding s\<^sub>1_def
     by  (metis (mono_tags, opaque_lifting) of_rat_ceiling of_rat_divide of_rat_numeral_eq of_rat_power real_nat_ceiling_ge)
 
-  have "Q.variance (\<lambda>\<omega>. f2 \<omega> i) = Q.variance (\<lambda>\<omega>. \<Sum>i\<^sub>1 = 0..<s\<^sub>1. f4 (\<omega> (i\<^sub>1, i))) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
-    unfolding f2_def by (subst Q.variance_divide[OF integrable_Q], simp)
-  also have "... = (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. Q.variance (\<lambda>\<omega>. f4 (\<omega> (i\<^sub>1, i)))) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
-    by (subst Q.var_sum_all_indep[OF _ _ integrable_Q a]) (auto simp: \<Omega>\<^sub>0_def \<Omega>\<^sub>1_def)
+  have "\<Omega>.variance (\<lambda>\<omega>. mean_rv \<omega> i) = \<Omega>.variance (\<lambda>\<omega>. \<Sum>i\<^sub>1 = 0..<s\<^sub>1. sketch_rv (\<omega> (i\<^sub>1, i))) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
+    unfolding mean_rv_def by (subst \<Omega>.variance_divide[OF integrable_\<Omega>], simp)
+  also have "... = (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. \<Omega>.variance (\<lambda>\<omega>. sketch_rv (\<omega> (i\<^sub>1, i)))) / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
+    by (subst \<Omega>.var_sum_all_indep[OF _ _ integrable_\<Omega> a]) (auto simp: \<Omega>_def \<Omega>\<^sub>p_def)
   also have "... \<le>  (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2)  / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
-    by (rule divide_right_mono, rule sum_mono[OF f3_var[OF assms]], auto)
+    by (rule divide_right_mono, rule sum_mono[OF sketch_rv_var[OF assms]], auto)
   also have "... = 2 * (real_of_rat (F 2 as)^2) / real s\<^sub>1"
     using p_sq_ne_1 s1_gt_0
     by (subst frac_eq_eq, auto simp add:power2_eq_square)
@@ -430,55 +431,55 @@ proof -
   finally show ?thesis by simp
 qed
 
-lemma f2_alg_per_mean:
+lemma mean_rv_bounds:
   assumes "i < s\<^sub>2"
-  shows "Q.prob {\<omega>. real_of_rat \<delta> * real_of_rat (F 2 as) < \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>} \<le> 1/3"
+  shows "\<Omega>.prob {\<omega>. real_of_rat \<delta> * real_of_rat (F 2 as) < \<bar>mean_rv \<omega> i - real_of_rat (F 2 as)\<bar>} \<le> 1/3"
 proof (cases "as = []")
   case True
   then show ?thesis
-    using assms by (subst f2_def, subst f4_def, simp add:F_def)
+    using assms by (subst mean_rv_def, subst sketch_rv_def, simp add:F_def)
 next
   case False
   hence "F 2 as > 0" using F_gr_0 by auto
 
   hence a: "0 < real_of_rat (\<delta> * F 2 as)"
     using \<delta>_range by simp
-  have [simp]: "(\<lambda>\<omega>. f2 \<omega> i) \<in> borel_measurable \<Omega>\<^sub>1"
-    by (simp add:\<Omega>\<^sub>0_def \<Omega>\<^sub>1_def)
-  have "Q.prob {\<omega>. real_of_rat \<delta> * real_of_rat (F 2 as) < \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>} \<le> 
-      Q.prob {\<omega>. real_of_rat (\<delta> * F 2 as) \<le> \<bar>f2 \<omega> i - real_of_rat (F 2 as)\<bar>}"
-    by (rule Q.pmf_mono'[OF \<Omega>\<^sub>1_def], simp add:of_rat_mult)
-  also have "... \<le>  Q.variance (\<lambda>\<omega>. f2 \<omega> i) / (real_of_rat (\<delta> * F 2 as))\<^sup>2"
-    using Q.Chebyshev_inequality[where a="real_of_rat (\<delta> * F 2 as)" and f="\<lambda>\<omega>. f2 \<omega> i",simplified] 
-      a prob_space_measure_pmf[where p="\<Omega>\<^sub>0"] Q_exp[OF assms] integrable_Q by simp
+  have [simp]: "(\<lambda>\<omega>. mean_rv \<omega> i) \<in> borel_measurable \<Omega>\<^sub>p"
+    by (simp add:\<Omega>_def \<Omega>\<^sub>p_def)
+  have "\<Omega>.prob {\<omega>. real_of_rat \<delta> * real_of_rat (F 2 as) < \<bar>mean_rv \<omega> i - real_of_rat (F 2 as)\<bar>} \<le> 
+      \<Omega>.prob {\<omega>. real_of_rat (\<delta> * F 2 as) \<le> \<bar>mean_rv \<omega> i - real_of_rat (F 2 as)\<bar>}"
+    by (rule \<Omega>.pmf_mono'[OF \<Omega>\<^sub>p_def], simp add:of_rat_mult)
+  also have "... \<le>  \<Omega>.variance (\<lambda>\<omega>. mean_rv \<omega> i) / (real_of_rat (\<delta> * F 2 as))\<^sup>2"
+    using \<Omega>.Chebyshev_inequality[where a="real_of_rat (\<delta> * F 2 as)" and f="\<lambda>\<omega>. mean_rv \<omega> i",simplified] 
+      a prob_space_measure_pmf[where p="\<Omega>"] mean_rv_exp[OF assms] integrable_\<Omega> by simp
   also have "... \<le> ((real_of_rat (\<delta> * F 2 as))\<^sup>2/3) / (real_of_rat (\<delta> * F 2 as))\<^sup>2"
-    by (rule divide_right_mono, rule Q_var[OF assms], simp)
+    by (rule divide_right_mono, rule mean_rv_var[OF assms], simp)
   also  have "... = 1/3" using a by force
   finally show ?thesis by blast
 qed
 
 lemma f2_alg_correct':
-   "\<P>(\<omega> in measure_pmf \<Omega>. \<bar>\<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as) \<ge> 1-of_rat \<epsilon>"
+   "\<P>(\<omega> in measure_pmf result. \<bar>\<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as) \<ge> 1-of_rat \<epsilon>"
 proof -
-  have a: "Q.indep_vars (\<lambda>_. borel) (\<lambda>i \<omega>. f2 \<omega> i) {0..<s\<^sub>2}" 
-    by (rule indep_vars_restrict_intro_2[where f="\<lambda>j. {..<s\<^sub>1} \<times> {j}"]) 
-     (auto simp: \<Omega>\<^sub>1_def \<Omega>\<^sub>0_def f2_def disjoint_family_on_def s2_gt_0)
+  have a: "\<Omega>.indep_vars (\<lambda>_. borel) (\<lambda>i \<omega>. mean_rv \<omega> i) {0..<s\<^sub>2}" 
+    using s1_gt_0
+    by (intro indep_vars_restrict_intro'[where f="snd"])
+      (auto simp: \<Omega>\<^sub>p_def \<Omega>_def mean_rv_def restrict_dfl_def)
 
   have b: "- 18 * ln (real_of_rat \<epsilon>) \<le> real s\<^sub>2" 
     unfolding  s\<^sub>2_def using of_nat_ceiling by auto
 
-  have "1 - of_rat \<epsilon> \<le> Q.prob {\<omega>.  \<bar>median s\<^sub>2 (f2 \<omega>) -  real_of_rat (F 2 as) \<bar> \<le> of_rat \<delta> * of_rat (F 2 as)}"
-    using \<epsilon>_range Q.median_bound_2[OF _ a b, where \<delta>="real_of_rat \<delta> * real_of_rat (F 2 as)"
-        and \<mu>="real_of_rat (F 2 as)"] f2_alg_per_mean
+  have "1 - of_rat \<epsilon> \<le> \<Omega>.prob {\<omega>.  \<bar>median s\<^sub>2 (mean_rv \<omega>) -  real_of_rat (F 2 as) \<bar> \<le> of_rat \<delta> * of_rat (F 2 as)}"
+    using \<epsilon>_range \<Omega>.median_bound_2[OF _ a b, where \<delta>="real_of_rat \<delta> * real_of_rat (F 2 as)"
+        and \<mu>="real_of_rat (F 2 as)"] mean_rv_bounds
     by simp
-  also have "... = Q.prob {\<omega>.  \<bar>real_of_rat (f \<omega>) - of_rat (F 2 as) \<bar> \<le> of_rat \<delta> * of_rat (F 2 as)}"
-    by (simp add:f_def median_restrict lessThan_atLeast0 median_rat[OF s2_gt_0]
-         f2_def f4_def of_rat_divide of_rat_sum of_rat_mult of_rat_diff of_rat_power)
-  also have "... = Q.prob {\<omega>. \<bar>f \<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as} " 
+  also have "... = \<Omega>.prob {\<omega>.  \<bar>real_of_rat (result_rv \<omega>) - of_rat (F 2 as) \<bar> \<le> of_rat \<delta> * of_rat (F 2 as)}"
+    by (simp add:result_rv_def median_restrict lessThan_atLeast0 median_rat[OF s2_gt_0]
+         mean_rv_def sketch_rv_def of_rat_divide of_rat_sum of_rat_mult of_rat_diff of_rat_power)
+  also have "... = \<Omega>.prob {\<omega>. \<bar>result_rv \<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as} " 
     by (simp add:of_rat_less_eq of_rat_mult[symmetric]  of_rat_diff[symmetric] set_eq_iff)
-  finally have "Q.prob {y. \<bar>f y - F 2 as\<bar> \<le> \<delta> * F 2 as} \<ge> 1-of_rat \<epsilon> " by simp
-  thus ?thesis
-    by (simp add: distr \<Omega>\<^sub>1_def)
+  finally have "\<Omega>.prob {y. \<bar>result_rv y - F 2 as\<bar> \<le> \<delta> * F 2 as} \<ge> 1-of_rat \<epsilon> " by simp
+  thus ?thesis by (simp add: distr \<Omega>\<^sub>p_def)
 qed
 
 lemma f2_exact_space_usage':
@@ -577,10 +578,10 @@ proof -
       by simp
   qed
 
-  have "set_pmf \<Omega>\<^sub>0 = {..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (Field.mod_ring p) 4"
-    by (simp add: \<Omega>\<^sub>0_def set_prod_pmf)  (simp add: space_def)
+  have "set_pmf \<Omega> = {..<s\<^sub>1} \<times> {..<s\<^sub>2} \<rightarrow>\<^sub>E bounded_degree_polynomials (Field.mod_ring p) 4"
+    by (simp add: \<Omega>_def set_prod_pmf)  (simp add: space_def)
   thus ?thesis
-    by (simp  add:f2_alg_sketch AE_measure_pmf_iff del:f2_space_usage.simps, metis a)
+    by (simp  add:mean_rv_alg_sketch AE_measure_pmf_iff del:f2_space_usage.simps, metis a)
 qed
 
 end

@@ -246,15 +246,8 @@ lemma fk_alg_aux_2:
   (is "?lhs = ?rhs")
 proof (induction as rule:rev_induct)
   case Nil
-  thus ?case
-    apply (simp, rule pmf_eqI)
-    apply (simp add:pmf_prod_pmf)
-    apply (rule conjI, rule impI)
-     apply (simp add:indicator_def, rule conjI, rule impI)
-      apply force
-     using extensional_arb apply fastforce
-    apply (simp add:extensional_def indicator_def)
-    by (meson SigmaD1 SigmaD2 atLeastLessThan_iff)
+  show ?case
+    by simp
 next
   case (snoc x xs)
   obtain t1 t2 where t_def: 
@@ -778,15 +771,8 @@ next
        (\<Sum>j = 0..<s\<^sub>1. prob_space.variance  (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))  (\<lambda>\<omega>. f2 \<omega> j i / real s\<^sub>1))"
       apply (simp add:f1_def sum_divide_distrib)
       apply (subst measure_pmf.var_sum_all_indep, simp, simp)
-        apply (rule integrable_measure_pmf_finite[OF fin_omega_2])
-       apply (rule indep_vars_restrict_intro[where f="\<lambda>j. {j} \<times> {i}"])
-            apply (simp add:f2_def)
-           apply (simp add:disjoint_family_on_def)
-          apply (simp add:s1_nonzero)
-         apply (simp add:f1_var_1)
-        apply simp
-       apply simp
-      by simp
+      apply (rule integrable_measure_pmf_finite[OF fin_omega_2])
+      by (rule indep_vars_restrict_intro'[where f="fst"], simp, simp, simp add:restrict_dfl_def f2_def f1_var_1, simp add:s1_nonzero s2_nonzero, simp, simp)
     also have "... = (\<Sum>j = 0..<s\<^sub>1. prob_space.variance  (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))  (\<lambda>\<omega>. f2 \<omega> j i) / real s\<^sub>1^2)"
       apply (rule sum.cong, simp)
       apply (rule measure_pmf.variance_divide)
@@ -836,13 +822,7 @@ next
         using assms(2) apply simp
        using assms(2) apply simp
        apply (simp add:f1_def f2_def)
-       apply (rule indep_vars_restrict_intro[where f="\<lambda>i. ({0..<s\<^sub>1}\<times>{i})"])
-           apply (simp)
-          apply (simp add:disjoint_family_on_def, blast)
-         apply (simp add:s2_nonzero)
-        apply (rule subsetI, simp, force)
-       apply(simp)
-      apply (simp)
+       apply (rule indep_vars_restrict_intro'[where f="snd"], simp, simp, simp add:restrict_dfl_def, simp add:s1_nonzero, simp)
      apply (simp add: s\<^sub>2_def) 
        using of_nat_ceiling apply blast 
      using d by simp

@@ -13,10 +13,7 @@ independent.\<close>
 lemma make_ext: 
   assumes "\<And>x. P x = P (restrict x I)" 
   shows "(\<forall>x \<in> Pi I A. P x) = (\<forall>x \<in> PiE I A. P x)"
-  apply (simp add:PiE_def Pi_def)
-  apply (rule order_antisym)
-   apply (simp add:Pi_def)
-  using assms by fastforce
+  using assms by (simp add:PiE_def Pi_def set_eq_iff, force)
 
 lemma PiE_reindex:
   assumes "inj_on f I"
@@ -42,8 +39,7 @@ proof -
     show "x \<in> ?f ` ?rhs" using b c by blast
   qed
   moreover have "?f ` ?rhs \<subseteq> ?lhs"
-    apply (rule image_subsetI)
-    by (simp add:Pi_def PiE_def)
+    by (rule image_subsetI, simp add:Pi_def PiE_def)
   ultimately show ?thesis by blast
 qed
 
@@ -54,22 +50,53 @@ proof -
   have a:"\<And>J g. J \<subseteq> I \<Longrightarrow> (\<Prod>j \<in> f ` J. g j) = (\<Prod>j \<in> J. g (f j))"
     by (metis assms prod.reindex_cong subset_inj_on)
 
-  have "\<And>J. J \<subseteq> I \<Longrightarrow> (\<Pi>\<^sub>E i \<in> J. A (f i)) = (\<lambda>a. restrict (a \<circ> f) J) ` PiE (f ` J) A"
-    apply (subst PiE_reindex[symmetric])
-    using assms inj_on_subset apply blast
-    by (simp add: comp_def)
+  have "J \<subseteq> I \<Longrightarrow> (\<Pi>\<^sub>E i \<in> J. A (f i)) = (\<lambda>a. restrict (a \<circ> f) J) ` PiE (f ` J) A" for J
+    using assms inj_on_subset 
+    by (subst PiE_reindex[symmetric]) auto
 
-  hence b:"\<And>P J. J \<subseteq> I \<Longrightarrow>  (\<And>x. P x = P (restrict x J)) \<Longrightarrow> (\<forall>A'\<in>PiE (f ` J) A. P (A' \<circ> f)) = (\<forall>A' \<in> \<Pi>\<^sub>E i \<in> J. A (f i). P A')"
-    by (simp)
+  hence b:"\<And>P J. J \<subseteq> I \<Longrightarrow>  (\<And>x. P x = P (restrict x J)) \<Longrightarrow> (\<forall>A' \<in> \<Pi>\<^sub>E i \<in> J. A (f i). P A') =  (\<forall>A'\<in>PiE (f ` J) A. P (A' \<circ> f))"
+    by simp
 
   have c:"\<And>J. J \<subseteq> I \<Longrightarrow> finite (f ` J) = finite J" 
     by (meson assms finite_image_iff inj_on_subset)
 
   show ?thesis
-    apply (simp add:indep_sets_def all_subset_image a c)
-    apply (subst make_ext) apply (simp cong:restrict_cong)
-    apply (subst make_ext) apply (simp cong:restrict_cong)
-    by (simp add:b[symmetric])
+    by (simp add:indep_sets_def all_subset_image a c)
+     (simp add:make_ext b cong:restrict_cong)+
+qed
+
+
+lemma (in prob_space) indep_vars_cong_AE:
+  assumes "AE x in M. (\<forall>i \<in> I. X' i x = Y' i x)"
+  assumes "indep_vars M' X' I"
+  assumes "\<And>i. i \<in> I \<Longrightarrow> random_variable (M' i) (Y' i)"
+  shows "indep_vars M' Y' I"
+proof (cases "I \<noteq> {}")
+  case True
+
+  have a: "AE x in M. (\<lambda>i\<in>I. Y' i x) = (\<lambda>i\<in>I. X' i x)"
+    by (rule AE_mp[OF assms(1)], rule AE_I2, simp cong:restrict_cong)
+  have b: "\<And>i. i \<in> I \<Longrightarrow> random_variable (M' i) (X' i)" 
+    using assms(2) by (simp add:indep_vars_def2)
+  have c: "\<And>x. x \<in> I \<Longrightarrow> AE xa in M. X' x xa = Y' x xa" 
+    by (rule AE_mp[OF assms(1)], rule AE_I2, simp)
+
+  have "distr M (Pi\<^sub>M I M') (\<lambda>x. \<lambda>i\<in>I. Y' i x) = distr M (Pi\<^sub>M I M') (\<lambda>x. \<lambda>i\<in>I. X' i x)"
+    by (intro distr_cong_AE measurable_restrict a b assms(3)) auto
+  also have "... =  Pi\<^sub>M I (\<lambda>i. distr M (M' i) (X' i))"
+    using assms True b by (subst indep_vars_iff_distr_eq_PiM'[symmetric]) auto
+  also have "... =  Pi\<^sub>M I (\<lambda>i. distr M (M' i) (Y' i))"
+    by (intro PiM_cong distr_cong_AE c assms(3) b) auto
+  finally have "distr M (Pi\<^sub>M I M') (\<lambda>x. \<lambda>i\<in>I. Y' i x) = Pi\<^sub>M I (\<lambda>i. distr M (M' i) (Y' i))"
+    by simp
+
+  thus ?thesis
+    using True assms(3)
+    by (subst indep_vars_iff_distr_eq_PiM') auto
+next
+  case False
+  then show ?thesis
+    by (simp add:indep_vars_def2 indep_sets_def)
 qed
 
 lemma (in prob_space) indep_vars_reindex:
@@ -82,9 +109,9 @@ lemma (in prob_space) variance_divide:
   fixes f :: "'a \<Rightarrow> real"
   assumes "integrable M f"
   shows "variance (\<lambda>\<omega>. f \<omega> / r) = variance f / r^2"
-  apply (subst Bochner_Integration.integral_divide[OF assms(1)])
-  apply (subst diff_divide_distrib[symmetric])
-  using assms by (simp add:power2_eq_square algebra_simps)
+  using assms
+  by (subst Bochner_Integration.integral_divide[OF assms(1)])
+    (simp add:diff_divide_distrib[symmetric] power2_eq_square algebra_simps)
 
 lemma (in prob_space) pmf_mono':
   assumes "M = measure_pmf p"
@@ -94,9 +121,7 @@ proof -
   have "prob P = prob (P \<inter> (set_pmf p))"
     by (rule  measure_pmf_eq[OF assms(1)], blast)
   also have "... \<le> prob Q"
-    apply (rule finite_measure.finite_measure_mono, simp)
-    using assms apply blast
-    by (simp add:assms(1))
+    using assms by (intro finite_measure.finite_measure_mono, auto)
   finally show ?thesis by simp
 qed
 
@@ -107,8 +132,7 @@ lemma (in prob_space) pmf_add:
 proof -
   have [simp]:"events = UNIV" by (subst assms(1), simp)
   have "prob P \<le> prob (Q \<union> R)"
-    apply (rule pmf_mono'[OF assms(1)])
-    using assms by blast
+    using assms by (intro pmf_mono'[OF assms(1)], blast)
   also have "... \<le> prob Q + prob R"
     by (rule measure_subadditive, auto)
   finally show ?thesis by simp
@@ -182,11 +206,13 @@ lemma (in prob_space) sum_square_int:
   assumes "\<And>i. i \<in> I \<Longrightarrow> f i \<in> borel_measurable M"
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   shows "integrable M (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)\<^sup>2)"
-  apply (simp add:power2_eq_square sum_distrib_left sum_distrib_right)
-  apply (rule Bochner_Integration.integrable_sum)
-  apply (rule Bochner_Integration.integrable_sum)
-  apply (rule real_prod_integrable)
-  using assms by auto 
+proof -
+  have " integrable M (\<lambda>\<omega>. \<Sum>i\<in>I. \<Sum>j\<in>I. f j \<omega> * f i \<omega>)"
+    using assms
+    by (intro Bochner_Integration.integrable_sum real_prod_integrable, auto)
+  thus ?thesis
+    by (simp add:power2_eq_square sum_distrib_left sum_distrib_right)
+qed
 
 lemma (in prob_space) var_sum_1:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
@@ -289,9 +315,8 @@ lemma (in prob_space) var_sum_pairwise_indep_2:
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   assumes "\<And>J. J \<subseteq> I \<Longrightarrow> card J = 2 \<Longrightarrow> indep_vars (\<lambda> _. borel) f J"
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
-  apply (rule var_sum_pairwise_indep[OF assms(1,2,3)], simp, simp)
-  apply (rule indep_var_from_indep_vars, simp)
-  by (rule assms(4), simp, simp)
+  using assms(4)
+  by (intro var_sum_pairwise_indep[OF assms(1,2,3)] indep_var_from_indep_vars, auto)
 
 lemma (in prob_space) var_sum_all_indep:
   fixes f :: "'b \<Rightarrow> 'a \<Rightarrow> real"
@@ -300,7 +325,6 @@ lemma (in prob_space) var_sum_all_indep:
   assumes "\<And>i. i \<in> I \<Longrightarrow> integrable M (\<lambda>\<omega>. f i \<omega>^2)"
   assumes "indep_vars (\<lambda> _. borel) f I"
   shows "variance (\<lambda>\<omega>. (\<Sum>i \<in> I. f i \<omega>)) = (\<Sum>i \<in> I. variance (f i))"
-  apply (rule var_sum_pairwise_indep_2[OF assms(1) assms(2) assms(3)], simp, simp)
-  using indep_vars_subset[OF assms(4)] by simp
+  by (intro var_sum_pairwise_indep_2[OF assms(1,2,3)] indep_vars_subset[OF assms(4)],  auto)
 
 end

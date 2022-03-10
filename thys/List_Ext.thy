@@ -23,10 +23,7 @@ proof -
 qed
 
 lemma card_gr_1_iff:
-  assumes "finite S"
-  assumes "x \<in> S"
-  assumes "y \<in> S"
-  assumes "x \<noteq> y"
+  assumes "finite S"  "x \<in> S"  "y \<in> S"  "x \<noteq> y"
   shows "card S > 1"
   using assms card_le_Suc0_iff_eq leI by auto
 
@@ -35,8 +32,12 @@ lemma count_list_ge_2_iff:
   assumes "z < length xs"
   assumes "xs ! y = xs ! z"
   shows "count_list xs (xs ! y) > 1"
-  apply (subst count_list_card)
-  apply (rule card_gr_1_iff[where x="y" and y="z"])
-  using assms by simp+
+proof -
+  have " 1 < card {k. k < length xs \<and> xs ! k = xs ! y}"
+    using assms by (intro card_gr_1_iff[where x="y" and y="z"], auto)
+
+  thus ?thesis
+    by (simp add: count_list_card)
+qed
 
 end

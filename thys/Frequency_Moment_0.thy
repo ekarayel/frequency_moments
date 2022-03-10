@@ -137,8 +137,7 @@ lemma f0_collision_prob:
   assumes "M' \<subseteq> {..<p}"
   assumes "c \<ge> 1"
   assumes "r \<ge> 1"
-  shows "prob {\<omega>.
-    \<exists>x \<in> M'. \<exists>y \<in> M'.
+  shows "prob {\<omega>. \<exists>x \<in> M'. \<exists>y \<in> M'.
     x \<noteq> y \<and>
     truncate_down r (hash x \<omega>) \<le> c \<and>
     truncate_down r (hash x \<omega>) = truncate_down r (hash y \<omega>)} \<le> 
@@ -157,9 +156,9 @@ proof -
 
   have f_M: "finite M'" using assms(1) finite_subset by auto
 
-  have a2: "\<And>\<omega> x. x < p \<Longrightarrow> \<omega> \<in> space \<Longrightarrow> hash x \<omega> < p" 
+  have a2: "x < p \<Longrightarrow> \<omega> \<in> space \<Longrightarrow> hash x \<omega> < p"  for x \<omega>
     by (metis hash_range mod_ring_carr)
-  have "\<And>\<omega>. degree \<omega> \<ge> 1 \<Longrightarrow> \<omega> \<in> space \<Longrightarrow> degree \<omega> = 1"
+  have "degree \<omega> \<ge> 1 \<Longrightarrow> \<omega> \<in> space \<Longrightarrow> degree \<omega> = 1" for \<omega>
     apply (simp add:bounded_degree_polynomials_def space_def) 
     by (metis One_nat_def Suc_1 le_less_Suc_eq less_imp_diff_less list.size(3) pos2)
   hence a3: "\<And>\<omega> x y. x < p \<Longrightarrow> y < p \<Longrightarrow>  x \<noteq> y \<Longrightarrow> degree \<omega> \<ge> 1 \<Longrightarrow> 
@@ -167,16 +166,11 @@ proof -
     using inj_onD[OF inj_if_degree_1]  mod_ring_carr by blast 
 
   have a1: 
-    "\<And>x y. x < y \<Longrightarrow> x \<in> M' \<Longrightarrow> y \<in> M' \<Longrightarrow> prob 
-    {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_down r (hash x \<omega>) \<le> c \<and>
+    "prob {\<omega>. degree \<omega> \<ge> 1 \<and> truncate_down r (hash x \<omega>) \<le> c \<and>
     truncate_down r (hash x \<omega>) = truncate_down r (hash y \<omega>)} \<le> 
     12 * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
+    if a1_1: "x \<in> M'" and  a1_2: "y \<in> M'" and a1_3: "x < y" for x y
   proof -
-    fix x y
-    assume a1_1: "x \<in> M'"
-    assume a1_2: "y \<in> M'"
-    assume a1_3: "x < y"
-
     have a1_4: "\<And>u v. truncate_down r (real u) \<le> c \<Longrightarrow> 
         truncate_down r (real u) = truncate_down r (real v) \<Longrightarrow>
         real u \<le> 2 * c \<and> \<bar>real u - real v\<bar> \<le> 2 * c * 2 powr (-real r)"
@@ -534,13 +528,11 @@ proof -
   have m_eq_F_0: "real m = of_rat (F 0 as)"
     by (simp add:m_def F_def)
 
-  have exp_var_f: "\<And>a. a \<ge> -1 \<Longrightarrow> a < int p \<Longrightarrow> 
-    expectation (\<lambda>\<omega>. real (f a \<omega>)) = real m * (real_of_int a+1) / p \<and>
+  have exp_var_f: "expectation (\<lambda>\<omega>. real (f a \<omega>)) = real m * (real_of_int a+1) / p \<and>
     variance (\<lambda>\<omega>. real (f a \<omega>)) \<le> real m * (real_of_int a+1) / p"
+    if  a_ge_m1: "a \<ge> -1"
+    and a_le_p: "a < int p" for a :: int
   proof -
-    fix a :: int
-    assume a_ge_m1: "a \<ge> -1"
-    assume a_le_p: "a < int p"
     have xs_subs_p: "set as \<subseteq> {..<p}"
       using xs_le_p  
       by (simp add: subset_iff)
@@ -1062,8 +1054,7 @@ proof -
         using est by linarith
     qed
     also have "... \<le> 1/9 + (1/9 + 1/9)"
-      apply (rule prob_add, simp add:M_def, simp add:M_def, rule case_1)
-      by (rule prob_add, simp add:M_def, simp add:M_def, rule case_2, rule case_3)
+      by (intro prob_add case_1 case_2 case_3, auto simp add:M_def)
     also have "... = 1/3" by simp
     finally show ?thesis by simp
   next
@@ -1160,8 +1151,8 @@ proof -
       \<bar>median s (\<lambda>i. g' (h (\<omega> i))) - real_of_rat (F 0 as)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (F 0 as))"
     apply (rule prob_space.median_bound_2, simp add:prob_space_measure_pmf)
        using assms apply simp 
-      apply (subst \<Omega>\<^sub>0_def)
-      apply (rule indep_vars_restrict_intro [where f="\<lambda>j. {j}"], simp, simp add:disjoint_family_on_def, simp add: s_ge_0, simp, simp, simp)
+       apply (subst \<Omega>\<^sub>0_def)
+       apply (rule indep_vars_restrict_intro'[where f="id"], simp, simp, simp add:restrict_dfl_def, simp add:lessThan_atLeast0, simp)
      apply (simp add:s_def) using of_nat_ceiling apply blast
     apply simp
     apply (subst \<Omega>\<^sub>0_def)
