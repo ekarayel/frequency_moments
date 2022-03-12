@@ -196,17 +196,18 @@ lemma variance_prod_pmf_slice:
   shows "prob_space.variance (Pi_pmf I d M) (\<lambda>\<omega>. f (\<omega> i)) = prob_space.variance (M i) f"
 proof -
   have a:"integrable (measure_pmf (M i)) f"
-    apply (rule measure_pmf.square_integrable_imp_integrable)
-    using assms(3) by auto
+    using assms(3) measure_pmf.square_integrable_imp_integrable by auto
+  have b:" integrable (measure_pmf (Pi_pmf I d M)) (\<lambda>x. (f (x i))\<^sup>2)"
+    by (rule integrable_Pi_pmf_slice[OF assms(2) assms(1)], metis assms(3))
+  have c:" integrable (measure_pmf (Pi_pmf I d M)) (\<lambda>x. (f (x i)))"
+    by (rule integrable_Pi_pmf_slice[OF assms(2) assms(1)], metis a)
 
-  show ?thesis
-    apply (subst measure_pmf.variance_eq)
-      apply (rule integrable_Pi_pmf_slice[OF assms(2) assms(1)], metis a)
-     apply (rule integrable_Pi_pmf_slice[OF assms(2) assms(1)], metis assms(3))
-    apply (subst measure_pmf.variance_eq[OF a assms(3)])
-    apply (subst expectation_Pi_pmf_slice[OF assms(2) assms(1)], metis assms(3))
-    apply (subst expectation_Pi_pmf_slice[OF assms(2) assms(1)], metis a)
-    by simp
+  have "measure_pmf.expectation (Pi_pmf I d M) (\<lambda>x. (f (x i))\<^sup>2) - (measure_pmf.expectation (Pi_pmf I d M) (\<lambda>x. f (x i)))\<^sup>2 =
+      measure_pmf.expectation (M i) (\<lambda>x. (f x)\<^sup>2) - (measure_pmf.expectation (M i) f)\<^sup>2"
+    using assms a b c by ((subst expectation_Pi_pmf_slice[OF assms(2,1)])?, simp)+
+
+  thus ?thesis
+    using assms a b c by (simp add: measure_pmf.variance_eq)
 qed
 
 lemma pmf_of_set_prod:

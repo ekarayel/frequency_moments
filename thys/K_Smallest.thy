@@ -6,7 +6,6 @@ begin
 
 text \<open>This section contains definitions and results for the selection of the $k$ smallest elements, the $k$-th smallest element, rank of an element in an ordered set.\<close>
 
-
 definition rank_of :: "'a :: linorder \<Rightarrow> 'a set \<Rightarrow> nat" where "rank_of x S = card {y \<in> S. y < x}"  
 text \<open>The function @{term "rank_of"} returns the rank of an element within a set.\<close>
 

@@ -17,28 +17,22 @@ lemma make_ext:
 
 lemma PiE_reindex:
   assumes "inj_on f I"
-  shows "PiE I (A \<circ> f) = (\<lambda>a. restrict (a \<circ> f) I) ` PiE (f ` I) A" (is "?lhs = ?f ` ?rhs")
+  shows "PiE I (A \<circ> f) = (\<lambda>a. restrict (a \<circ> f) I) ` PiE (f ` I) A" (is "?lhs = ?g ` ?rhs")
 proof -
-  have "?lhs \<subseteq> ?f` ?rhs"
+  have "?lhs \<subseteq> ?g` ?rhs"
   proof (rule subsetI)
     fix x
     assume a:"x \<in> Pi\<^sub>E I (A \<circ> f)"
     define y where y_def: "y = (\<lambda>k. if k \<in> f ` I then x (the_inv_into I f k) else undefined)"
     have b:"y \<in> PiE (f ` I) A" 
-      apply (rule PiE_I)
-      using a apply (simp add:y_def PiE_iff)
-       apply (metis imageE assms the_inv_into_f_eq)
-      using a by (simp add:y_def PiE_iff extensional_def)
-    have c: "x = (\<lambda>a. restrict (a \<circ> f) I) y" 
-      apply (rule ext)
-      using a apply (simp add:y_def PiE_iff)
-      apply (rule conjI)
-      using assms the_inv_into_f_eq 
-      apply (simp add: the_inv_into_f_eq)
-      by (meson extensional_arb)
-    show "x \<in> ?f ` ?rhs" using b c by blast
+      using a assms the_inv_into_f_eq[OF assms]
+      by (simp add: y_def PiE_iff extensional_def)
+    have c: "x = (\<lambda>a. restrict (a \<circ> f) I) y"
+      using a assms the_inv_into_f_eq extensional_arb
+      by (intro ext, simp add:y_def PiE_iff, fastforce) 
+    show "x \<in> ?g ` ?rhs" using b c by blast
   qed
-  moreover have "?f ` ?rhs \<subseteq> ?lhs"
+  moreover have "?g ` ?rhs \<subseteq> ?lhs"
     by (rule image_subsetI, simp add:Pi_def PiE_def)
   ultimately show ?thesis by blast
 qed
@@ -64,7 +58,6 @@ proof -
     by (simp add:indep_sets_def all_subset_image a c)
      (simp add:make_ext b cong:restrict_cong)+
 qed
-
 
 lemma (in prob_space) indep_vars_cong_AE:
   assumes "AE x in M. (\<forall>i \<in> I. X' i x = Y' i x)"

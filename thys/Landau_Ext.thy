@@ -32,21 +32,18 @@ proof -
     have "\<bar>f1 x + f2 x\<bar> \<le> \<bar>f1 x \<bar> + \<bar>f2 x\<bar>" using abs_triangle_ineq by blast
     also have "... \<le> c1 *  \<bar>g1 x\<bar> + c2 * \<bar>g2 x\<bar>" using a add_mono by blast
     also have "... \<le> max c1 c2 * \<bar>g1 x\<bar> + max c1 c2 * \<bar>g2 x\<bar>" 
-      apply (rule add_mono)
-       apply (rule mult_right_mono, simp)
-       apply (metis a a1 abs_le_zero_iff abs_zero linorder_not_less order_trans semiring_norm(63) zero_le_mult_iff)
-      apply (rule mult_right_mono, simp)
-      by (metis a a2 abs_le_zero_iff abs_zero linorder_not_less order_trans semiring_norm(63) zero_le_mult_iff)
+      by (intro add_mono mult_right_mono) auto
+    also have "... = max c1 c2 * (\<bar>g1 x\<bar> + \<bar>g2 x\<bar>)"
+      by (simp add:algebra_simps)
     also have "... \<le> max c1 c2 * (\<bar>g1 x + g2 x\<bar>)"
-      apply (subst distrib_left[symmetric])
-      apply (rule mult_left_mono)
-      using a a1 a2 by auto
-    finally show "\<bar>f1 x + f2 x\<bar> \<le> max c1 c2 * \<bar>g1 x + g2 x\<bar>" by (simp add:algebra_simps)
+      using a a1 a2 by (intro mult_left_mono) auto
+    finally show "\<bar>f1 x + f2 x\<bar> \<le> max c1 c2 * \<bar>g1 x + g2 x\<bar>"
+      by (simp add:algebra_simps)
   qed
-  thus ?thesis
-    apply (simp add:bigo_def)
-    apply (rule exI[where x= "max c1 c2"])
+  hence " 0 < max c1 c2 \<and> (\<forall>\<^sub>F x in F'. \<bar>f1 x + f2 x\<bar> \<le> max c1 c2 * \<bar>g1 x + g2 x\<bar>)"
     using a1 a2 by linarith
+  thus ?thesis
+    by (simp add: bigo_def, blast) 
 qed
 
 lemma landau_sum_1:
@@ -55,10 +52,9 @@ lemma landau_sum_1:
   assumes "f \<in> O[F'](g1)"
   shows "f \<in> O[F'](\<lambda>x. g1 x + g2 x)"
 proof -
-  have "f = (\<lambda>x. f x + 0)"
-    by simp
+  have "f = (\<lambda>x. f x + 0)" by simp
   also have "... \<in> O[F'](\<lambda>x. g1 x + g2 x)"
-    by (rule landau_sum[OF assms(1) assms(2) assms(3) zero_in_bigo])
+    using assms zero_in_bigo by (intro landau_sum)
   finally show ?thesis by simp
 qed
 
@@ -68,10 +64,9 @@ lemma landau_sum_2:
   assumes "f \<in> O[F'](g2)"
   shows "f \<in> O[F'](\<lambda>x. g1 x + g2 x)"
 proof -
-  have "f = (\<lambda>x. 0 + f x)"
-    by simp
+  have "f = (\<lambda>x. 0 + f x)" by simp
   also have "... \<in> O[F'](\<lambda>x. g1 x + g2 x)"
-    by (rule landau_sum[OF assms(1) assms(2) zero_in_bigo assms(3)])
+    using assms zero_in_bigo by (intro landau_sum)
   finally show ?thesis by simp
 qed
 
@@ -80,14 +75,12 @@ lemma landau_ln_3:
   assumes "f \<in> O[F'](g)" 
   shows "(\<lambda>x. ln (f x)) \<in> O[F'](g)" 
 proof -
-  have a:"(\<lambda>x. ln (f x)) \<in> O[F'](f)"
-    apply (rule landau_o.big_mono, simp)
-    apply (rule eventually_mono[OF assms(1)])
-    apply (subst abs_of_nonneg, subst ln_ge_zero_iff, simp, simp, simp)
-    using ln_less_self 
-    by (meson ln_bound order.strict_trans2 zero_less_one)
-  show ?thesis
-    by (rule landau_o.big_trans[OF a assms(2)])
+  have "1 \<le> x \<Longrightarrow> \<bar>ln x\<bar> \<le> \<bar>x\<bar>" for x :: real
+    using ln_bound by auto
+  hence "(\<lambda>x. ln (f x)) \<in> O[F'](f)"
+    by (intro landau_o.big_mono eventually_mono[OF assms(1)]) simp
+  thus ?thesis
+    using assms(2) landau_o.big_trans by blast
 qed
 
 lemma landau_ln_2:
@@ -209,21 +202,19 @@ lemma eventually_nonneg_div:
   assumes "eventually (\<lambda>x. (0::real) \<le> f x) F'"
   assumes "eventually (\<lambda>x. 0 < g x) F'"
   shows "eventually (\<lambda>x. 0 \<le> f x / g x) F'"
-  apply (rule eventually_mono[OF eventually_conj[OF assms(1) assms(2)]])
-  by simp
+  by (rule eventually_mono[OF eventually_conj[OF assms(1) assms(2)]], simp)
 
 lemma eventually_nonneg_add:
   assumes "eventually (\<lambda>x. (0::real) \<le> f x) F'"
   assumes "eventually (\<lambda>x. 0 \<le> g x) F'"
   shows "eventually (\<lambda>x. 0 \<le> f x + g x) F'"
-  apply (rule eventually_mono[OF eventually_conj[OF assms(1) assms(2)]])
-  by simp
+  by (rule eventually_mono[OF eventually_conj[OF assms(1) assms(2)]], simp)
 
 lemma eventually_ln_ge_iff:
   assumes "eventually (\<lambda>x. (exp (c::real)) \<le> f x) F'"
   shows "eventually (\<lambda>x. c \<le> ln (f x)) F'"
-  apply (rule eventually_mono[OF assms(1)])
-  by (meson ln_ge_iff  exp_gt_zero order_less_le_trans)
+  by (rule eventually_mono[OF assms(1)])
+   (meson ln_ge_iff  exp_gt_zero order_less_le_trans)
 
 lemma div_commute: "(a::real) / b = (1/b) * a" by simp
 

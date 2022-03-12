@@ -1,12 +1,6 @@
 theory Set_Ext
-imports Main
+  imports Main
 begin
-
-lemma inj_on_if_inj: "inj f \<Longrightarrow> inj_on f M"
-  by (simp add: inj_on_def)
-
-lemma inj_swap: "inj (\<lambda>x. (snd x, fst x))"
-  by (rule inj_onI, simp add: prod_eq_iff)
 
 lemma card_ordered_pairs:
   fixes M :: "('a ::linorder) set" 
@@ -15,9 +9,12 @@ lemma card_ordered_pairs:
 proof -
   have a: "finite (M \<times> M)" using assms by simp
 
+  have inj_swap: "inj (\<lambda>x. (snd x, fst x))"
+    by (rule inj_onI, simp add: prod_eq_iff)
+
   have "2 * card {(x,y) \<in> M \<times> M. x < y} =
     card {(x,y) \<in> M \<times> M. x < y} + card ((\<lambda>x. (snd x, fst x))`{(x,y) \<in> M \<times> M. x < y})"
-    by (simp add: card_image[OF inj_on_if_inj[OF inj_swap]])
+    by (simp add: card_image[OF inj_on_subset[OF inj_swap]])
   also have "... = card {(x,y) \<in> M \<times> M. x < y} + card {(x,y) \<in> M \<times> M. y < x}"
     by (auto intro: arg_cong[where f="card"] simp add:set_eq_iff image_iff)
   also have "... = card ({(x,y) \<in> M \<times> M. x < y} \<union> {(x,y) \<in> M \<times> M. y < x})"
