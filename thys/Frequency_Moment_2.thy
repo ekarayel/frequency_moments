@@ -123,12 +123,12 @@ proof -
       by (simp add:s\<^sub>1_def s\<^sub>2_def space_def p_def[symmetric] \<Omega>_def restrict_def Let_def) 
   next
     case (snoc a as)
-    show ?case
-      using snoc apply (simp del:f2_hash.simps f2_init.simps)
-      apply (subst bind_assoc_pmf)
-      apply (subst bind_return_pmf)
-      apply (simp add:restrict_def del:f2_hash.simps f2_init.simps cong:restrict_cong)
-      by (subst add.commute, simp)
+    have "fold (\<lambda>a state. state \<bind> f2_update a) (as @ [a]) (f2_init \<delta> \<epsilon> n) = \<Omega> \<bind> 
+      (\<lambda>\<omega>. return_pmf (s\<^sub>1, s\<^sub>2, p, \<omega>, \<lambda>s \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}. (\<Sum>x \<leftarrow> as.  f2_hash p (\<omega> s) x)) \<bind> f2_update a)"
+      using snoc by (simp add: bind_assoc_pmf restrict_def del:f2_hash.simps f2_init.simps)
+    also have "... =  \<Omega> \<bind> (\<lambda>\<omega>. return_pmf (s\<^sub>1, s\<^sub>2, p, \<omega>, \<lambda>i \<in> {..<s\<^sub>1} \<times> {..<s\<^sub>2}. (\<Sum>x \<leftarrow> as@[a].  f2_hash p (\<omega> i) x)))"
+      by (subst bind_return_pmf) (simp add: add.commute del:f2_hash.simps cong:restrict_cong)
+    finally show ?case by blast
   qed
   finally show ?thesis by auto
 qed
@@ -167,8 +167,7 @@ proof -
   finally have card_even: "card ({k. even k} \<inter> {..<p}) = t+1" by simp
   hence "card ({k. even k} \<inter> {..<p}) * 2 = (p+1)" by (simp add:t_def)
   hence prob_even: "prob {\<omega>. hash k \<omega> \<in> Collect even} = (real p + 1)/(2*real p)"
-    apply (subst prob_range, simp add:mod_ring_carr assms)
-    by (simp add:frac_eq_eq p_gt_0 mod_ring_def lessThan_atLeast0) 
+    using assms by (subst prob_range, auto simp:frac_eq_eq p_gt_0 mod_ring_def) 
 
   have "p = card {..<p}" by simp
   also have "... = card (({k. odd k} \<inter> {..<p}) \<union> ({k. even k} \<inter> {..<p}))" 
@@ -182,8 +181,7 @@ proof -
   hence "card ({k. odd k} \<inter> {..<p}) * 2 = (p-1)" 
     by (simp add:t_def)
   hence prob_odd: "prob {\<omega>. hash k \<omega> \<in> Collect odd} = (real p - 1)/(2*real p)"
-    apply (subst prob_range, simp add:mod_ring_carr assms)
-    by (simp add: frac_eq_eq mod_ring_def lessThan_atLeast0 t_def)
+    using assms by (subst prob_range, auto simp add: frac_eq_eq mod_ring_def)
 
   have "expectation (\<lambda>x. real_of_int (f2_hash p x k) ^ m) =
     expectation (\<lambda>\<omega>. indicator {\<omega>. even (hash k \<omega>)} \<omega> * (real p - 1)^m + 
@@ -342,7 +340,6 @@ proof -
      by (simp add: variance_eq, simp add:power_mult_distrib b)
 qed
 
-
 lemma space_omega_1 [simp]: "Sigma_Algebra.space \<Omega>\<^sub>p = UNIV"
     by (simp add:\<Omega>\<^sub>p_def)
 
@@ -421,11 +418,9 @@ proof -
   also have "... \<le>  (\<Sum>i\<^sub>1 = 0..<s\<^sub>1. 2*(real_of_rat (F 2 as)^2) * ((real p)\<^sup>2-1)\<^sup>2)  / (((real p)\<^sup>2 - 1) * real s\<^sub>1)\<^sup>2"
     by (rule divide_right_mono, rule sum_mono[OF sketch_rv_var[OF assms]], auto)
   also have "... = 2 * (real_of_rat (F 2 as)^2) / real s\<^sub>1"
-    using p_sq_ne_1 s1_gt_0
-    by (subst frac_eq_eq, auto simp add:power2_eq_square)
+    using p_sq_ne_1 s1_gt_0 by (subst frac_eq_eq, auto simp:power2_eq_square)
   also have "... \<le> 2 * (real_of_rat (F 2 as)^2) / (6 / (real_of_rat \<delta>)\<^sup>2)"
-    apply (rule divide_left_mono[OF s1_bound])
-    using divide_left_mono[OF s1_bound] s1_gt_0 \<delta>_range mult_pos_pos by auto
+    using  s1_gt_0 \<delta>_range by (intro divide_left_mono mult_pos_pos s1_bound) auto
   also have "... = (real_of_rat (\<delta> * F 2 as))\<^sup>2 / 3"
     by (simp add:of_rat_mult algebra_simps)
   finally show ?thesis by simp
@@ -543,7 +538,7 @@ proof -
       also have "... = int (length as) * (int p+1)"
         by (simp add: sum_list_triv)
       also have "... \<le> int (length as) * (4+2*(int n))"
-        using p_bound by (auto intro:mult_mono)
+        using p_bound by (intro mult_mono, auto)
       finally  have "\<bar>sum_list (map (f2_hash p (y x)) as)\<bar> \<le> int (length as) * (4 + 2 * int n)" by simp
       hence "?lhs x \<le> ereal (2 * log 2 (real_of_int (int (length as) * (4 + 2 * int n) + 1)) + 2)"
         by (rule int_bit_count_est) 
@@ -554,7 +549,7 @@ proof -
     have 
       "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))
       \<le> ereal (real (length (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))) * (ereal (2 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1)) + 1) + 1"
-      by (rule extensional_bit_count_est)  
+      by (intro extensional_bit_count_est)  
         (simp_all add:extensional_def lessThan_atLeast0 sketch_bit_count_aux del:f2_hash.simps I\<^sub>S.simps)
     also have "... = ereal (real s\<^sub>1 * real s\<^sub>2 * (3 + 2 * log 2 (real (length as) * (4 + 2 * real n) + 1)) + 1)"
       by simp

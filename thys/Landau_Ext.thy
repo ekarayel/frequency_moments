@@ -164,13 +164,22 @@ lemma landau_rat_ceil:
   assumes "(\<lambda>_. 1) \<in> O[F'](g)"
   assumes "(\<lambda>x. real_of_rat (f x)) \<in> O[F'](g)"
   shows "(\<lambda>x. real_of_int \<lceil>f x\<rceil>) \<in> O[F'](g)"
+proof -
+  have a:"\<bar>real_of_int \<lceil>x\<rceil>\<bar> \<le> 1 + real_of_rat \<bar>x\<bar>" for x :: rat
+    apply (cases "x \<ge> 0", simp)
+     apply (metis  add.commute  of_int_ceiling_le_add_one of_rat_ceiling)
+    apply simp 
+    by (metis (no_types, opaque_lifting) add_le_same_cancel1 add_uminus_conv_diff ceiling_le_iff ceiling_mono eq_diff_eq le_minus_iff linorder_linear minus_diff_eq not_one_le_zero of_rat_ceiling of_rat_minus)
+
+  show ?thesis
   apply (rule landau_o.big_trans[where g="\<lambda>x. 1 + abs (real_of_rat (f x))"])
    apply (rule landau_o.big_mono)
    apply (rule always_eventually, rule allI, simp) 
-  apply (smt (verit) abs_ge_self abs_of_nonpos abs_of_rat le_of_int_ceiling of_int_ceiling_le_add_one of_rat_ceiling)
+  apply (rule a)
   apply (rule sum_in_bigo[OF assms(1)])
   using assms(2) 
   by (metis landau_o.big.abs_in_iff)
+qed
 
 lemma landau_nat_ceil:
   assumes "(\<lambda>_. 1) \<in> O[F'](g)"
