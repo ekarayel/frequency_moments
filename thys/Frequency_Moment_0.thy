@@ -159,7 +159,12 @@ proof -
     by (simp, subst a[symmetric], intro powr_less_mono, auto)
 qed
 
-private definition tr_hash where "tr_hash x \<omega> = truncate_down r (hash p x \<omega>)"
+interpretation carter_wegman_hash_family "mod_ring p" 2
+  rewrites "ring.hash (mod_ring p) = Frequency_Moment_0.hash p"
+  using carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite]
+  using hash_def p_prime by auto
+
+private definition tr_hash where "tr_hash x \<omega> = truncate_down r (hash x \<omega>)"
 
 private definition f0_sketch where (* Rename to sketch_rv *)
   "f0_sketch \<omega> = least t ((\<lambda>x. float_of (tr_hash x \<omega>)) ` set as)"
@@ -167,10 +172,8 @@ private definition f0_sketch where (* Rename to sketch_rv *)
 private definition estimate (* Should be directly applied to f0_sketch - abstract over type! *)
    where "estimate S = (if card S < t then of_nat (card S) else of_nat t * of_nat p / rat_of_float (Max S))"
 
-interpretation carter_wegman_hash_family "mod_ring p" 2
-  rewrites "ring.hash (mod_ring p) = Frequency_Moment_0.hash p"
-  using carter_wegman_hash_familyI[OF mod_ring_is_field mod_ring_finite]
-  using hash_def p_prime by auto
+private definition sketch_rv' where "sketch_rv' \<omega> = least t ((\<lambda>x. tr_hash x \<omega>) ` set as)"
+private definition estimate' where "estimate' S = (if card S < t then real (card S) else real t * real p / Max S)"
 
 private definition \<Omega>\<^sub>0 where "\<Omega>\<^sub>0 = prod_pmf {..<s} (\<lambda>_. pmf_of_set space)"
 
@@ -252,22 +255,17 @@ proof -
 
   have c_ge_0: "c\<ge>0" using assms by simp
   
-  have a2: "x < p \<Longrightarrow> \<omega> \<in> space \<Longrightarrow> hash x \<omega> < p"  for x \<omega>
-    by (metis hash_range mod_ring_carr)
   have "degree \<omega> \<ge> 1 \<Longrightarrow> \<omega> \<in> space \<Longrightarrow> degree \<omega> = 1" for \<omega>
     by (simp add:bounded_degree_polynomials_def space_def) 
      (metis One_nat_def Suc_1 le_less_Suc_eq less_imp_diff_less list.size(3) pos2)
-  hence a3: "\<And>\<omega> x y. x < p \<Longrightarrow> y < p \<Longrightarrow>  x \<noteq> y \<Longrightarrow> degree \<omega> \<ge> 1 \<Longrightarrow> 
-    \<omega> \<in> space \<Longrightarrow>  hash x \<omega> \<noteq> hash y \<omega>" 
+  hence a: "\<And>\<omega> x y. x < p \<Longrightarrow> y < p \<Longrightarrow>  x \<noteq> y \<Longrightarrow> degree \<omega> \<ge> 1 \<Longrightarrow> \<omega> \<in> space \<Longrightarrow>  hash x \<omega> \<noteq> hash y \<omega>" 
     using inj_onD[OF inj_if_degree_1]  mod_ring_carr by blast 
 
-  have a1: "prob {\<omega>. degree \<omega> \<ge> 1 \<and> tr_hash x \<omega> \<le> c \<and> tr_hash x \<omega> = tr_hash y \<omega>} \<le> 
-    5 * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
-    if a1_1: "x \<in> set as" and  a1_2: "y \<in> set as" and a1_3: "x < y" for x y
+  have b: "prob {\<omega>. degree \<omega> \<ge> 1 \<and> tr_hash x \<omega> \<le> c \<and> tr_hash x \<omega> = tr_hash y \<omega>} \<le> 5 * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
+    if b_assms: "x \<in> set as"  "y \<in> set as"  "x < y" for x y
   proof -
-    have a1_4: "real u \<le> \<rho> * c \<and> \<bar>real u - real v\<bar> \<le> \<rho> * c * 2 powr (-real r)"
-      if a_1:"truncate_down r (real u) \<le> c"
-      and a_2:"truncate_down r (real u) = truncate_down r (real v)" for u v
+    have c: "real u \<le> \<rho> * c \<and> \<bar>real u - real v\<bar> \<le> \<rho> * c * 2 powr (-real r)"
+      if c_assms:"truncate_down r (real u) \<le> c" "truncate_down r (real u) = truncate_down r (real v)" for u v
     proof -
       have "9 * 2 powr - real r \<le> 9 * 2 powr (- real 23)" 
         using r_ge_23 by (intro mult_left_mono powr_mono, auto)
@@ -277,33 +275,30 @@ proof -
       hence "1 \<le> \<rho> * (1 - 2 powr (- real r))" 
         by (simp add:\<rho>_def)
 
-      hence a_4: "(c*1) / (1 - 2 powr (-real r)) \<le> c * \<rho>" 
+      hence d: "(c*1) / (1 - 2 powr (-real r)) \<le> c * \<rho>" 
         using assms two_pow_r_le_1 by (simp add: pos_divide_le_eq)
 
       have "\<And>x. truncate_down r (real x) \<le> c \<Longrightarrow> real x * (1 - 2 powr - real r) \<le> c * 1" 
         using  truncate_down_pos[OF of_nat_0_le_iff] order_trans by (simp, blast)
-      hence a_5: "\<And>x. truncate_down r (real x) \<le>  c  \<Longrightarrow> real x \<le> c * \<rho>"
-        using two_pow_r_le_1 by (intro order_trans[OF _ a_4], simp add: pos_le_divide_eq) 
+      hence "\<And>x. truncate_down r (real x) \<le>  c  \<Longrightarrow> real x \<le> c * \<rho>"
+        using two_pow_r_le_1 by (intro order_trans[OF _ d], simp add: pos_le_divide_eq) 
 
-      have a_6: "real u \<le> c * \<rho>"
-        using a_1 a_5 by simp
-      have a_7: "real v \<le> c * \<rho>" 
-        using a_1 a_2 a_5 by simp
+      hence e: "real u \<le> c * \<rho>" "real v \<le> c * \<rho>" 
+        using c_assms by auto
       have " \<bar>real u - real v\<bar> \<le> (max \<bar>real u\<bar> \<bar>real v\<bar>) * 2 powr (-real r)"
-        using a_2 by (intro truncate_down_eq, simp) 
+        using c_assms by (intro truncate_down_eq, simp) 
       also have "... \<le> (c * \<rho>) * 2 powr (-real r)"
-        using a_6 a_7 by (intro mult_right_mono, auto)
+        using e by (intro mult_right_mono, auto)
       finally have "\<bar>real u - real v\<bar> \<le> \<rho> * c * 2 powr (-real r)"
         by (simp add:algebra_simps)
-      thus ?thesis using a_6 by (simp add:algebra_simps)
+      thus ?thesis using e by (simp add:algebra_simps)
     qed
 
     have "prob {\<omega>. degree \<omega> \<ge> 1 \<and> tr_hash x \<omega> \<le> c \<and> tr_hash x \<omega> = tr_hash y \<omega>} \<le>
       prob (\<Union> i \<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and> truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}.
       {\<omega>.  hash x \<omega> = fst i \<and> hash y \<omega> = snd i})"
-      using a3
-      by (intro pmf_mono'[OF M_def], simp add:tr_hash_def) 
-       (metis a2 a1_3 a1_2 a1_1 as_subset_p lessThan_iff nat_neq_iff subset_eq) 
+      using a by (intro pmf_mono'[OF M_def], simp add:tr_hash_def) 
+       (metis hash_range mod_ring_carr b_assms as_subset_p lessThan_iff nat_neq_iff subset_eq) 
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and>
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 
       prob {\<omega>. hash x \<omega> = fst i \<and> hash  y \<omega> = snd i})"
@@ -315,15 +310,14 @@ proof -
       by (intro sum_mono  pmf_mono'[OF M_def]) force
     also have "... \<le> (\<Sum> i\<in> {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and>
       truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}. 1/(real p)\<^sup>2)"
-      apply (rule sum_mono)
-      apply (subst hash_prob, simp add:mod_ring_finite field_axioms)
-      using assms as_subset_p a1_1 a1_2 a1_3 by (auto simp add: mod_ring_def power2_eq_square)
+      using assms as_subset_p b_assms
+      by (intro sum_mono, subst hash_prob)  (auto simp add: mod_ring_def power2_eq_square)
     also have "... = 1/(real p)\<^sup>2 * 
       card {(u,v) \<in> {0..<p} \<times> {0..<p}. u \<noteq> v \<and> truncate_down r u \<le> c \<and> truncate_down r u = truncate_down r v}"
       by simp
     also have "... \<le> 1/(real p)\<^sup>2 * 
       card {(u,v) \<in> {..<p} \<times> {..<p}. u \<noteq> v \<and> real u \<le> \<rho> * c \<and> abs (real u - real v) \<le> \<rho> * c * 2 powr (-real r)}"
-      using a1_4
+      using c
       by (intro mult_mono of_nat_mono card_mono finite_cartesian_product finite_subset[where B="{..<p}\<times>{..<p}"])
         auto
     also have "... \<le> 1/(real p)\<^sup>2 * card (\<Union>u' \<in> {u. u < p \<and> real u \<le> \<rho> * c}.
@@ -356,13 +350,11 @@ proof -
     also have "... \<le>  1/(real p)\<^sup>2 * ((1+\<rho> * c) * (2 * (\<rho> * c * 2 powr (-real r))))"
       using rho_c_ge_0 by (intro mult_left_mono mult_right_mono, auto)
     also have "... \<le>  1/(real p)\<^sup>2 * (((1+\<rho>) * c) * (2 * (\<rho> * c * 2 powr (-real r))))" 
-      using assms
-      by (intro mult_mono, auto simp add:distrib_left distrib_right \<rho>_def)
+      using assms by (intro mult_mono, auto simp add:distrib_left distrib_right \<rho>_def)
     also have "... = (\<rho> * (2 + \<rho> * 2)) * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
       by (simp add:ac_simps power2_eq_square) 
     also have "... \<le> 5 * c\<^sup>2 *  2 powr (-real r) /(real p)\<^sup>2"
-      by (intro divide_right_mono mult_right_mono)
-       (auto simp add:\<rho>_def)
+      by (intro divide_right_mono mult_right_mono) (auto simp add:\<rho>_def)
     finally show ?thesis by simp
   qed
 
@@ -376,7 +368,7 @@ proof -
     by (intro measure_UNION_le finite_cartesian_product finite_subset[where B="(set as) \<times> (set as)"])
       auto
   also have "... \<le> (\<Sum> i \<in> {(x,y) \<in> (set as) \<times> (set as). x < y}. 5  * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2)"
-    using a1 by (intro sum_mono, simp add:case_prod_beta)
+    using b by (intro sum_mono, simp add:case_prod_beta)
   also have "... =  ((5/2) * c\<^sup>2  * 2 powr (-real r) /(real p)\<^sup>2) * (2 * card  {(x,y) \<in> (set as) \<times> (set as). x < y})"
     by simp
   also have "... =  ((5/2) * c\<^sup>2  * 2 powr (-real r) /(real p)\<^sup>2) * (card (set as) * (card (set as) - 1))"
@@ -385,11 +377,11 @@ proof -
     by (intro mult_left_mono) (auto simp add:power2_eq_square mult_left_mono)
   also have "... = (5/2) * (real (card (set as)))\<^sup>2 * c\<^sup>2 * 2 powr (-real r) /(real p)\<^sup>2"
     by (simp add:algebra_simps)
-  finally have a:"prob {\<omega>. ?l \<omega> \<and> degree \<omega> \<ge> 1} \<le> ?r1" by simp
+  finally have a':"prob {\<omega>. ?l \<omega> \<and> degree \<omega> \<ge> 1} \<le> ?r1" by simp
 
   have "prob {\<omega>. ?l \<omega>} \<le> prob {\<omega>. ?l \<omega> \<and> degree \<omega> \<ge> 1} + prob {\<omega>. degree \<omega> < 1}"
     by (rule pmf_add[OF M_def], auto)
-  also have "... \<le> ?r1 + ?r2" by (intro add_mono a prob_degree_lt_1)
+  also have "... \<le> ?r1 + ?r2" by (intro add_mono a' prob_degree_lt_1)
   finally show ?thesis by simp
 qed
 
@@ -401,36 +393,30 @@ private definition Q where "Q y \<omega> = card {x \<in> set as. int (hash x \<o
 private definition m where "m = card (set as)"
 
 private lemma
-  assumes a_ge_m1: "a \<ge> -1"
-  assumes a_le_p: "a < int p"
-  shows exp_Q: "expectation (\<lambda>\<omega>. real (Q a \<omega>)) = real m * (real_of_int a+1) / p"
-  and var_Q: "variance (\<lambda>\<omega>. real (Q a \<omega>)) \<le> real m * (real_of_int a+1) / p"
+  assumes "a \<ge> -1"
+  assumes "a < int p"
+  shows exp_Q: "expectation (\<lambda>\<omega>. real (Q a \<omega>)) = real m * (of_int a+1) / p"
+  and var_Q: "variance (\<lambda>\<omega>. real (Q a \<omega>)) \<le> real m * (of_int a+1) / p"
 proof -
   have exp_single: "expectation (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a)) = (real_of_int a+1)/real p"
     if a:"x \<in> set as" for x
   proof -
     have x_le_p: "x < p" using a as_lt_p by simp
-    have "expectation (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a)) = prob ({\<omega>. int (hash x \<omega>) \<le> a} \<inter> Sigma_Algebra.space M)"
-      apply (subst Bochner_Integration.integral_indicator[where M="M", symmetric])
-      apply (rule arg_cong2[where f="integral\<^sup>L"], simp)
-      by (rule ext, simp)
+    have "expectation (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a)) = expectation (indicat_real {\<omega>. int (Frequency_Moment_0.hash p x \<omega>) \<le> a})"
+      by (intro arg_cong2[where f="integral\<^sup>L"] ext, simp_all)
     also have "... = prob {\<omega>. hash x \<omega> \<in> {k. int k \<le> a}}"
       by (simp add:M_def)
     also have "... = card ({k. int k \<le> a} \<inter> {..<p}) / real p"
-      apply (subst prob_range, simp add:mod_ring_carr x_le_p)
-      by (simp add:mod_ring_def)
+      by (subst prob_range, simp_all add: x_le_p mod_ring_def)
     also have "... = card {..<nat (a+1)} / real p"
-      apply (rule arg_cong2[where f="(/)"])
-       apply (rule arg_cong[where f="real"], rule arg_cong[where f="card"])
-       apply (subst set_eq_iff, rule allI)
-       apply (cases "a \<ge> 0")
-        using a_le_p apply (simp, linarith) 
-      by simp+
+      using assms by (intro arg_cong2[where f="(/)"] arg_cong[where f="real"] arg_cong[where f="card"])
+       (auto simp add:set_eq_iff) 
     also have "... =  (real_of_int a+1)/real p"
-      using a_ge_m1 by simp
+      using assms by simp
     finally show "expectation (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a)) = (real_of_int a+1)/real p"
       by simp
   qed
+
   have "expectation(\<lambda>\<omega>. real (Q a \<omega>)) = expectation (\<lambda>\<omega>. (\<Sum>x \<in> set as. of_bool (int (hash x \<omega>) \<le> a)))"
     by (simp add:Q_def Int_def)
   also have "... =  (\<Sum>x \<in> set as. expectation (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a)))"
@@ -441,32 +427,29 @@ proof -
     by (simp add:m_def)
   finally show "expectation (\<lambda>\<omega>. real (Q a \<omega>)) = real m * (real_of_int a+1) / p" by simp
 
+  have indep: "J \<subseteq> set as \<Longrightarrow> card J = 2 \<Longrightarrow> indep_vars (\<lambda>_. borel) (\<lambda>i x. of_bool (int (hash i x) \<le> a)) J" for J
+    using as_subset_p mod_ring_carr
+    by (intro indep_vars_compose2[where Y="\<lambda>i x. of_bool (int x \<le> a)" and M'="\<lambda>_. discrete"]
+        k_wise_indep_vars_subset[OF k_wise_indep] finite_subset[OF _ finite_set]) auto
+
+  have rv: "\<And>x. x \<in> set as \<Longrightarrow> random_variable borel (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a))"
+     by (simp add:M_def)
+
   have "variance (\<lambda>\<omega>. real (Q a \<omega>)) = variance (\<lambda>\<omega>. (\<Sum>x \<in> set as. of_bool (int (hash x \<omega>) \<le> a)))"
     by (simp add:Q_def Int_def)
   also have "... = (\<Sum>x \<in> set as. variance (\<lambda>\<omega>. of_bool (int (hash x \<omega>) \<le> a)))"
-    apply (rule var_sum_pairwise_indep_2, simp, simp add:M_def, simp)
-    apply (rule indep_vars_compose2[where Y="\<lambda>i x. of_bool (int x \<le> a)" and M'="\<lambda>_. discrete"])
-     using k_wise_indep_vars_subset[OF k_wise_indep] as_subset_p finite_subset[OF _ finite_set[where xs="as"]]
-     apply (simp add:M_def mod_ring_def) 
-    by (simp)
+    by (intro var_sum_pairwise_indep_2 indep rv) auto
   also have "... \<le> (\<Sum> x \<in> set as. (a+1)/real p)"
-    apply (rule sum_mono)
-    apply (subst variance_eq, simp, simp)
-    apply (simp add:of_bool_square)
-    apply (subst exp_single, simp)
-    by simp
+    by (rule sum_mono, simp add: variance_eq of_bool_square, simp add: exp_single)
   also have "... = real m * (real_of_int a + 1) /real p"
     by (simp add:m_def)
   finally show "variance (\<lambda>\<omega>. real (Q a \<omega>)) \<le> real m * (real_of_int a+1) / p"
     by simp
 qed
 
-lemma estimate_bounds:
-  "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<bar>median s (\<lambda>i. estimate (f0_sketch (\<omega> i))) - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1-real_of_rat \<epsilon>"
+lemma estimate'_bounds:
+  "prob {\<omega>. of_rat \<delta> * real_of_rat (F 0 as) < \<bar>estimate' (sketch_rv' \<omega>) - of_rat (F 0 as)\<bar>} \<le> 1/3"
 proof -
-  define g' where "g' = (\<lambda>S. if card S < t then real (card S) else real t * real p / Max S)"
-  define h where "h = (\<lambda>\<omega>. least t ((\<lambda>x. tr_hash x \<omega>) ` set as))"
-
   define \<delta>' where "\<delta>' = 3* real_of_rat \<delta> /4"
   define a where "a = \<lfloor>real t * p / (m * (1+\<delta>'))\<rfloor>"
   define b where "b = \<lceil>real t * p / (m * (1-\<delta>'))-1\<rceil>"
@@ -485,72 +468,52 @@ proof -
     by (rule arg_cong2[where f="(powr)"], auto simp add:algebra_simps)
   also have "... \<le> 2 powr ( -1 * log 2 (1 /real_of_rat \<delta>) -4)"
     using \<delta>_range by (intro powr_mono diff_mono, auto)
+  also have "... = 2 powr ( -1 * log 2 (1 /real_of_rat \<delta>)) /  16"
+    by (simp add: powr_diff)
   also have "... = real_of_rat \<delta> / 16"
-    apply (subst powr_diff)
-    apply (subst log_divide, simp, simp, simp, simp add:\<delta>_ge_0, simp)
-    by (subst powr_log_cancel, simp, simp, simp add:\<delta>_ge_0, simp)
+    using \<delta>_ge_0 by (simp add:log_divide)
   also have "... < real_of_rat \<delta> / 8"
     by (subst pos_divide_less_eq, simp, simp add:\<delta>_ge_0)
-  finally have r_le_\<delta>: "2 powr (-real r) < (real_of_rat \<delta>)/ 8"
+  finally have r_le_\<delta>: "2 powr (-real r) < real_of_rat \<delta> / 8"
     by simp
 
-  have "18 * 40 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 
-    18 * 40 * (80 / (real_of_rat \<delta>)\<^sup>2+1)\<^sup>2 * 2 powr (-4 * log 2 (1 / real_of_rat \<delta>) - 23)"
-    unfolding t_def \<delta>_range
-    apply (intro mult_left_mono mult_mono power_mono powr_mono)
-        using t_def t_ge_0 apply linarith
-        apply simp
-       apply simp
-       using r_bound apply linarith
-    by simp+
-  also have "... \<le> 18 * 40 * (80 / (real_of_rat \<delta>)\<^sup>2 + 1 /  (real_of_rat \<delta>)\<^sup>2)\<^sup>2 * (2 powr (-4 * log 2 (1 / real_of_rat \<delta>)) * 2 powr (-23))"
-    using \<delta>_range by (intro mult_left_mono mult_mono power_mono add_mono)
-     (simp_all add:power_le_one powr_diff)
-  also have "... = 18 * 40 * (81\<^sup>2 / (real_of_rat \<delta>)^4) * (2 powr (log 2 ((real_of_rat \<delta>)^4))  * 2 powr (-23))"
-    apply (rule arg_cong2[where f="(*)"])
-     apply (rule arg_cong2[where f="(*)"], simp)
-    apply (simp add:power2_eq_square power4_eq_xxxx)
-    apply (rule arg_cong2[where f="(*)"])
-     apply (rule arg_cong2[where f="(powr)"], simp)
-     apply (subst log_nat_power, simp add:\<delta>_ge_0)
-     apply (subst log_divide, simp, simp, simp, simp add:\<delta>_ge_0) 
-    by simp+
-  also have "... = 18 * 40 * 81\<^sup>2 * 2 powr (-23)"
-    apply (subst powr_log_cancel, simp, simp, simp) using \<delta>_ge_0 apply blast
-    apply (simp add:algebra_simps) using \<delta>_ge_0 by blast
-  also have "... \<le> 1"
-    by simp
-  finally have r_le_t2: "18 * 40 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 1"
-    by simp
+  have "t \<le> 80 / (real_of_rat \<delta>)\<^sup>2 + 1" using t_def t_ge_0 by linarith
+  also have "... \<le> 80 / (real_of_rat \<delta>)\<^sup>2 + 1 /  (real_of_rat \<delta>)\<^sup>2"
+    using \<delta>_range by (intro add_mono, simp, simp add:power_le_one)
+  also have "... = 81 / (real_of_rat \<delta>)\<^sup>2" by simp
+  finally have t_le_\<delta>: "t \<le> 81 / (real_of_rat \<delta>)\<^sup>2" by simp
 
   have \<delta>'_ge_0: "\<delta>' > 0" using \<delta>_range by (simp add:\<delta>'_def)
-  have \<delta>'_le_1: "\<delta>' < 1"
-    apply (rule order_less_le_trans[where y="3/4"])
-    using \<delta>_range by (simp add:\<delta>'_def)+
- 
-  have "t \<le> 80 / (real_of_rat \<delta>)\<^sup>2 + 1"
-    using t_def t_ge_0 by linarith
-  also have "... = 45 / (\<delta>')\<^sup>2 + 1"
-    by (simp add:\<delta>'_def algebra_simps power2_eq_square)
-  also have "... \<le> 45 / \<delta>'\<^sup>2 + 1 / \<delta>'\<^sup>2"
-    apply (rule add_mono, simp)
-    apply (subst pos_le_divide_eq, simp add:\<delta>'_def)
-    using \<delta>_range apply force
-    apply (simp add: \<delta>'_def algebra_simps)
-    apply (subst power_le_one_iff)
-    using \<delta>_range apply simp
-    apply (subst pos_divide_le_eq, simp, simp)
-    apply (rule order_trans[where y="3"])
-    using \<delta>_range by simp+
-  also have "... = 46/ \<delta>'\<^sup>2"
-    by simp
+  have "\<delta>' < 3/4" using \<delta>_range by (simp add:\<delta>'_def)+
+  also have "... < 1" by simp
+  finally have \<delta>'_le_1: "\<delta>' < 1" by simp
+
+  have "t \<le> 81 / (real_of_rat \<delta>)\<^sup>2"
+    using t_le_\<delta> by simp
+  also have "... = (81*9/16) / (\<delta>')\<^sup>2"
+    by (simp add:\<delta>'_def power2_eq_square)
+  also have "... \<le> 46 / \<delta>'\<^sup>2"
+    by (intro divide_right_mono, simp, simp)
   finally have t_le_\<delta>': "t \<le> 46/ \<delta>'\<^sup>2" by simp
 
-  have "45 / \<delta>'\<^sup>2 = 80/ (real_of_rat \<delta>)\<^sup>2"
-    by (simp add:\<delta>'_def power2_eq_square)
-  also have "... \<le> t"
-    using t_ge_0 t_def of_nat_ceiling by linarith
-  finally have t_ge_\<delta>': " 45 / \<delta>'\<^sup>2 \<le> t" by simp
+  have "720 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 720 * (81 / (real_of_rat \<delta>)\<^sup>2)\<^sup>2 * 2 powr (-4 * log 2 (1 / real_of_rat \<delta>) - 23)"
+    using r_bound t_le_\<delta>
+    by (intro mult_left_mono mult_mono power_mono powr_mono, auto)
+  also have "... \<le> 720 * (81 / (real_of_rat \<delta>)\<^sup>2)\<^sup>2 * (2 powr (-4 * log 2 (1 / real_of_rat \<delta>)) * 2 powr (-23))"
+    using \<delta>_range by (intro mult_left_mono mult_mono power_mono add_mono)
+     (simp_all add:power_le_one powr_diff)
+  also have "... = 720 * (81\<^sup>2 / (real_of_rat \<delta>)^4) * (2 powr (log 2 ((real_of_rat \<delta>)^4))  * 2 powr (-23))"
+    using \<delta>_ge_0 by (intro arg_cong2[where f="(*)"])
+      (simp_all add:power2_eq_square power4_eq_xxxx log_divide log_powr[symmetric])
+  also have "... = 720 * 81\<^sup>2 * 2 powr (-23)" using \<delta>_ge_0 by simp
+  also have "... \<le> 1" by simp
+  finally have r_le_t2: "18 * 40 * (real t)\<^sup>2 * 2 powr (-real r) \<le> 1" by simp
+
+  have "80 \<le> (real_of_rat \<delta>)\<^sup>2 * (80 / (real_of_rat \<delta>)\<^sup>2)" using \<delta>_range by simp
+  also have "... \<le> (real_of_rat \<delta>)\<^sup>2 * t"
+    by (intro mult_left_mono, simp add:t_def of_nat_ceiling, simp)
+  finally have "80 \<le> (real_of_rat \<delta>)\<^sup>2 * t" by simp
+  hence t_ge_\<delta>': "45 \<le> t * \<delta>' * \<delta>'" by (simp add:\<delta>'_def power2_eq_square)
 
   have "m \<le> card {..<n}" unfolding m_def using as_range by (intro card_mono, auto)
   also have "... \<le> p" using n_le_p by simp
@@ -559,54 +522,36 @@ proof -
   have m_eq_F_0: "real m = of_rat (F 0 as)"
     by (simp add:m_def F_def)
 
-
-  have b: "prob {\<omega>. of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - of_rat (F 0 as)\<bar>} \<le> 1/3"
+  show "prob {\<omega>. of_rat \<delta> * real_of_rat (F 0 as) < \<bar>estimate' (sketch_rv' \<omega>) - of_rat (F 0 as)\<bar>} \<le> 1/3"
   proof (cases "card (set as) \<ge> t")
     case True
     hence t_le_m: "t \<le> card (set as)" by simp
-    have m_ge_0: "real m > 0"
-      using m_def True t_ge_0 by simp
+    have m_ge_0: "real m > 0" using m_def True t_ge_0 by simp
   
-    have b_le_tpm :"b \<le> real t * real p / (real m * (1 - \<delta>'))"
-      by (simp add:b_def)
+    have b_le_tpm :"b \<le> real t * real p / (real m * (1 - \<delta>'))" by (simp add:b_def)
     also have "... \<le> real t * real p / (real m * (1/4))"
-      apply (rule divide_left_mono)
-        apply (rule mult_left_mono)
-        using \<delta>_range apply (simp add:\<delta>'_def)
-      using m_ge_0 \<delta>'_le_1 by (auto intro!:mult_pos_pos)
-    finally have b_le_tpm: "b \<le> 4 * real t * real p / real m"
-      by (simp add:algebra_simps)
+      using \<delta>'_le_1 m_ge_0 \<delta>_range
+      by (intro divide_left_mono mult_left_mono mult_nonneg_nonneg mult_pos_pos, simp_all add:\<delta>'_def)
+    finally have b_le_tpm: "b \<le> 4 * real t * real p / real m" by (simp add:algebra_simps)
 
-    have a_ge_0: "a \<ge> 0" 
-      apply (simp add:a_def)
-      apply (rule divide_nonneg_nonneg, simp)
-      using \<delta>'_ge_0 by simp
-    have b_ge_0: "b > 0" 
-      apply (simp add:b_def)
-      apply (subst pos_less_divide_eq)
-       apply (rule mult_pos_pos)
-      using True m_def t_ge_0 apply simp
-      using \<delta>'_le_1 apply simp
-      apply simp
-      apply (subst mult.commute)
-      apply (rule order_less_le_trans[where y="real m"]) using \<delta>'_ge_0 m_ge_0 apply simp
-      apply (rule order_trans[where y="1 * real p"]) using m_le_p apply simp
-      apply (rule mult_right_mono) using t_ge_0 apply simp
-      by simp
-    hence b_ge_1: "real_of_int b \<ge> 1"
-      by linarith
+    have a_ge_0: "a \<ge> 0" using \<delta>'_ge_0 by (simp add:a_def)
+    have "real m * (1 - \<delta>') < real m" using \<delta>'_ge_0 m_ge_0 by simp
+    also have "... \<le> 1 * real p" using m_le_p by simp
+    also have "... \<le> real t * real p" using t_ge_0 by (intro mult_right_mono, auto)
+    finally have " real m * (1 - \<delta>') < real t * real p" by simp
+    hence b_ge_0: "b > 0" using mult_pos_pos m_ge_0 \<delta>'_le_1 by (simp add:b_def)
+    hence b_ge_1: "real_of_int b \<ge> 1" by linarith
 
-    have a_le_p: "a < real p"
-      apply (rule order_le_less_trans[where y="real t * real p / (real m * (1 + \<delta>'))"])
-       apply (simp add:a_def)
-      apply (subst pos_divide_less_eq) using m_ge_0 \<delta>'_ge_0 apply force
-      apply (subst mult.commute)
-      apply (rule mult_strict_left_mono)
-       apply (rule order_le_less_trans[where y="real m"]) using True m_def apply linarith
-      using \<delta>'_ge_0 m_ge_0 apply force
-      using p_ge_0 by simp
-    hence a_le_p: "a < int p"
-      by linarith
+    have "real t \<le> real m" using True m_def by linarith
+    also have "... < (1 + \<delta>') * real m" using \<delta>'_ge_0 m_ge_0 by force
+    finally have a_le_p_aux: "real t < (1 + \<delta>') * real m"  by simp
+
+    have "a \<le> real t * real p / (real m * (1 + \<delta>'))" by (simp add:a_def)
+    also have "... < real p" 
+      using m_ge_0 \<delta>'_ge_0 a_le_p_aux  a_le_p_aux p_ge_0
+      by (simp add: pos_divide_less_eq ac_simps) 
+    finally have a_le_p: "a < real p" by simp
+    hence a_le_p: "a < int p" by linarith
 
     have "prob {\<omega>. Q a \<omega> \<ge> t} \<le> 
       prob {\<omega> \<in> Sigma_Algebra.space M. abs (real (Q a \<omega>) - expectation (\<lambda>\<omega>. real (Q a \<omega>))) \<ge> 3 * sqrt (m *(real_of_int a+1)/p)}"
@@ -629,54 +574,35 @@ proof -
         using a_le_1 by (intro add_mono mult_left_mono, auto)
       also have "... \<le> 3 * sqrt (real t+1) + ((t - \<delta>' * t / (1+\<delta>')) + 1)"
         using \<delta>'_ge_0 t_ge_0
-        apply (intro add_mono  mult_left_mono)
+        apply (intro add_mono mult_left_mono)
          apply (simp add: pos_divide_le_eq left_diff_distrib)+ 
         by (simp add:algebra_simps)+
+      also have "... = 3 * sqrt (real t+1) + (t - \<delta>' * t / (1+\<delta>')) + 1" by simp
       also have "... \<le> 3 * sqrt (46 / \<delta>'\<^sup>2 + 1 / \<delta>'\<^sup>2) + (t - \<delta>' * t/2) + 1 / \<delta>'"
-        apply (subst add.assoc[symmetric])
-        apply (intro add_mono mult_left_mono)
-           apply (subst real_sqrt_le_iff)
-           apply (rule add_mono, metis t_le_\<delta>')
-           apply (subst pos_le_divide_eq) using \<delta>'_ge_0 apply simp
-           apply (metis  \<delta>'_le_1 \<delta>'_ge_0  less_eq_real_def mult_1 power_le_one)
-          apply simp
-         apply simp
-         apply (subst pos_le_divide_eq) using \<delta>'_ge_0 apply simp
-         using \<delta>'_le_1 \<delta>'_ge_0 
-         apply (metis add_mono less_eq_real_def mult_eq_0_iff mult_left_mono of_nat_0_le_iff one_add_one)
-        using \<delta>'_le_1 \<delta>'_ge_0 by simp
+        using \<delta>'_ge_0 t_ge_0 \<delta>'_le_1 add_pos_pos  t_le_\<delta>'
+        by (intro add_mono mult_left_mono real_sqrt_le_mono add_mono)
+         (simp_all add: power_le_one pos_le_divide_eq)
       also have "... \<le> (21 / \<delta>' + (t - 45 / (2*\<delta>'))) + 1 / \<delta>'" 
-        apply (rule add_mono)
-         apply (rule add_mono)
-          apply (simp add:real_sqrt_divide, subst abs_of_nonneg) using \<delta>'_ge_0 apply linarith
-        using \<delta>'_ge_0 apply (simp add: divide_le_cancel)
-          apply (rule real_le_lsqrt, simp, simp, simp)
-         apply simp
-         apply (metis \<delta>'_ge_0 t_ge_\<delta>' less_eq_real_def mult_left_mono power2_eq_square real_divide_square_eq times_divide_eq_right)
-        by simp
+        using \<delta>'_ge_0 t_ge_\<delta>'
+        by (intro add_mono)
+           (simp_all add:real_sqrt_divide divide_le_cancel real_le_lsqrt pos_divide_le_eq ac_simps)
       also have "... \<le> t" using \<delta>'_ge_0 by simp
       also have "... \<le> Q a \<omega>" using t_le by simp
       finally have t_le: "3 * sqrt (real m * (of_int a + 1) / real p) \<le> Q a \<omega> - real m * (of_int a + 1) / real p"
         by (simp add:algebra_simps)
       have " 3 * sqrt (real m * (real_of_int a + 1) / real p) \<le> 
         \<bar>real (Q a \<omega>) - expectation (\<lambda>\<omega>. real (Q a \<omega>))\<bar>"
-        apply (subst exp_Q) using a_ge_0 a_le_p True apply (simp, simp)
-        apply (subst abs_ge_iff)
-        using t_le by blast
+        using a_ge_0 a_le_p True t_le by (simp add:exp_Q abs_ge_iff)
       thus "\<omega> \<in> {\<omega> \<in> Sigma_Algebra.space M. 3 * sqrt (real m * (real_of_int a + 1) / real p) \<le> \<bar>real (Q a \<omega>) -expectation (\<lambda>\<omega>. real (Q a \<omega>))\<bar>}"
         by (simp add: M_def)
     qed
     also have "... \<le> variance  (\<lambda>\<omega>. real (Q a \<omega>)) / (3 * sqrt (real m * (of_int a + 1) / real p))\<^sup>2"
-      apply (rule Chebyshev_inequality, simp add:M_def, simp)
-      using t_ge_0 a_ge_0 p_ge_0 m_ge_0 m_eq_F_0 by auto
-    also have "... \<le> 1/9"
-      apply (subst pos_divide_le_eq) using a_ge_0 p_ge_0 m_ge_0 m_eq_F_0 apply force
-      apply simp
-      apply (subst real_sqrt_pow2) using a_ge_0 p_ge_0 m_ge_0 m_eq_F_0 apply force
-      apply (rule var_Q) using a_ge_0 apply linarith
-      using a_le_p by simp
-    finally have case_1: "prob {\<omega>. Q a \<omega> \<ge> t} \<le> 1/9"
-      by simp
+      using t_ge_0 a_ge_0 p_ge_0 m_ge_0 m_eq_F_0 
+      by (intro Chebyshev_inequality, simp add:M_def)  auto
+    also have "... \<le> (real m * (real_of_int a + 1) / real p) / (3 * sqrt (real m * (of_int a + 1) / real p))\<^sup>2"
+      using a_ge_0 a_le_p by (intro divide_right_mono var_Q, auto)
+    also have "... \<le> 1/9" using a_ge_0 by simp
+    finally have case_1: "prob {\<omega>. Q a \<omega> \<ge> t} \<le> 1/9" by simp
 
     have case_2: "prob {\<omega>. Q b \<omega> < t} \<le> 1/9"
     proof (cases "b < p")
@@ -686,87 +612,56 @@ proof -
       proof (rule pmf_mono'[OF M_def])
         fix \<omega>
         assume "\<omega> \<in> set_pmf (pmf_of_set space)"
-        have aux: "(real t + 3 * sqrt (real t / (1 - \<delta>') + 1)) * (1 - \<delta>') =
-           real t - \<delta>' * t + 3 * ((1-\<delta>') * sqrt( real t / (1-\<delta>') + 1))"
+        have "(real t + 3 * sqrt (real t / (1 - \<delta>') + 1)) * (1 - \<delta>') = real t - \<delta>' * t + 3 * ((1-\<delta>') * sqrt( real t / (1-\<delta>') + 1))"
           by (simp add:algebra_simps)
         also have "... = real t - \<delta>' * t + 3 * sqrt (  (1-\<delta>')\<^sup>2 * (real t /  (1-\<delta>') +  1))"
-          apply (subst real_sqrt_mult)
-          apply (subst real_sqrt_abs)
-          apply (subst abs_of_nonneg)
-          using \<delta>'_le_1 by simp+
+          using \<delta>'_le_1 by (simp add:real_sqrt_mult)
         also have "... = real t - \<delta>' * t + 3 * sqrt ( real t * (1- \<delta>') + (1-\<delta>')\<^sup>2)"
           by (simp add:power2_eq_square distrib_left)
         also have "... \<le> real t - 45/ \<delta>' + 3 * sqrt ( real t  + 1)"
-          apply (rule add_mono, simp)
-           apply (subst mult.commute, subst pos_divide_le_eq[symmetric])
-            using \<delta>'_ge_0 apply blast
-           using t_ge_\<delta>' apply (simp add:power2_eq_square)
-          apply simp
-          apply (rule add_mono)
-           using \<delta>'_le_1 \<delta>'_ge_0 by (simp add: power_le_one t_ge_0)+
-        also have "... \<le> real t - 45/ \<delta>' + 3 * sqrt ( 46 / \<delta>'\<^sup>2 + 1 / \<delta>'\<^sup>2)"
-          apply (intro add_mono mult_left_mono, simp)
-           apply (subst real_sqrt_le_iff)
-           apply (rule add_mono, metis t_le_\<delta>')
-           apply (meson \<delta>'_ge_0 \<delta>'_le_1 le_divide_eq_1_pos less_eq_real_def power_le_one_iff zero_less_power)
-          by simp
+          using \<delta>'_ge_0 t_ge_\<delta>' \<delta>'_le_1
+          by (intro add_mono mult_left_mono real_sqrt_le_mono)
+           (simp_all add:pos_divide_le_eq ac_simps left_diff_distrib power_le_one)
+         also have "... \<le> real t - 45/ \<delta>' + 3 * sqrt ( 46 / \<delta>'\<^sup>2 + 1 / \<delta>'\<^sup>2)"
+           using  t_le_\<delta>' \<delta>'_le_1 \<delta>'_ge_0
+           by (intro add_mono mult_left_mono real_sqrt_le_mono, simp_all add:pos_divide_le_eq power_le_one)
         also have "... = real t + (3 * sqrt(47) - 45)/ \<delta>'"
-          apply (simp add:real_sqrt_divide)
-          apply (subst abs_of_nonneg)
-          using \<delta>'_ge_0 by (simp add: diff_divide_distrib)+
+          using \<delta>'_ge_0 by (simp add:real_sqrt_divide diff_divide_distrib)
         also have "... \<le> t"
-          apply simp
-          apply (subst pos_divide_le_eq)
-          using \<delta>'_ge_0 apply simp 
-          apply simp
-          by (rule real_le_lsqrt, simp+)
+          using \<delta>'_ge_0 by (simp add:pos_divide_le_eq real_le_lsqrt)
         finally have aux: "(real t + 3 * sqrt (real t / (1 - \<delta>') + 1)) * (1 - \<delta>') \<le> real t "
           by simp
         assume "\<omega> \<in> {\<omega>. Q b \<omega> < t}"
-        hence t_ge: "Q b \<omega> < t" by simp
-        have "real (Q b \<omega>) + 3 * sqrt (real m * (real_of_int b + 1) / real p) 
+        hence "Q b \<omega> < t" by simp
+        hence "real (Q b \<omega>) + 3 * sqrt (real m * (real_of_int b + 1) / real p) 
           \<le> real t + 3 * sqrt (real m * real_of_int b / real p + 1)"
-          apply (rule add_mono)
-          using t_ge apply linarith
-          using m_le_p by (simp add: algebra_simps add_divide_distrib p_ge_0)
+          using m_le_p p_ge_0 
+          by (intro add_mono, auto simp add: algebra_simps add_divide_distrib)
         also have "... \<le> real t + 3 * sqrt (real m * (real t * real p / (real m * (1- \<delta>'))) / real p + 1)"
-          apply (intro add_mono mult_left_mono, simp)
-           apply (subst real_sqrt_le_iff)
-           apply (intro add_mono divide_right_mono  mult_left_mono)
-          by (auto simp add:b_def)
+          by (intro add_mono mult_left_mono real_sqrt_le_mono divide_right_mono)
+           (auto simp add:b_def)
         also have "... \<le> real t + 3 * sqrt(real t / (1-\<delta>') + 1)"
-          apply (simp add:p_ge_0)
-          using t_ge_0 t_le_m m_def by linarith
+          using m_ge_0 p_ge_0 by simp
         also have "... \<le> real t / (1-\<delta>')" 
-          apply (subst pos_le_divide_eq) using \<delta>'_le_1 aux by simp+
+          using \<delta>'_le_1 aux by (simp add: pos_le_divide_eq) 
         also have "... = real m * (real t * real p / (real m * (1-\<delta>'))) / real p" 
-          apply (simp add:p_ge_0)
-          using t_ge_0 t_le_m m_def by linarith
+          using t_ge_0 t_le_m m_ge_0 p_ge_0 \<delta>'_le_1 by simp
         also have "... \<le>  real m * (real_of_int b + 1) / real p"      
-          apply (intro  divide_right_mono mult_left_mono)
-          by (simp add:b_def)+
-        finally have t_ge: "real (Q b \<omega>) + 3 * sqrt (real m * (real_of_int b + 1) / real p) 
-          \<le> real m * (real_of_int b + 1) / real p"
-          by simp
-        have " 3 * sqrt (real m * (real_of_int b + 1) / real p) \<le> \<bar>real (Q b \<omega>) -expectation (\<lambda>\<omega>. real (Q b \<omega>))\<bar>"  
-          apply (subst exp_Q) using b_ge_0 True apply (simp, simp)
-          apply (subst abs_ge_iff)
-          using t_ge by force
+          by (intro  divide_right_mono mult_left_mono) (simp_all add:b_def)
+        finally have "real (Q b \<omega>) + 3 * sqrt (real m * (real_of_int b + 1) / real p) 
+          \<le> real m * (real_of_int b + 1) / real p" by simp
+        hence " 3 * sqrt (real m * (real_of_int b + 1) / real p) \<le> \<bar>real (Q b \<omega>) -expectation (\<lambda>\<omega>. real (Q b \<omega>))\<bar>"  
+          using b_ge_0 True by (simp add: exp_Q abs_ge_iff)
         thus "\<omega> \<in> {\<omega>\<in> Sigma_Algebra.space M. 3 * sqrt (real m * (real_of_int b + 1) / real p) \<le> \<bar>real (Q b \<omega>) - expectation (\<lambda>\<omega>. real (Q b \<omega>))\<bar>}" 
           by (simp add:M_def)
       qed
-      also have "... \<le> variance (\<lambda>\<omega>. real (Q b \<omega>)) 
-        / (3 * sqrt (real m * (real_of_int b + 1) / real p))\<^sup>2" 
-        apply (rule Chebyshev_inequality, simp add:M_def, simp)
-        using t_ge_0 b_ge_0 p_ge_0 m_ge_0 m_eq_F_0 by auto
-      also have "... \<le> 1/9"
-        apply (subst pos_divide_le_eq) 
-        using b_ge_0 p_ge_0 m_ge_0 m_eq_F_0 apply force
-        apply simp
-        apply (subst real_sqrt_pow2)
-        using b_ge_0 p_ge_0 m_ge_0 m_eq_F_0 apply force
-        apply (rule var_Q) using b_ge_0 apply linarith
-        using True by simp
+      also have "... \<le> variance (\<lambda>\<omega>. real (Q b \<omega>)) / (3 * sqrt (real m * (real_of_int b + 1) / real p))\<^sup>2" 
+        using t_ge_0 b_ge_0 p_ge_0 m_ge_0 m_eq_F_0
+        by (intro Chebyshev_inequality, simp add:M_def, auto)
+      also have "... \<le> (real m * (real_of_int b + 1) / real p) / (3 * sqrt (real m * (real_of_int b + 1) / real p))\<^sup>2"
+        using  b_ge_0 True  by (intro divide_right_mono var_Q, auto)
+      also have "... = 1/9"
+        using p_ge_0 b_ge_0 m_ge_0 by (simp add:power2_eq_square)
       finally show ?thesis
         by simp
     next
@@ -774,37 +669,27 @@ proof -
       have "prob {\<omega>. Q b \<omega> < t} \<le> prob {\<omega>. False}"
       proof (rule pmf_mono'[OF M_def])
         fix \<omega>
-        assume a_1:"\<omega> \<in> {\<omega>. Q b \<omega> < t}"
-        assume a_2:"\<omega> \<in> set_pmf (pmf_of_set space)"
-        have a:"\<And>x. x < p \<Longrightarrow> hash x \<omega> < p" 
-          using hash_range mod_ring_carr a_2 by (simp add:M_def measure_pmf_inverse) 
-        have "t \<le> card (set as)"
-          using True by simp
+        assume a:"\<omega> \<in> {\<omega>. Q b \<omega> < t}"
+        assume "\<omega> \<in> set_pmf (pmf_of_set space)"
+        hence b:"\<And>x. x < p \<Longrightarrow> hash x \<omega> < p" 
+          using hash_range mod_ring_carr by (simp add:M_def measure_pmf_inverse) 
+        have "t \<le> card (set as)" using True by simp
         also have "... \<le> Q b \<omega>"
-          apply (simp add:Q_def)
-          apply (rule card_mono, simp)
-          apply (rule subsetI)
-          by (metis (no_types, lifting) False a as_lt_p  linorder_linear mem_Collect_eq of_nat_less_iff order_le_less_trans)
-        also have "... < t" using a_1 by simp
+          unfolding Q_def  using b False as_lt_p
+          by (intro card_mono subsetI, simp, force) 
+        also have "... < t" using a by simp
         finally have "False" by auto
-        thus "\<omega> \<in> {\<omega>. False}"
-          by simp
+        thus "\<omega> \<in> {\<omega>. False}" by simp
       qed
       also have "... = 0" by auto
       finally show ?thesis by simp
     qed
 
     have "prob {\<omega>. \<not>has_no_collision \<omega>} \<le>
-      prob {\<omega>. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> 
-      tr_hash x \<omega> \<le> real_of_int b \<and> 
-      tr_hash x \<omega> = tr_hash y \<omega>}" 
-      apply (rule pmf_mono'[OF M_def])
-      apply (simp add:has_no_collision_def M_def) 
-      by force
-    also have "... \<le> (5/2) * (real (card (set as)))\<^sup>2 * (real_of_int b)\<^sup>2 
-       * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
-      apply (rule collision_prob[where c="real_of_int b"]) 
-      by ( metis b_ge_1)
+      prob {\<omega>. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> tr_hash x \<omega> \<le> real_of_int b \<and> tr_hash x \<omega> = tr_hash y \<omega>}"
+      by (rule pmf_mono'[OF M_def]) (simp add:has_no_collision_def M_def, force) 
+    also have "... \<le> (5/2) * (real (card (set as)))\<^sup>2 * (real_of_int b)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
+      using collision_prob  b_ge_1 by blast
     also have "... \<le> (5/2) * (real m)\<^sup>2 * (real_of_int b)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
       by (intro divide_right_mono add_mono mult_right_mono mult_mono power_mono, simp_all add:m_def)
     also have "... \<le> (5/2) * (real m)\<^sup>2 * (4 * real t * real p / real m)\<^sup>2 * (2 powr - real r) / (real p)\<^sup>2 + 1 / real p"
@@ -813,28 +698,24 @@ proof -
     also have "... = 40 * (real t)\<^sup>2 * (2 powr -real r) + 1 / real p"
       using p_ge_0 m_ge_0 t_ge_0 by (simp add:algebra_simps power2_eq_square)
     also have "... \<le> 1/18 + 1/18"
-      apply (rule add_mono)
-      apply (subst pos_le_divide_eq, simp)
-      using r_le_t2 apply simp
-      using p_ge_18 by simp
+      using r_le_t2 p_ge_18 by (intro add_mono, simp_all add: pos_le_divide_eq)
     also have "... = 1/9" by (simp)
     finally have case_3: "prob {\<omega>. \<not>has_no_collision \<omega>} \<le> 1/9" 
       by simp
 
-    have "prob {\<omega>. 
-        real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>} \<le> 
+    have "prob {\<omega>. real_of_rat \<delta> * of_rat (F 0 as) < \<bar>estimate' (sketch_rv' \<omega>) - of_rat (F 0 as)\<bar>} \<le> 
       prob {\<omega>. Q a \<omega> \<ge> t \<or> Q b \<omega> < t \<or> \<not>(has_no_collision \<omega>)}"
     proof (rule pmf_mono'[OF M_def], rule ccontr)
       fix \<omega>
       assume "\<omega> \<in> set_pmf (pmf_of_set space)"
-      assume "\<omega> \<in> {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>}"
-      hence est: "real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>" by simp
+      assume "\<omega> \<in> {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>estimate' (sketch_rv' \<omega>) - real_of_rat (F 0 as)\<bar>}"
+      hence est: "real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>estimate' (sketch_rv' \<omega>) - real_of_rat (F 0 as)\<bar>" by simp
       assume "\<omega> \<notin> {\<omega>. t \<le> Q a \<omega> \<or> Q b \<omega> < t \<or> \<not> has_no_collision \<omega>}"
       hence "\<not>( t \<le> Q a \<omega> \<or> Q b \<omega> < t \<or> \<not> has_no_collision \<omega>)" by simp
       hence lb: "Q a \<omega> < t" and ub: "Q b \<omega> \<ge> t" and no_col: "has_no_collision \<omega>" by simp+
 
       define y where "y =  nth_mset (t-1) {#int (hash x \<omega>). x \<in># mset_set (set as)#}"
-      define y' where "y' =  nth_mset (t-1) {#tr_hash x \<omega>. x \<in># mset_set (set as)#}"
+      define y' where "y' = nth_mset (t-1) {#tr_hash x \<omega>. x \<in># mset_set (set as)#}"
 
       have "a < y" 
         apply (subst y_def, rule nth_mset_bound_left_excl)
@@ -858,12 +739,10 @@ proof -
          apply simp using True t_ge_0 apply linarith
         by (simp add: multiset.map_comp comp_def tr_hash_def)
       have "real_of_int (a+1) * (1 - 2 powr -real r) \<le> real_of_int y * (1 - 2 powr (-real r))"
-        apply (rule mult_right_mono)
-        using rank_t_lb of_int_le_iff  apply blast
-        using two_pow_r_le_1 by simp
+        using rank_t_lb of_int_le_iff two_pow_r_le_1
+        by (intro mult_right_mono, auto)
       also have "... \<le> y'"
-        apply (subst y'_eq)
-        using truncate_down_pos[OF y_ge_0] by simp
+        using y'_eq truncate_down_pos[OF y_ge_0] by simp
       finally have rank_t_lb': "(a+1) * (1 - 2 powr (-real r)) \<le> y'" by simp
 
       have "y' \<le> real_of_int y"
@@ -874,9 +753,7 @@ proof -
         by simp
 
       have "0 < (a+1) * (1-2 powr (-real r))"
-        apply (rule mult_pos_pos)
-        using a_ge_0 apply linarith
-        using two_pow_r_le_1 by simp 
+        using a_ge_0 two_pow_r_le_1 by (intro mult_pos_pos, auto)
       hence y'_pos: "y' > 0" using rank_t_lb' by linarith
 
       have no_col': "\<And>x. x \<le> y' \<Longrightarrow> count {#tr_hash x \<omega>. x \<in># mset_set (set as)#} x \<le> 1"
@@ -884,36 +761,32 @@ proof -
         using  rank_t_ub' no_col apply (subst (asm) has_no_collision_def)
         by force
 
-      have h_1: "Max (h \<omega>) = y'"
-        apply (simp add:h_def y'_def)
+      have h_1: "Max (sketch_rv' \<omega>) = y'"
+        apply (simp add:sketch_rv'_def y'_def)
         apply (subst nth_mset_max)
         using True t_ge_0 apply simp
         using no_col' apply (simp add:y'_def)
         using t_ge_0
         by simp
 
-      have "card (h \<omega>) = card (least ((t-1)+1) (set_mset {#tr_hash x \<omega>. x \<in># mset_set (set as)#}))"
-        using t_ge_0
-        by (simp add:h_def)
+      have "card (sketch_rv' \<omega>) = card (least ((t-1)+1) (set_mset {#tr_hash x \<omega>. x \<in># mset_set (set as)#}))"
+        using t_ge_0 by (simp add:sketch_rv'_def)
       also have "... = (t-1) +1"
         apply (rule nth_mset_max(2))
          using True t_ge_0 apply simp
         using no_col' by (simp add:y'_def)
       also have "... = t" using t_ge_0 by simp
-      finally have h_2: "card (h \<omega>) = t"
-        by simp
-      have h_3: "g' (h \<omega>) = real t * real p / y'"
-        using h_2 h_1 by (simp add:g'_def)
+      finally have h_2: "card (sketch_rv' \<omega>) = t" by simp
+      have h_3: "estimate' (sketch_rv' \<omega>) = real t * real p / y'"
+        using h_2 h_1 by (simp add:estimate'_def)
 
       have "(real t) * real p \<le>  (1 + \<delta>') * real m * ((real t) * real p / (real m * (1 + \<delta>')))" 
         using \<delta>'_le_1 m_def True t_ge_0 \<delta>'_ge_0 by auto
       also have "... \<le> (1+\<delta>') * m * (a+1)"
         using \<delta>'_ge_0 by (intro mult_left_mono, simp_all add:a_def)
       also have "... < ((1 + real_of_rat \<delta>)*(1-real_of_rat \<delta>/8)) * m * (a+1)"
-        apply (rule mult_strict_right_mono)
-         apply (rule mult_strict_right_mono)
-          apply (simp add:\<delta>'_def distrib_left distrib_right left_diff_distrib right_diff_distrib)
-        using True m_def t_ge_0 a_ge_0 \<delta>_range by auto
+        using True m_def t_ge_0 a_ge_0 \<delta>_range
+        by (intro mult_strict_right_mono, auto simp add:\<delta>'_def right_diff_distrib)
       also have "... \<le> ((1 + real_of_rat \<delta>)*(1-2 powr (-r))) * m * (a+1)"
         using r_le_\<delta> \<delta>_range a_ge_0 by (intro mult_right_mono mult_left_mono, auto)
       also have "... = (1 + real_of_rat \<delta>) * m * ((a+1) * (1-2 powr (-real r)))" 
@@ -921,7 +794,7 @@ proof -
       also have "... \<le> (1 + real_of_rat \<delta>) * m * y'"
        using \<delta>_range by (intro mult_left_mono rank_t_lb', simp)
       finally have "real t * real p < (1 + real_of_rat \<delta>) * m * y'" by simp
-      hence f_1: "g' (h \<omega>) < (1 + real_of_rat \<delta>) * m"
+      hence f_1: "estimate' (sketch_rv' \<omega>) < (1 + real_of_rat \<delta>) * m"
         apply (simp add: h_3)
         by (subst pos_divide_less_eq, metis y'_pos, simp)
       have "(1 - real_of_rat \<delta>) * m * y' \<le> (1 - real_of_rat \<delta>) * m * b" 
@@ -929,24 +802,19 @@ proof -
       also have "... = ((1-real_of_rat \<delta>))  * (real m * b)"
         by simp
       also have "... < (1-\<delta>') * (real m * b)" 
-        apply (rule mult_strict_right_mono)
-         apply (simp add: \<delta>'_def algebra_simps)
-        using \<delta>_range apply simp
-        using r_le_\<delta> m_eq_F_0 m_ge_0 b_ge_0 by simp
+        using \<delta>_range r_le_\<delta> m_eq_F_0 m_ge_0 b_ge_0
+        by (intro mult_strict_right_mono, simp_all add: \<delta>'_def algebra_simps)
       also have "... \<le> (1-\<delta>') * (real m * (real t * real p / (real m * (1-\<delta>'))))"
         using \<delta>'_ge_0 \<delta>'_le_1 by (intro mult_left_mono, auto simp add:b_def)
       also have "... = real t * real p"
-        apply (simp)
-        using \<delta>'_ge_0 \<delta>'_le_1 t_ge_0 p_ge_0 apply simp
-        using True m_def order_less_le_trans by linarith
+        using \<delta>'_ge_0 \<delta>'_le_1 t_ge_0 p_ge_0 m_ge_0 by auto
       finally have "(1 - real_of_rat \<delta>) * m * y' < real t * real p" by simp
-      hence f_2: "g' (h \<omega>) > (1 - real_of_rat \<delta>) * m"
+      hence f_2: "estimate' (sketch_rv' \<omega>) > (1 - real_of_rat \<delta>) * m"
         apply (simp add: h_3)
         by (subst pos_less_divide_eq, metis y'_pos, simp)
-      have "abs (g' (h \<omega>) - real_of_rat (F 0 as)) < real_of_rat \<delta> * (real_of_rat (F 0 as))"
+      have "abs (estimate' (sketch_rv' \<omega>) - real_of_rat (F 0 as)) < real_of_rat \<delta> * (real_of_rat (F 0 as))"
         using f_1 f_2 by (simp add:abs_less_iff algebra_simps m_eq_F_0)
-      thus "False"
-        using est by linarith
+      thus "False" using est by linarith
     qed
     also have "... \<le> 1/9 + (1/9 + 1/9)"
       by (intro prob_add case_1 case_2 case_3, auto simp add:M_def)
@@ -954,29 +822,28 @@ proof -
     finally show ?thesis by simp
   next
     case False
-    have "prob {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>} \<le>
+    have "prob {\<omega>. real_of_rat \<delta> * of_rat (F 0 as) < \<bar>estimate' (sketch_rv' \<omega>) - of_rat (F 0 as)\<bar>} \<le>
       prob {\<omega>. \<exists>x \<in> set as. \<exists>y \<in> set as. x \<noteq> y \<and> tr_hash x \<omega> \<le> real p \<and> tr_hash x \<omega> = tr_hash y \<omega>}" 
     proof (rule pmf_mono'[OF M_def])
       fix \<omega>
-      assume a:"\<omega> \<in> {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>g' (h \<omega>) - real_of_rat (F 0 as)\<bar>}"
+      assume a:"\<omega> \<in> {\<omega>. real_of_rat \<delta> * real_of_rat (F 0 as) < \<bar>estimate' (sketch_rv' \<omega>) - real_of_rat (F 0 as)\<bar>}"
       assume b:"\<omega> \<in> set_pmf (pmf_of_set space)" 
       have a_1: "card (set as) < t" using False by auto
-      have a_2:"card (h \<omega>) = card ((\<lambda>x. tr_hash x \<omega>) ` (set as))"
-        apply (simp add:h_def)
+      have a_2:"card (sketch_rv' \<omega>) = card ((\<lambda>x. tr_hash x \<omega>) ` (set as))"
+        apply (simp add:sketch_rv'_def)
         apply (subst card_least, simp)
         apply (rule min.absorb4)
         using card_image_le a_1 order_le_less_trans[OF _ a_1] by blast
-      have "card (h \<omega>) < t"
+      have "card (sketch_rv' \<omega>) < t"
         by (metis List.finite_set  a_1 a_2 card_image_le  order_le_less_trans)
-      hence "g' (h \<omega>) = card (h \<omega>)" by (simp add:g'_def)
-      hence "card (h \<omega>) \<noteq> real_of_rat (F 0 as)"
+      hence "estimate' (sketch_rv' \<omega>) = card (sketch_rv' \<omega>)" by (simp add:estimate'_def)
+      hence "card (sketch_rv' \<omega>) \<noteq> real_of_rat (F 0 as)"
         using a \<delta>_range apply simp 
         by (metis abs_zero cancel_comm_monoid_add_class.diff_cancel of_nat_less_0_iff pos_prod_lt zero_less_of_rat_iff)
-      hence "card (h \<omega>) \<noteq> card (set as)"
+      hence "card (sketch_rv' \<omega>) \<noteq> card (set as)"
         using m_def m_eq_F_0 by linarith
       hence "\<not>inj_on (\<lambda>x. tr_hash x \<omega>) (set as)"
-        apply (simp add:a_2) 
-        using card_image by blast
+        using card_image a_2 by auto
       moreover have "tr_hash x \<omega> \<le> real p" if a:"x \<in> set as" for x
       proof -
         have "hash x \<omega> < p" 
@@ -992,33 +859,28 @@ proof -
     also have "... = (5/2) * (real (card (set as)))\<^sup>2 * 2 powr (- real r) + 1 / real p"
       using p_ge_0 by (simp add:ac_simps power2_eq_square)
     also have "... \<le> (5/2) * (real t)\<^sup>2 * 2 powr (-real r) + 1 / real p"
-      apply (rule add_mono)
-       apply (rule mult_right_mono)
-        apply (rule mult_left_mono)
-         apply (rule power_mono) using False apply simp
-      by simp+
+      using False by (intro add_mono mult_right_mono mult_left_mono power_mono, auto)
     also have "... \<le> 1/6 + 1/6"
-      apply (rule add_mono)
-      apply (subst pos_le_divide_eq, simp)
-      using r_le_t2 apply simp
-      using p_ge_18 by simp
+      using r_le_t2  p_ge_18 by (intro add_mono, simp_all)
     also have "... \<le> 1/3" by simp
     finally show ?thesis by simp
   qed
+qed
 
-  have real_g_2:"\<And>\<omega>. real_of_float ` f0_sketch \<omega> = h \<omega>" 
-    apply (simp add: g'_def h_def f0_sketch_def tr_hash_def)
-    apply (subst least_mono_commute, simp)
-     apply (meson less_float.rep_eq strict_mono_onI)
-    by (simp add:image_comp float_of_inverse[OF truncate_down_float])
+lemma median_bounds:
+  "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<bar>median s (\<lambda>i. estimate (f0_sketch (\<omega> i))) - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1 - real_of_rat \<epsilon>"
+proof -
+  have "strict_mono_on real_of_float A" for A by (meson less_float.rep_eq strict_mono_onI)
+  hence real_g_2: "\<And>\<omega>.  sketch_rv' \<omega> = real_of_float ` f0_sketch \<omega>" 
+    by (simp add: sketch_rv'_def f0_sketch_def tr_hash_def least_mono_commute image_comp)
 
-  have card_eq: "\<And>\<omega>. card (f0_sketch \<omega>) = card (h \<omega>)" 
-    apply (subst real_g_2[symmetric]) 
-    apply (rule card_image[symmetric]) 
-    using inj_on_def real_of_float_inject by blast
+  moreover have "inj_on real_of_float A" for A
+    using  real_of_float_inject by (simp add:inj_on_def)
+  ultimately have card_eq: "\<And>\<omega>. card (f0_sketch \<omega>) = card (sketch_rv' \<omega>)" 
+    using real_g_2 by (auto intro!: card_image[symmetric])
 
-  have real_g: "\<And>\<omega>. real_of_rat (estimate (f0_sketch \<omega>)) = g' (h \<omega>)"
-    apply (simp add:estimate_def g'_def card_eq of_rat_divide of_rat_mult of_rat_add real_of_rat_of_float)
+  have real_g: "\<And>\<omega>. estimate' (sketch_rv' \<omega>) = real_of_rat (estimate (f0_sketch \<omega>))"
+    apply (simp add:estimate_def estimate'_def card_eq of_rat_divide of_rat_mult of_rat_add real_of_rat_of_float)
     apply (rule impI)
     apply (subst mono_Max_commute[where f="real_of_float"])
     using less_eq_float.rep_eq mono_def apply blast
@@ -1027,7 +889,7 @@ proof -
     by (simp add:real_g_2)
  
   have "1-real_of_rat \<epsilon> \<le> \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.
-      \<bar>median s (\<lambda>i. g' (h (\<omega> i))) - real_of_rat (F 0 as)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (F 0 as))"
+      \<bar>median s (\<lambda>i. estimate' (sketch_rv' (\<omega> i))) - real_of_rat (F 0 as)\<bar> \<le>  real_of_rat \<delta> * real_of_rat (F 0 as))"
     apply (rule prob_space.median_bound_2, simp add:prob_space_measure_pmf)
        using \<epsilon>_range apply simp 
        apply (subst \<Omega>\<^sub>0_def)
@@ -1036,16 +898,12 @@ proof -
     apply simp
     apply (subst \<Omega>\<^sub>0_def)
     apply (subst prob_prod_pmf_slice, simp, simp)
-    using b by (simp add:M_def) 
+    using estimate'_bounds by (simp add:M_def) 
   also have "... = \<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. 
       \<bar>median s (\<lambda>i. estimate (f0_sketch (\<omega> i))) - F 0 as\<bar> \<le>  \<delta> * F 0 as)"
-    apply (rule arg_cong2[where f="measure"], simp)
-    apply (rule Collect_cong, simp, subst real_g[symmetric])
-    apply (subst of_rat_mult[symmetric], subst median_rat[OF s_ge_0, symmetric])
-    apply (subst of_rat_diff[symmetric], simp)
-    using of_rat_less_eq by blast
-  finally show "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0.  
-      \<bar>median s (\<lambda>i. estimate (f0_sketch (\<omega> i))) - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1-real_of_rat \<epsilon>"
+    using s_ge_0 median_rat[symmetric] real_g by (intro arg_cong2[where f="measure"]) 
+      (simp_all add:of_rat_diff[symmetric] of_rat_mult[symmetric] of_rat_less_eq)
+  finally show "\<P>(\<omega> in measure_pmf \<Omega>\<^sub>0. \<bar>median s (\<lambda>i. estimate (f0_sketch (\<omega> i))) - F 0 as\<bar> \<le> \<delta> * F 0 as) \<ge> 1-real_of_rat \<epsilon>"
     by blast
 qed
 
@@ -1066,7 +924,7 @@ proof -
     apply (subst bind_return_pmf)
     apply (subst f0_result_elim)
     apply (subst map_pmf_def[symmetric])
-    using estimate_bounds by simp
+    using median_bounds by simp
 qed
 
 lemma f_subset:
