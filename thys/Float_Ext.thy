@@ -16,16 +16,11 @@ proof (cases "abs x > 0")
   case True
   have "x \<le> round_down (int prec - \<lfloor>log 2 \<bar>x\<bar>\<rfloor>) x + 2 powr (-real_of_int(int prec - \<lfloor>log 2 \<bar>x\<bar>\<rfloor>))"
     by (rule round_down_ge)
-  also have "... \<le> truncate_down prec x + abs x * 2 powr (-prec)"
-    apply (rule add_mono)
-     apply (simp add:truncate_down_def)
-    apply (subst of_int_diff, simp)
-    apply (subst powr_diff)
-    apply (subst pos_divide_le_eq, simp)
-    apply (subst mult.assoc)
-    apply (subst powr_add[symmetric], simp)
-    apply (subst le_log_iff[symmetric], simp, metis True)
-    by auto
+  also have "... \<le> truncate_down prec x + 2 powr ( \<lfloor>log 2 \<bar>x\<bar>\<rfloor>) * 2 powr (-real prec)"
+    by (rule add_mono, simp_all add:powr_add[symmetric] truncate_down_def)
+  also have "... \<le> truncate_down prec x + \<bar>x\<bar> * 2 powr (-real prec)"
+    using True
+    by (intro add_mono mult_right_mono, simp_all add:le_log_iff[symmetric])
   finally show ?thesis by simp
 next
   case False
@@ -35,8 +30,8 @@ qed
 lemma truncate_down_pos:
   assumes "x \<ge> 0"
   shows "x * (1 - 2 powr (-prec)) \<le> truncate_down prec x"
-  apply (simp add:right_diff_distrib diff_le_eq)
-  by (metis truncate_down_ge assms  abs_of_nonneg)
+  by (simp add:right_diff_distrib diff_le_eq)
+   (metis truncate_down_ge assms  abs_of_nonneg)
 
 lemma truncate_down_eq:
   assumes "truncate_down r x = truncate_down r y"
@@ -45,9 +40,8 @@ proof -
   have "x - y \<le> truncate_down r x + abs x * 2 powr (-real r) - y"
     by (rule diff_right_mono, rule truncate_down_ge)
   also have "... \<le> y + abs x * 2 powr (-real r) - y"
-    apply (rule diff_right_mono, rule add_mono)
-     apply (subst assms(1), rule truncate_down_le, simp)
-    by simp
+    using truncate_down_le
+    by (intro diff_right_mono add_mono, subst assms(1), simp_all)
   also have "... \<le> abs x * 2 powr (-real r)" by simp
   also have "... \<le> max (abs x) (abs y) * 2 powr (-real r)" by simp
   finally have a:"x - y \<le> max (abs x) (abs y) * 2 powr (-real r)" by simp
@@ -55,9 +49,8 @@ proof -
   have "y - x \<le> truncate_down r y + abs y * 2 powr (-real r) - x"
     by (rule diff_right_mono, rule truncate_down_ge)
   also have "... \<le> x + abs y * 2 powr (-real r) - x"
-    apply (rule diff_right_mono, rule add_mono)
-     apply (subst assms(1)[symmetric], rule truncate_down_le, simp)
-    by simp
+    using truncate_down_le
+    by (intro diff_right_mono add_mono, subst assms(1)[symmetric], auto)
   also have "... \<le> abs y * 2 powr (-real r)" by simp
   also have "... \<le> max (abs x) (abs y) * 2 powr (-real r)" by simp
   finally have b:"y - x \<le> max (abs x) (abs y) * 2 powr (-real r)" by simp
@@ -71,11 +64,13 @@ definition rat_of_float :: "float \<Rightarrow> rat" where
     (if exponent f \<ge> 0 then 2 ^ (nat (exponent f)) else 1 / 2 ^ (nat (-exponent f)))" 
 
 lemma real_of_rat_of_float: "real_of_rat (rat_of_float x) = real_of_float x"
-  apply (cases x)
-  apply (simp add:rat_of_float_def)
-  apply (rule conjI)
-   apply (metis (mono_tags, opaque_lifting) Float.rep_eq compute_real_of_float mantissa_exponent of_int_mult of_int_numeral of_int_power of_rat_of_int_eq)
-  by (metis Float.rep_eq Float_mantissa_exponent compute_real_of_float of_int_numeral of_int_power of_rat_divide of_rat_of_int_eq)
+proof -
+  have "real_of_rat (rat_of_float x) = mantissa x * (2 powr (exponent x))"
+    by (simp add:rat_of_float_def of_rat_mult of_rat_divide of_rat_power powr_realpow[symmetric] powr_minus_divide)
+  also have "... = real_of_float x"
+    using mantissa_exponent by simp
+  finally show ?thesis by simp 
+qed
 
 text \<open>Definition of an encoding for floating point numbers.\<close>
 
@@ -94,9 +89,8 @@ proof -
       by (metis real_of_float_inverse)
   qed
   have "is_encoding (\<lambda>f. if True then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
-    apply (rule encoding_compose[where f="(I\<^sub>S \<times>\<^sub>S I\<^sub>S)"])
-     apply (metis dependent_encoding int_encoding, simp)
-    by (metis a)
+    using a
+    by (intro encoding_compose[where f="(I\<^sub>S \<times>\<^sub>S I\<^sub>S)"]  dependent_encoding int_encoding, simp)
   moreover have "F\<^sub>S = (\<lambda>f. if f \<in> UNIV then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
     by (rule ext, simp add:F\<^sub>S_def)
   ultimately show "is_encoding F\<^sub>S"
@@ -108,57 +102,37 @@ lemma truncate_mantissa_bound:
 proof -
   define q where "q = \<lfloor>x * 2 powr (real r - real_of_int (\<lfloor>log 2 \<bar>x\<bar>\<rfloor>))\<rfloor>"
 
-  have "x > 0 \<Longrightarrow> abs q \<le> 2 ^ (r + 1)"
+  have "abs q \<le> 2 ^ (r + 1)" if a:"x > 0"
   proof -
-    assume a:"x > 0"
-
     have "abs q = q"
-      apply (rule abs_of_nonneg)
-      apply (simp add:q_def)
-      using a by simp
+      using a by (intro abs_of_nonneg, simp add:q_def)
     also have "... \<le> x * 2 powr (real r - real_of_int \<lfloor>log 2 \<bar>x\<bar>\<rfloor>)"
-      apply (subst q_def)
-      using of_int_floor_le by blast
+      unfolding q_def using of_int_floor_le by blast
     also have "... = x * 2 powr real_of_int (int r - \<lfloor>log 2 \<bar>x\<bar>\<rfloor>)"
       by auto
     also have "... = 2 powr (log 2 x + real_of_int (int r - \<lfloor>log 2 \<bar>x\<bar>\<rfloor>))"
-      apply (simp add:powr_add)
-      by (subst powr_log_cancel, simp, simp, simp add:a, simp)
+      using a by (simp add:powr_add)
     also have "... \<le> 2 powr (real r + 1)"
-      apply (rule powr_mono)
-      apply simp 
-      using a apply linarith
-      by simp
+      using a by (intro powr_mono, linarith+) 
     also have "... = 2 ^ (r+1)"
-      by (subst powr_realpow[symmetric], simp, simp add:add.commute)
+      by (subst powr_realpow[symmetric], simp_all add:add.commute)
     finally show "abs q \<le> 2 ^ (r+1)" 
       by (metis of_int_le_iff of_int_numeral of_int_power)
   qed
     
-  moreover have "x < 0 \<Longrightarrow> abs q \<le> (2 ^ (r + 1))"
+  moreover have "abs q \<le> (2 ^ (r + 1))" if a: "x < 0"
   proof -
-    assume a:"x < 0"
     have "-(2 ^ (r+1) + 1) = -(2 powr (real r + 1)+1)"
-      apply (subst powr_realpow[symmetric], simp)
-      by (simp add:add.commute)
+      by (subst powr_realpow[symmetric], simp_all add: add.commute)
     also have  "... < -(2 powr (log 2 (- x) + (r - \<lfloor>log 2 \<bar>x\<bar>\<rfloor>)) + 1)"
-      apply (subst neg_less_iff_less)
-      apply (rule add_strict_right_mono)
-      apply (rule powr_less_mono)
-       apply (simp)
-       using a apply linarith
-       by simp+
+      using a by (simp, linarith)
     also have "... = x * 2 powr (r - \<lfloor>log 2 \<bar>x\<bar>\<rfloor>) - 1"
-      apply (simp add:powr_add)
-      apply (subst powr_log_cancel, simp, simp, simp add:a)
-      by simp
+      using a by (simp add:powr_add)
     also have "... \<le> q"
       by (simp add:q_def)
     also have "... = - abs q"
-      apply (subst abs_of_neg)
-      using a 
-       apply (simp add: mult_pos_neg2 q_def)
-      by simp
+      using a
+      by (subst abs_of_neg, simp_all add: mult_pos_neg2 q_def)
     finally have "-(2 ^ (r+1)+1) < - abs q" using of_int_less_iff by fastforce
     hence "-(2 ^ (r+1)) \<le> - abs q" by linarith
     thus "abs q \<le> 2^(r+1)" by linarith
@@ -268,15 +242,19 @@ qed
 
 lemma float_bit_count_zero:
   "bit_count (F\<^sub>S (float_of 0)) = 4"
-  apply (subst zero_float.abs_eq[symmetric])
-  by (simp add:F\<^sub>S_def N\<^sub>S_def dependent_bit_count)
+  by (simp add:F\<^sub>S_def N\<^sub>S_def dependent_bit_count  zero_float.abs_eq[symmetric])
 
 lemma log_est: "log 2 (real n + 1) \<le> n"
 proof -
-  have "1 + real n \<le> 2 powr (real n)"
-    using suc_n_le_2_pow_n apply (simp add: powr_realpow)
-    by (metis numeral_power_eq_of_nat_cancel_iff of_nat_Suc of_nat_mono)
-  thus ?thesis 
+  have "1 + real n = real (n + 1)"
+    by simp
+  also have "... \<le> real (2 ^ n)"
+    by (intro of_nat_mono suc_n_le_2_pow_n)
+  also have "... = 2 powr (real n)"
+    by (simp add:powr_realpow)
+  finally have "1 + real n \<le> 2 powr (real n)"
+    by simp
+  thus ?thesis
     by (simp add: Transcendental.log_le_iff)
 qed
 

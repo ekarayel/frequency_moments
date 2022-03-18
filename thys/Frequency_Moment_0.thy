@@ -993,19 +993,19 @@ lemma f0_alg_correct':
 proof -
   have f0_result_elim: "\<And>x. f0_result (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i)) =
     return_pmf (median s (\<lambda>i. estimate (f0_sketch (x i))))"
-    apply (simp add:estimate_def)
-    apply (rule median_cong)
+    by (simp add:estimate_def, rule median_cong, simp)
+ 
+  have "result = map_pmf (\<lambda>x. (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) \<Omega>\<^sub>0 \<bind> f0_result"
+    by (subst result_def, subst f0_alg_sketch, simp)
+  also have "... = \<Omega>\<^sub>0 \<bind> (\<lambda>x. return_pmf (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) \<bind> f0_result"
+    by (simp add:t_def p_def r_def s_def map_pmf_def)
+  also have "... = \<Omega>\<^sub>0 \<bind> (\<lambda>x. return_pmf (median s (\<lambda>i. estimate (f0_sketch (x i)))))"
+    by (subst bind_assoc_pmf, subst bind_return_pmf, subst f0_result_elim)  simp
+  finally have a:"result =  \<Omega>\<^sub>0 \<bind> (\<lambda>x. return_pmf (median s (\<lambda>i. estimate (f0_sketch (x i)))))"
     by simp
 
   show ?thesis
-    apply (subst result_def)
-    apply (subst f0_alg_sketch, simp)
-    apply (simp add:t_def[symmetric] p_def[symmetric] r_def[symmetric] s_def[symmetric] map_pmf_def)
-    apply (subst bind_assoc_pmf)
-    apply (subst bind_return_pmf)
-    apply (subst f0_result_elim)
-    apply (subst map_pmf_def[symmetric])
-    using median_bounds by simp
+    using median_bounds by (simp add: a map_pmf_def[symmetric])
 qed
 
 private lemma f_subset:

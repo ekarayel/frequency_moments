@@ -56,7 +56,7 @@ proof -
     hence "is_prefix (f y) (f x) \<or> is_prefix (f x) (f y)"
       using u_1 assms(2) by simp
     thus "y = x"
-      using assms(1) apply (simp add:is_encoding_def) by blast
+      using assms(1) by (simp add:is_encoding_def, blast)
   qed
   have b:"is_prefix (f x) (Some (r@r1))" 
     using assms(2) by simp
@@ -143,7 +143,7 @@ function decode_list :: "('a \<Rightarrow> bool list option) \<Rightarrow> bool 
   by pat_completeness auto
 termination
   apply (relation "measure (\<lambda>(_,x). length x)")
-  by (simp+, metis le_imp_less_Suc snd_decode_len)
+  by (simp_all, metis le_imp_less_Suc snd_decode_len)
 
 lemma list_encoding_dom:
   assumes "set l \<subseteq> dom f"
@@ -285,7 +285,6 @@ proof -
   thus ?thesis using assms le_ereal_le int_bit_count by blast
 qed
 
-text \<open>Encoding for Cartesian products\<close>
 text \<open>Encoding for dependent sums\<close>
 
 definition encode_dependent_sum :: "'a encoding \<Rightarrow> ('a \<Rightarrow> 'b encoding) \<Rightarrow> ('a \<times> 'b) encoding" (infixr "\<times>\<^sub>D" 65)
