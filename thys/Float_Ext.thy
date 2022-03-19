@@ -150,94 +150,93 @@ lemma suc_n_le_2_pow_n:
   shows "n + 1 \<le> 2 ^ n"
   by (induction n, simp, simp)
 
-lemma float_bit_count:
+lemma float_bit_count_1:
+  "bit_count (F\<^sub>S f) \<le> 4 + 2 * (log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1))" (is "?lhs \<le> ?rhs")
+proof -
+  have "?lhs = bit_count (I\<^sub>S (mantissa f)) + bit_count (I\<^sub>S (exponent f))"
+    by (simp add:F\<^sub>S_def dependent_bit_count del:I\<^sub>S.simps)
+  also have "... \<le> ereal (2 * log 2 (real_of_int (\<bar>mantissa f\<bar> + 1)) + 2) + ereal (2 * log 2 (real_of_int (\<bar>exponent f\<bar> + 1)) + 2)"
+    by (intro int_bit_count add_mono)
+  also have "... = ?rhs"
+    by simp
+  finally show ?thesis by simp
+qed
+
+lemma float_bit_count_2:
   fixes m :: int
   fixes e :: int
   defines "f \<equiv> float_of (m * 2 powr e)"
   shows "bit_count (F\<^sub>S f) \<le> 4 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
-proof (cases "m \<noteq> 0")
-  case True
-  have "f = Float m e" 
-    by (simp add: f_def Float.abs_eq)
-  moreover have f_ne_0: "f \<noteq> 0" using True apply (simp add:f_def) 
-    by (metis Float.compute_is_float_zero Float.rep_eq is_float_zero.rep_eq real_of_float_inverse zero_float.rep_eq)
-  ultimately obtain i :: nat where m_def: "m = mantissa f * 2 ^ i" and e_def: "e = exponent f - i"
-    using  denormalize_shift by blast
-
-  have b:"abs (real_of_int (mantissa f)) \<ge> 1" 
-    by (meson dual_order.refl f_ne_0 mantissa_noteq_0 of_int_leD)
-
-  have c: "2*i \<le> 2^i"
-    apply (cases "i > 0")
-      using suc_n_le_2_pow_n[where n="i-1"] apply simp
-     apply (metis One_nat_def nat_mult_le_cancel_disj power_commutes power_minus_mult)
-    by simp
-
-  have a:"\<bar>real_of_int (mantissa f)\<bar> * (real i + 1) + real i \<le> \<bar>real_of_int (mantissa f)\<bar> * 2 ^ i + 1" 
-  proof (cases "i \<ge> 1")
+proof -
+  have b:" (r + 1) * int i \<le> r * (2 ^ i - 1) + 1" if b_assms: "r \<ge> 1" for r :: int and i :: nat
+  proof (cases "i > 0")
     case True
-    have "\<bar>real_of_int (mantissa f)\<bar> * (real i + 1) + real i = \<bar>real_of_int (mantissa f)\<bar> * (real i + 1) + (real i - 1) + 1"
-      by simp
-    also have "...  \<le> \<bar>real_of_int (mantissa f)\<bar> * ((real i + 1) + (real i - 1)) + 1"
-      apply (subst (2) distrib_left)
-      apply (rule add_mono)
-       apply (rule add_mono, simp)
-       apply (rule order_trans[where y="1* (real i - 1)"], simp)
-       apply (rule mult_right_mono, metis b)
-       using True apply simp
-      by simp
-    also have "... = \<bar>real_of_int (mantissa f)\<bar> * (2 * real i) + 1"
-      by simp
-    also have "... \<le> \<bar>real_of_int (mantissa f)\<bar> * 2 ^ i + 1"
-      apply (rule add_mono)
-       apply (rule mult_left_mono) 
-       using c of_nat_mono apply fastforce
-      by simp+
+    have "(r + 1) * int i = r * i + 2 * int ((i-1)+1) - i"
+      using True by (simp add:algebra_simps)
+    also have "... \<le> r * i + int (2^1) * int (2^(i-1)) - i"
+      using b_assms
+      by (intro add_mono diff_mono mult_mono of_nat_mono suc_n_le_2_pow_n, simp_all)
+    also have "... = r * i + 2^i - i"
+      using True
+      by (subst of_nat_mult[symmetric], subst power_add[symmetric], simp)
+    also have "... = r *i + 1 * (2 ^ i - int i - 1) + 1"  by simp
+    also have "... \<le> r *i + r * (2 ^ i - int i - 1) + 1"  
+      using b_assms
+      by (intro add_mono mult_mono, simp_all)
+    also have "... = r * (2 ^ i - 1) + 1"
+      by (simp add:algebra_simps)
     finally show ?thesis by simp
   next
     case False
     hence "i = 0" by simp
     then show ?thesis by simp
-  qed 
+  qed
 
-  have "bit_count (F\<^sub>S f) = bit_count (I\<^sub>S (mantissa f)) + bit_count (I\<^sub>S (exponent f))"
-    by (simp add: F\<^sub>S_def dependent_bit_count)
-  also have "... \<le> 
-      ereal (2 * (log 2 (real_of_int (abs (mantissa f) + 1)))+ 2) + 
-      ereal (2 * (log 2 (real_of_int (abs (exponent f) + 1)))+ 2)"
-    by (rule add_mono, rule int_bit_count, rule int_bit_count)
-  also have "... = ereal (4 + 2 * (log 2 (real_of_int (abs (mantissa f)) + 1) + 
-                                   log 2 (real_of_int (abs (e + i)) + 1)))"
-    by (simp add:algebra_simps e_def)
-  also have "... \<le> ereal (4 + 2 * (log 2 (real_of_int (abs (mantissa f)) + 1) +
-                                    log 2 (real i+1) +
-                                    log 2 (abs e + 1)))"
-    apply (simp)
-    apply (subst distrib_left[symmetric])
-    apply (rule mult_left_mono)
-     apply (subst log_mult[symmetric], simp, simp, simp, simp)
-     apply (subst log_le_cancel_iff, simp, simp, simp)
-    apply (rule order_trans[where y=" abs e + real i + 1"], simp)
-    by (simp add:algebra_simps, simp)
-  also have "... \<le> ereal (4 + 2 * (log 2 (real_of_int (abs (mantissa f * 2 ^ i)) + 2) +
-    log 2 (abs e + 1)))"
-    apply (simp)
-    apply (subst distrib_left[symmetric])
-    apply (rule mult_left_mono)
-     apply (subst log_mult[symmetric], simp, simp, simp, simp)
-     apply (subst log_le_cancel_iff, simp, simp, simp)
-     apply (subst abs_mult)
-     using a apply (simp add: distrib_right)
-    by simp
-  also have "... = ereal (4 + 2 * (log 2 (real_of_int (abs m) + 2) + log 2 (abs e + 1)))"
-    by (simp add:m_def)
-  finally show ?thesis by (simp add:f_def[symmetric] bit_count_append del:I\<^sub>S.simps)
-next
-  case False
-  hence "float_of (m * 2 powr e) = Float 0 0"
-    apply simp 
-    using zero_float.abs_eq by linarith
-  then show ?thesis by (simp add: f_def F\<^sub>S_def N\<^sub>S_def dependent_bit_count)
+  have a:"log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1) \<le> log 2 (\<bar>m\<bar>+2) + log 2 (\<bar>e\<bar>+1)"
+  proof (cases "f=0")
+    case True then show ?thesis by simp
+  next
+    case False
+    moreover have "f = Float m e" 
+      by (simp add:f_def Float.abs_eq) 
+    ultimately obtain i :: nat where m_def: "m = mantissa f * 2 ^ i" and e_def: "e = exponent f - i"
+      using denormalize_shift by blast
+
+    have mantissa_ge_1: "1 \<le> \<bar>mantissa f\<bar>"
+      using False mantissa_noteq_0 by fastforce
+
+    have "(\<bar>mantissa f\<bar> + 1) * (\<bar>exponent f\<bar> + 1) = (\<bar>mantissa f\<bar> + 1) * (\<bar>e+i\<bar>+1)"
+      by (simp add:e_def)
+    also have "...  \<le>  (\<bar>mantissa f\<bar> + 1) * ((\<bar>e\<bar>+\<bar>i\<bar>)+1)"
+      by (intro mult_mono add_mono, simp_all)
+    also have "... = (\<bar>mantissa f\<bar> + 1) * ((\<bar>e\<bar>+1)+i)"
+      by simp
+    also have "... = (\<bar>mantissa f\<bar> + 1) * (\<bar>e\<bar>+1) + (\<bar>mantissa f\<bar>+1)*i"
+      by (simp add:algebra_simps)
+    also have "... \<le>  (\<bar>mantissa f\<bar> + 1)*(\<bar>e\<bar>+1) + (\<bar>mantissa f\<bar>*  (2^i-1)+1)" 
+      by (intro add_mono b mantissa_ge_1, simp) 
+    also have "... =  (\<bar>mantissa f\<bar> + 1)*(\<bar>e\<bar>+1)+(\<bar>mantissa f\<bar>*  (2^i-1)+1)*(1)"
+      by simp
+    also have "... \<le>  (\<bar>mantissa f\<bar> + 1)*(\<bar>e\<bar>+1)+(\<bar>mantissa f\<bar>*  (2^i-1)+1)*(\<bar>e\<bar>+1)" 
+      by (intro add_mono mult_left_mono, simp_all)
+    also have "... =  ((\<bar>mantissa f\<bar> + 1)+(\<bar>mantissa f\<bar>*  (2^i-1)+1))*(\<bar>e\<bar>+1)"
+      by (simp add:algebra_simps)
+    also have "... =  (\<bar>mantissa f\<bar>*2^i+2)*(\<bar>e\<bar>+1)" 
+      by (simp add:algebra_simps)
+    also have "... =  (\<bar>m\<bar>+2)*(\<bar>e\<bar>+1)" 
+      by (simp add:m_def abs_mult)
+    finally have "(\<bar>mantissa f\<bar> + 1) * (\<bar>exponent f\<bar> + 1) \<le> (\<bar>m\<bar>+2)*(\<bar>e\<bar>+1)" by simp
+
+    hence "(\<bar>real_of_int (mantissa f)\<bar> + 1) * (\<bar>of_int (exponent f)\<bar> + 1) \<le> (\<bar>of_int m\<bar>+2)*(\<bar>of_int e\<bar>+1)" 
+      by (simp flip:of_int_abs)
+       (metis (mono_tags, opaque_lifting) numeral_One of_int_add of_int_le_iff of_int_mult of_int_numeral)
+    then show ?thesis by (simp add:log_mult[symmetric])
+  qed
+  have "bit_count (F\<^sub>S f) \<le> 4 + 2 * (log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1))"
+    using float_bit_count_1 by simp
+  also have "... \<le> 4 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
+    using a by simp
+  finally show ?thesis by simp
 qed
 
 lemma float_bit_count_zero:
@@ -265,48 +264,43 @@ proof -
   define m where "m = \<lfloor>x * 2 powr (real r - real_of_int \<lfloor>log 2 \<bar>x\<bar>\<rfloor>)\<rfloor>"
   define e where "e = \<lfloor>log 2 \<bar>x\<bar>\<rfloor> - int r"
 
-  have a: "real r = real_of_int (int r)" by simp
+  have a: "(real_of_int \<lfloor>log 2 \<bar>x\<bar>\<rfloor> - real r) = e"
+    by (simp add:e_def)
   have "abs m + 2 \<le> 2 ^ (r + 1) + 2^1"
-    apply (rule add_mono)
-     using truncate_mantissa_bound apply (simp add:m_def)
-    by simp
+    using truncate_mantissa_bound
+    by (intro add_mono, simp_all add:m_def)
   also have "... \<le> 2 ^ (r+2)"
     by simp
   finally have b:"abs m + 2 \<le> 2 ^ (r+2)" by simp
-  have c:"log 2 (real_of_int (\<bar>m\<bar> + 2)) \<le> r+2"
-    apply (subst Transcendental.log_le_iff, simp, simp)
-    apply (subst powr_realpow, simp)
-    by (metis of_int_le_iff of_int_numeral of_int_power b)
+  hence "real_of_int (\<bar>m\<bar> + 2) \<le> real_of_int (4 * 2 ^ r)" 
+    by (subst of_int_le_iff, simp)
+  hence "\<bar>real_of_int m\<bar> + 2 \<le> 4 * 2 ^ r" 
+    by simp
+  hence c:"log 2 (real_of_int (\<bar>m\<bar> + 2)) \<le> r+2"
+    by (simp add: Transcendental.log_le_iff powr_add powr_realpow)
 
   have "real_of_int (abs e + 1) \<le> real_of_int \<bar>\<lfloor>log 2 \<bar>x\<bar>\<rfloor>\<bar> +  real_of_int r + 1"
     by (simp add:e_def)
   also have "... \<le> 1 + abs (log 2 (abs x)) + real_of_int r + 1"
-    apply (simp)
-    apply (subst abs_le_iff)
-    by (rule conjI, linarith, linarith)
+    by (simp add:abs_le_iff, linarith)
   also have "... \<le> (real_of_int r+ 1) * (2 + abs (log 2 (abs x)))"
     by (simp add:distrib_left distrib_right)
   finally have d:"real_of_int (abs e + 1) \<le> (real_of_int r+ 1) * (2 + abs (log 2 (abs x)))" by simp
 
   have "log 2 (real_of_int (abs e + 1)) \<le> log 2 (real_of_int r + 1) + log 2 (2 + abs (log 2 (abs x)))"
-    apply (subst log_mult[symmetric], simp, simp, simp, simp)
-    using d by simp
+    using d by (simp add: log_mult[symmetric])
   also have "... \<le> r + log 2 (2 + abs (log 2 (abs x)))"
-    apply (rule add_mono)
-    using log_est apply (simp add:add.commute)
-    by simp
+    using log_est by (intro add_mono, simp_all add:add.commute)
   finally have e: "log 2 (real_of_int (abs e + 1)) \<le> r + log 2 (2 + abs (log 2 (abs x)))" by simp
 
-  have "?lhs \<le> ereal (4 + (2 * log 2 (real_of_int (\<bar>m\<bar> + 2)) + 2 * log 2 (real_of_int (\<bar>e\<bar> + 1))))"
-    apply (simp add:truncate_down_def round_down_def m_def[symmetric])
-    apply (subst a, subst of_int_diff[symmetric], subst e_def[symmetric])
-    using float_bit_count by simp
+  have "?lhs =  bit_count (F\<^sub>S (float_of (real_of_int m * 2 powr real_of_int e)))"
+    by (simp add:truncate_down_def round_down_def m_def[symmetric] a)
+  also have "... \<le> ereal (4 + (2 * log 2 (real_of_int (\<bar>m\<bar> + 2)) + 2 * log 2 (real_of_int (\<bar>e\<bar> + 1))))"
+    using float_bit_count_2 by simp
   also have "... \<le> ereal (4 + (2 * real (r+2) + 2 * (r + log 2 (2 + abs (log 2 (abs x))))))"
-    apply (subst ereal_less_eq)
-    apply (rule add_mono, simp)
-    apply (rule add_mono, rule mult_left_mono, metis c, simp)
-    by (rule mult_left_mono, metis e, simp)
-  also have "... = ?rhs"  by simp
+    using c e
+    by (subst ereal_less_eq, intro add_mono mult_left_mono, linarith+) 
+  also have "... = ?rhs" by simp
   finally show ?thesis by simp
 qed
 
