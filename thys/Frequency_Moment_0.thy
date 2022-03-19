@@ -23,7 +23,7 @@ fun f0_init :: "rat \<Rightarrow> rat \<Rightarrow> nat \<Rightarrow> f0_state p
     do {
       let s = nat \<lceil>-18 * ln (real_of_rat \<epsilon>)\<rceil>;
       let t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2\<rceil>;
-      let p = find_prime_above (max n 19);
+      let p = prime_above (max n 19);
       let r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 23); 
       h \<leftarrow> prod_pmf {..<s} (\<lambda>_. pmf_of_set (bounded_degree_polynomials (mod_ring p) 2));
       return_pmf (s, t, p, r, h, (\<lambda>_ \<in> {0..<s}. {}))
@@ -48,10 +48,10 @@ fun f0_space_usage :: "(nat \<times> rat \<times> rat) \<Rightarrow> real" where
     8 +
     2 * log 2 (real s + 1) +
     2 * log 2 (real t + 1) +
-    2 * log 2 (real n + 10) +
+    2 * log 2 (real n + 21) +
     2 * log 2 (real r + 1) +
-    real s * (12 + 4 * log 2 (10 + real n) +
-    real t * (11 + 4 * r + 2 * log 2 (log 2 (real n + 9)))))"
+    real s * (12 + 4 * log 2 (21 + real n) +
+    real t * (11 + 4 * r + 2 * log 2 (log 2 (real n + 13)))))"
 
 definition encode_f0_state :: "f0_state \<Rightarrow> bool list option" where
   "encode_f0_state = 
@@ -87,15 +87,15 @@ private lemma t_ge_0: "t > 0" using \<delta>_range by (simp add:t_def)
 private definition s where "s = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
 private lemma s_ge_0: "s > 0" using \<epsilon>_range by (simp add:s_def)
 
-private definition p where "p = find_prime_above (max n 19)"
+private definition p where "p = prime_above (max n 19)"
 
 private lemma p_prime:"Factorial_Ring.prime p"
-  using p_def find_prime_above_is_prime by presburger
+  using p_def prime_above_prime by presburger
 
 private lemma p_ge_18: "p \<ge> 18"
 proof -
   have "p \<ge> 19" 
-    by (metis p_def find_prime_above_lower_bound max.bounded_iff)
+    by (metis p_def prime_above_lower_bound max.bounded_iff)
   thus ?thesis by simp
 qed
 
@@ -106,21 +106,16 @@ private lemma n_le_p: "n \<le> p"
 proof -
   have "n \<le> max n 19" by simp
   also have "... \<le> p"
-    unfolding p_def by (rule find_prime_above_lower_bound)
+    unfolding p_def by (rule prime_above_lower_bound)
   finally show ?thesis by simp
 qed
 
-private lemma p_le_n: "p \<le> 2*n + 19"
-proof (cases "n \<le> 19")
-  case True
-  then show ?thesis by (simp add:p_def find_prime_above.simps)
-next
-  case False
-  hence "p \<le> 2*n + 2"
-    using find_prime_above_upper_bound
-    by (simp add:p_def)
-  also have "... \<le> 2*n+19"
-    by simp
+private lemma p_le_n: "p \<le> 2*n + 40"
+proof -
+  have "p \<le> 2 * (max n 19) + 2"
+    by (subst p_def, rule prime_above_upper_bound)
+  also have "... \<le> 2 * n + 40"
+    by (cases "n \<ge> 19", auto)
   finally show ?thesis by simp
 qed
 
@@ -1022,12 +1017,12 @@ proof -
     by (metis log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
 
   have b_4_22: "\<And>y. y \<in> {..<p} \<Longrightarrow> bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
-    ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+9)))" 
+    ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+13)))" 
   proof -
     fix y
     assume a:"y \<in> {..<p}"
 
-    show " bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+9)))" 
+    show " bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+13)))" 
     proof (cases "y \<ge> 1")
       case True
 
@@ -1044,7 +1039,7 @@ proof -
         apply (simp, subst log_le_cancel_iff, simp, simp) using True apply simp
          apply (simp add:p_ge_0)
         using a by simp
-      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (log 2 4 + log 2 (2 * n + 19)))"
+      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (log 2 4 + log 2 (2 * n + 40)))"
         apply simp
         apply (subst log_le_cancel_iff, simp, simp add:_b_4_23)
          apply (rule add_pos_pos, simp, simp)
@@ -1052,12 +1047,12 @@ proof -
          apply (metis dual_order.refl log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
         apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
         using p_le_n by simp
-      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (log 2 ((n+9) powr 2)))"
+      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (log 2 ((n+13) powr 2)))"
         apply simp
         apply (subst log_le_cancel_iff, simp, rule add_pos_pos, simp, simp, simp)
         apply (subst log_mult[symmetric], simp, simp, simp, simp)
         by (subst log_le_cancel_iff, simp, simp, simp, simp add:power2_eq_square algebra_simps)
-      also have "... = ereal (10 +  4 * real r + 2 * log 2 (log 2 (n + 9)))"
+      also have "... = ereal (10 +  4 * real r + 2 * log 2 (log 2 (n + 13)))"
         apply (subst log_powr, simp)
         apply (simp)
         apply (subst (3) log_2_4[symmetric]) 
@@ -1101,7 +1096,7 @@ proof -
       by force
 
     have b_4_1: "\<And>y z . y \<in> (\<lambda>z. f0_sketch (x z)) ` {..<s} \<Longrightarrow> z \<in> y \<Longrightarrow> 
-      bit_count (F\<^sub>S z) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+9)))"
+      bit_count (F\<^sub>S z) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+13)))"
       using b_4_22 b_4 by blast
 
     have "\<And>y. y \<in> {..<s} \<Longrightarrow> finite (f0_sketch (x y))"
@@ -1120,7 +1115,7 @@ proof -
     also have "... \<le> ereal (2* log 2 (real s + 1) + 1) + ereal  (2* log 2 (real t + 1) + 1)
       + ereal (2* log 2 (real p + 1) + 1) + ereal (2 * log 2 (real r + 1) + 1)
       + (ereal (real s) * (ereal (real 2 * (2 * log 2 (real p) + 2) + 1) + 1) + 1) 
-      + (ereal (real s) * ((ereal (real t) * (ereal (10 + 4 * real r + 2 * log 2 (log 2 (real (n + 9))))
+      + (ereal (real s) * ((ereal (real t) * (ereal (10 + 4 * real r + 2 * log 2 (log 2 (real (n + 13))))
            + 1) + 1) + 1) + 1)"
       apply (rule add_mono, rule add_mono, rule add_mono, rule add_mono, rule add_mono)
            apply (metis nat_bit_count)
@@ -1134,12 +1129,12 @@ proof -
       using  b_5 b_3 b_4_1  by (simp add:lessThan_atLeast0)+
     also have "... = ereal ( 6 + 2 * log 2 (real s + 1) + 2 * log 2 (real t + 1) + 
       2 * log 2 (real p + 1) + 2 * log 2 (real r + 1) + real s * (8 + 4 * log 2 (real p) + 
-      real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 9))))))"
+      real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
       apply (simp)
       by (subst distrib_left[symmetric], simp) 
     also have "... \<le> ereal ( 6 + 2 * log 2 (real s + 1)  + 2 * log 2 (real t + 1) + 
-      2 * log 2 (2 * (10 + real n)) + 2 * log 2 (real r + 1) + real s * (8 + 4 * log 2 (2 * (10 + real n)) + 
-      real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 9))))))"
+      2 * log 2 (2 * (21 + real n)) + 2 * log 2 (real r + 1) + real s * (8 + 4 * log 2 (2 * (21 + real n)) + 
+      real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
       apply (simp, rule add_mono, simp) using p_le_n apply simp
       apply (rule mult_left_mono, simp)
        apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
@@ -1320,11 +1315,11 @@ proof -
     apply (rule eventually_mono[OF n_inf[where c="exp 1"]])
     by (metis abs_ge_self less_eq_real_def ln_ge_iff not_exp_le_zero of_nat_0_le_iff order.trans)
 
-  have l4: "(\<lambda>x. ln (10 + real (n_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)))"
+  have l4: "(\<lambda>x. ln (21 + real (n_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)))"
     apply (rule landau_ln_2[where a="2"], simp, simp, rule n_inf)
     by (rule sum_in_bigo, simp add:unit_3, simp)
 
-  have l5: "(\<lambda>x. ln (real (n_of x) + 10)) \<in> O[?F](g)"
+  have l5: "(\<lambda>x. ln (real (n_of x) + 21)) \<in> O[?F](g)"
     apply (simp add:g_def)
     apply (rule landau_o.big_mult_1'[OF unit_4])
     apply (rule landau_sum_1)
@@ -1364,7 +1359,7 @@ proof -
 
   have l8: "(\<lambda>x. real (nat \<lceil>80 / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>) * 
     (11 + 4 * real (nat (4 * \<lceil>log 2 (1 / real_of_rat (\<delta>_of x))\<rceil> + 23)) + 
-    2 * log 2 (log 2 (real (n_of x) + 9))))
+    2 * log 2 (log 2 (real (n_of x) + 13))))
     \<in> O[?F](\<lambda>x. (ln (ln (real (n_of x))) + ln (1 / real_of_rat (\<delta>_of x))) / (real_of_rat (\<delta>_of x))\<^sup>2)"
     apply (subst (4) div_commute)
     apply (rule landau_o.mult)

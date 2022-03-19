@@ -3,92 +3,63 @@ section \<open>Primes\<close>
 text \<open>This section introduces a function that finds the smallest primes above a given threshold.\<close>
 
 theory Primes_Ext
-imports Main "HOL-Computational_Algebra.Primes" "Bertrands_Postulate.Bertrand" 
+  imports "HOL-Computational_Algebra.Primes" "Bertrands_Postulate.Bertrand" 
 begin
 
-lemma inf_primes: "wf ((\<lambda>n. (Suc n, n)) ` {n. \<not> (prime n)})" (is "wf ?S") 
-proof (rule wfI_min)
-  fix x :: nat
-  fix Q :: "nat set"
-  assume a:"x \<in> Q"
+definition prime_above :: "nat \<Rightarrow> nat" where "prime_above n = (SOME x. x \<in> {n..(2*n+2)} \<and> prime x)"
 
-  have "\<exists>z \<in> Q. prime z \<or> Suc z \<notin> Q" 
-  proof (cases "\<exists>z \<in> Q. Suc z \<notin> Q")
+lemma ex_subset:
+  assumes "\<exists>x \<in> A. P x"
+  assumes "A \<subseteq> B"
+  shows "\<exists>x \<in> B. P x"
+  using assms by auto
+
+lemma
+  shows prime_above_prime: "prime (prime_above n)"
+  and prime_above_range: "prime_above n \<in> {n..(2*n+2)}"
+proof -
+  define r where "r = (\<lambda>x. x \<in> {n..(2*n+2)} \<and> prime x)"
+  have "\<exists>x. r x"
+  proof (cases "n>2")
     case True
-    then show ?thesis by auto
+    hence "n-1 > 1" by simp
+    hence "\<exists>x \<in> {(n-1)<..<(2*(n-1))}. prime x"
+      using bertrand by simp
+    moreover have "{n - 1<..<2 * (n - 1)} \<subseteq> {n..2 * n + 2}"
+      by (intro subsetI, auto) 
+    ultimately have "\<exists>x \<in> {n..(2*n+2)}. prime x"
+      by (rule ex_subset)
+    then show ?thesis by (simp add:r_def Bex_def)
   next
     case False
-    hence b:"\<And>z. z \<in> Q \<Longrightarrow> Suc z \<in> Q" by blast
-    have c:"\<And>k. k + x \<in> Q"
-    proof -
-      fix k
-      show "k+x \<in> Q"
-        by (induction "k", simp add:a, simp add:b)
-    qed
-    show ?thesis 
-      apply (cases "\<exists>z \<in> Q. prime z")
-       apply blast
-        by (metis add.commute less_natE bigger_prime c)
+    hence "2 \<in> {n..(2*n+2)}" 
+      by simp
+    moreover have "prime (2::nat)" 
+      using two_is_prime_nat by blast
+    ultimately have "r 2"
+      using r_def by simp
+    then show ?thesis by (rule exI)
   qed
-  thus "\<exists>z \<in> Q. \<forall>y. (y,z) \<in> ?S \<longrightarrow> y \<notin> Q" by blast
+  moreover have "prime_above n = (SOME x. r x)"
+    by (simp add:prime_above_def r_def)
+  ultimately have a:"r (prime_above n)"
+    using someI_ex by metis
+  show "prime (prime_above n)"
+    using a unfolding r_def by blast
+  show "prime_above n \<in> {n..(2*n+2)}"
+    using a unfolding r_def by blast
 qed
 
-function find_prime_above :: "nat \<Rightarrow> nat" where
-  "find_prime_above n = (if prime n then n else find_prime_above (Suc n))"
-  by auto
-termination
-  apply (relation "(\<lambda>n. (Suc n, n)) ` {n. \<not> (prime n)}")
-  using inf_primes apply blast
+lemma prime_above_min:  "prime_above n \<ge> 2"
+  using prime_above_prime 
+  by (simp add: prime_ge_2_nat)
+
+lemma prime_above_lower_bound: "prime_above n \<ge> n"
+  using prime_above_range
   by simp
 
-declare find_prime_above.simps [simp del]
-
-lemma find_prime_above_is_prime:
-  "prime (find_prime_above n)"
-  apply (induction n rule:find_prime_above.induct)
-  by (simp add: find_prime_above.simps)+
-
-lemma find_prime_above_min:
-  "find_prime_above n \<ge> 2"
-  by (metis find_prime_above_is_prime prime_ge_2_nat)
-
-lemma find_prime_above_lower_bound:
-  "find_prime_above n \<ge> n"
-  apply (induction n rule:find_prime_above.induct)
-  by (metis find_prime_above.simps linorder_le_cases not_less_eq_eq)
-
-lemma find_prime_above_upper_boundI:
-  assumes "prime m"
-  shows "n \<le> m \<Longrightarrow> find_prime_above n \<le> m"
-proof (induction n rule:find_prime_above.induct)
-  case (1 n)
-  have a:"\<not>prime n \<Longrightarrow> Suc n \<le> m"
-    by (metis assms "1.prems" not_less_eq_eq le_antisym)
-  show ?case using 1 
-    apply (cases "prime n")
-     apply (subst find_prime_above.simps)
-    using assms(1) apply simp
-    by (metis a find_prime_above.simps)
-qed
-
-lemma find_prime_above_upper_bound:
-  "find_prime_above n \<le> 2*n+2"
-proof (cases "n \<le> 1")
-  case True
-  have "find_prime_above n \<le> 2"
-    apply (rule find_prime_above_upper_boundI, simp) using True by simp 
-  then show ?thesis using trans_le_add2 by blast
-next
-  case False
-  hence a:"n > 1" by auto
-  then obtain p where p_bound: "p \<in> {n<..<2*n}" and p_prime: "prime p" 
-    using bertrand by metis
-  have "find_prime_above n \<le> p"
-    apply (rule find_prime_above_upper_boundI)
-     apply (metis p_prime)
-    using p_bound by simp
-  thus ?thesis using p_bound 
-    by (metis greaterThanLessThan_iff nat_le_iff_add nat_less_le trans_le_add1)
-qed
+lemma prime_above_upper_bound: "prime_above n \<le> 2*n+2"
+  using prime_above_range
+  by simp
 
 end
