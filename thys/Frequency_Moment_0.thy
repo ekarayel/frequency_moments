@@ -2,7 +2,7 @@ section \<open>Frequency Moment $0$\<close>
 
 theory Frequency_Moment_0
   imports Main Primes_Ext Float_Ext Median_Method.Median K_Smallest 
-    Universal_Hash_Families.Carter_Wegman_Hash_Family Encoding
+    Universal_Hash_Families.Carter_Wegman_Hash_Family
     Frequency_Moments Landau_Ext Product_PMF_Ext
     Universal_Hash_Families.Field
 begin
@@ -45,13 +45,13 @@ fun f0_space_usage :: "(nat \<times> rat \<times> rat) \<Rightarrow> real" where
     let s = nat \<lceil>-18 * ln (real_of_rat \<epsilon>)\<rceil> in 
     let r = nat (4 * \<lceil>log 2 (1 / real_of_rat \<delta>)\<rceil> + 23) in
     let t = nat \<lceil>80 / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
-    8 +
+    6 +
     2 * log 2 (real s + 1) +
     2 * log 2 (real t + 1) +
     2 * log 2 (real n + 21) +
     2 * log 2 (real r + 1) +
-    real s * (12 + 4 * log 2 (21 + real n) +
-    real t * (11 + 4 * r + 2 * log 2 (log 2 (real n + 13)))))"
+    real s * (5 + 2 * log 2 (21 + real n) +
+    real t * (13 + 4 * r + 2 * log 2 (log 2 (real n + 13)))))"
 
 definition encode_f0_state :: "f0_state \<Rightarrow> bool list option" where
   "encode_f0_state = 
@@ -59,14 +59,14 @@ definition encode_f0_state :: "f0_state \<Rightarrow> bool list option" where
     N\<^sub>S \<times>\<^sub>S (
     N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
     N\<^sub>S \<times>\<^sub>S ( 
-    ([0..<s] \<rightarrow>\<^sub>S (list\<^sub>S N\<^sub>S)) \<times>\<^sub>S
+    ([0..<s] \<rightarrow>\<^sub>S (P\<^sub>S p 2)) \<times>\<^sub>S
     ([0..<s] \<rightarrow>\<^sub>S (set\<^sub>S F\<^sub>S))))))"
 
 lemma "inj_on encode_f0_state (dom encode_f0_state)"
 proof -
   have "is_encoding encode_f0_state" 
     unfolding encode_f0_state_def
-    by (intro dependent_encoding nat_encoding encode_extensional list_encoding encode_set encode_float)
+    by (intro dependent_encoding exp_goloumb_encoding poly_encoding fun_encoding set_encoding encode_float)
   thus ?thesis  by (rule encoding_imp_inj)
 qed
 
@@ -1016,53 +1016,47 @@ proof -
   have log_2_4: "log 2 4 = 2" 
     by (metis log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
 
-  have b_4_22: "\<And>y. y \<in> {..<p} \<Longrightarrow> bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
-    ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+13)))" 
-  proof -
-    fix y
-    assume a:"y \<in> {..<p}"
+  have b_4_22: "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
+    ereal (12 + 4 * real r + 2 * log 2 (log 2 (n+13)))" if a:"y \<in> {..<p}" for y
+  proof (cases "y \<ge> 1")
+    case True
 
-    show " bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+13)))" 
-    proof (cases "y \<ge> 1")
-      case True
+    have b_4_23: "0 < 2 + log 2 (real p)" 
+     apply (rule order_less_le_trans[where y="2+log 2 1"], simp)
+     using p_ge_0 by simp
 
-      have b_4_23: "0 < 2 + log 2 (real p)" 
-       apply (rule order_less_le_trans[where y="2+log 2 1"], simp)
-       using p_ge_0 by simp
-
-      have "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le>  ereal (8 + 4 * real r + 2 * log 2 (2 + \<bar>log 2 \<bar>real y\<bar>\<bar>))"
-        by (rule truncate_float_bit_count)
-      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (2 + log 2 p))"
-        apply (simp)
-        apply (subst log_le_cancel_iff, simp, simp, simp add:b_4_23)
-        apply (subst abs_of_nonneg) using True apply simp
-        apply (simp, subst log_le_cancel_iff, simp, simp) using True apply simp
-         apply (simp add:p_ge_0)
-        using a by simp
-      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (log 2 4 + log 2 (2 * n + 40)))"
-        apply simp
-        apply (subst log_le_cancel_iff, simp, simp add:_b_4_23)
-         apply (rule add_pos_pos, simp, simp)
-        apply (rule add_mono)
-         apply (metis dual_order.refl log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
-        apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
-        using p_le_n by simp
-      also have "... \<le> ereal (8 + 4 * real r + 2 * log 2 (log 2 ((n+13) powr 2)))"
-        apply simp
-        apply (subst log_le_cancel_iff, simp, rule add_pos_pos, simp, simp, simp)
-        apply (subst log_mult[symmetric], simp, simp, simp, simp)
-        by (subst log_le_cancel_iff, simp, simp, simp, simp add:power2_eq_square algebra_simps)
-      also have "... = ereal (10 +  4 * real r + 2 * log 2 (log 2 (n + 13)))"
-        apply (subst log_powr, simp)
-        apply (simp)
-        apply (subst (3) log_2_4[symmetric]) 
-        by (subst log_mult, simp, simp, simp, simp, simp add:log_2_4)
-      finally show ?thesis by simp
-    next
-      case False
-      hence "y = 0" using a by simp
-      then show ?thesis by (simp add:float_bit_count_zero)
-    qed
+    have "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le>  ereal (10 + 4 * real r + 2 * log 2 (2 + \<bar>log 2 \<bar>real y\<bar>\<bar>))"
+      by (rule truncate_float_bit_count)
+    also have "... \<le> ereal (10 + 4 * real r + 2 * log 2 (2 + log 2 p))"
+      apply (simp)
+      apply (subst log_le_cancel_iff, simp, simp, simp add:b_4_23)
+      apply (subst abs_of_nonneg) using True apply simp
+      apply (simp, subst log_le_cancel_iff, simp, simp) using True apply simp
+       apply (simp add:p_ge_0)
+      using a by simp
+    also have "... \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 4 + log 2 (2 * n + 40)))"
+      apply simp
+      apply (subst log_le_cancel_iff, simp, simp add:_b_4_23)
+       apply (rule add_pos_pos, simp, simp)
+      apply (rule add_mono)
+       apply (metis dual_order.refl log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
+      apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
+      using p_le_n by simp
+    also have "... \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 ((n+13) powr 2)))"
+      apply simp
+      apply (subst log_le_cancel_iff, simp, rule add_pos_pos, simp, simp, simp)
+      apply (subst log_mult[symmetric], simp, simp, simp, simp)
+      by (subst log_le_cancel_iff, simp, simp, simp, simp add:power2_eq_square algebra_simps)
+    also have "... = ereal (12 +  4 * real r + 2 * log 2 (log 2 (n + 13)))"
+      apply (subst log_powr, simp)
+      apply (simp)
+      apply (subst (3) log_2_4[symmetric]) 
+      by (subst log_mult, simp, simp, simp, simp, simp add:log_2_4)
+    finally show ?thesis by simp
+  next
+    case False
+    hence "y = 0" using a by simp
+    then show ?thesis by (simp add:float_bit_count_zero)
   qed
 
   have b: 
@@ -1096,7 +1090,7 @@ proof -
       by force
 
     have b_4_1: "\<And>y z . y \<in> (\<lambda>z. f0_sketch (x z)) ` {..<s} \<Longrightarrow> z \<in> y \<Longrightarrow> 
-      bit_count (F\<^sub>S z) \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 (n+13)))"
+      bit_count (F\<^sub>S z) \<le> ereal (12 + 4 * real r + 2 * log 2 (log 2 (n+13)))"
       using b_4_22 b_4 by blast
 
     have "\<And>y. y \<in> {..<s} \<Longrightarrow> finite (f0_sketch (x y))"
@@ -1106,35 +1100,36 @@ proof -
 
     have "bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) =
       bit_count (N\<^sub>S s) + bit_count (N\<^sub>S t) +  bit_count (N\<^sub>S p) + bit_count (N\<^sub>S r) +
-      bit_count (list\<^sub>S (list\<^sub>S N\<^sub>S) (map x [0..<s])) +
-      bit_count (list\<^sub>S (set\<^sub>S F\<^sub>S) (map (\<lambda>i\<in>{..<s}. f0_sketch (x i)) [0..<s]))"
+      bit_count (([0..<s] \<rightarrow>\<^sub>S P\<^sub>S p 2) x) +
+      bit_count (([0..<s] \<rightarrow>\<^sub>S set\<^sub>S F\<^sub>S) (\<lambda>i\<in>{..<s}. f0_sketch (x i)))"
       using b_2
       apply (simp add:encode_f0_state_def dependent_bit_count lessThan_atLeast0
         s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] fun\<^sub>S_def)
       by (simp add:ac_simps  lessThan_atLeast0)
     also have "... \<le> ereal (2* log 2 (real s + 1) + 1) + ereal  (2* log 2 (real t + 1) + 1)
       + ereal (2* log 2 (real p + 1) + 1) + ereal (2 * log 2 (real r + 1) + 1)
-      + (ereal (real s) * (ereal (real 2 * (2 * log 2 (real p) + 2) + 1) + 1) + 1) 
-      + (ereal (real s) * ((ereal (real t) * (ereal (10 + 4 * real r + 2 * log 2 (log 2 (real (n + 13))))
-           + 1) + 1) + 1) + 1)"
-      apply (rule add_mono, rule add_mono, rule add_mono, rule add_mono, rule add_mono)
-           apply (metis nat_bit_count)
-          apply (metis nat_bit_count)
-         apply (metis nat_bit_count)
-        apply (metis nat_bit_count)
-       apply (rule list_bit_count_est[where xs="map x [0..<s]", simplified]) 
-       apply (rule bounded_degree_polynomial_bit_count[OF p_ge_0]) using b_1 space_def lessThan_atLeast0 apply blast
-      apply (rule list_bit_count_est[where xs="map (\<lambda>i\<in>{..<s}. f0_sketch (x i)) [0..<s]", simplified])
-         apply (rule set_bit_count_est)
-      using  b_5 b_3 b_4_1  by (simp add:lessThan_atLeast0)+
-    also have "... = ereal ( 6 + 2 * log 2 (real s + 1) + 2 * log 2 (real t + 1) + 
-      2 * log 2 (real p + 1) + 2 * log 2 (real r + 1) + real s * (8 + 4 * log 2 (real p) + 
-      real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
+      + (ereal (real s) * (ereal (real 2 * (log 2 (real p) + 1)))) 
+      + (ereal (real s) * ((ereal (real t) * (ereal (12 + 4 * real r + 2 * log 2 (log 2 (real (n + 13))))
+           + 1) + 1)))"
+      apply (intro add_mono exp_goloumb_bit_count)
+       apply (rule fun_bit_count_est[where xs="[0..<s]", simplified])
+      using b_2 apply (simp add:lessThan_atLeast0)
+       apply (rule  bounded_degree_polynomial_bit_count[OF p_ge_1])
+      using b_1 space_def lessThan_atLeast0 apply blast
+      apply (rule fun_bit_count_est[where xs="[0..<s]", simplified], simp add:lessThan_atLeast0)
+      apply (rule set_bit_count_est[OF encode_float])
+      using b_5 apply simp
+      using b_3 apply simp
+       apply simp
+      using b_4_1 by (simp add:image_iff atLeast0LessThan, blast)
+    also have "... = ereal ( 4 + 2 * log 2 (real s + 1) + 2 * log 2 (real t + 1) + 
+      2 * log 2 (real p + 1) + 2 * log 2 (real r + 1) + real s * (3 + 2 * log 2 (real p) + 
+      real t * (13 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
       apply (simp)
       by (subst distrib_left[symmetric], simp) 
-    also have "... \<le> ereal ( 6 + 2 * log 2 (real s + 1)  + 2 * log 2 (real t + 1) + 
-      2 * log 2 (2 * (21 + real n)) + 2 * log 2 (real r + 1) + real s * (8 + 4 * log 2 (2 * (21 + real n)) + 
-      real t * (11 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
+    also have "... \<le> ereal ( 4 + 2 * log 2 (real s + 1)  + 2 * log 2 (real t + 1) + 
+      2 * log 2 (2 * (21 + real n)) + 2 * log 2 (real r + 1) + real s * (3 + 2 * log 2 (2 * (21 + real n)) + 
+      real t * (13 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
       apply (simp, rule add_mono, simp) using p_le_n apply simp
       apply (rule mult_left_mono, simp)
        apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
@@ -1358,7 +1353,7 @@ proof -
     by (subst ln_div, simp, simp, simp)
 
   have l8: "(\<lambda>x. real (nat \<lceil>80 / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>) * 
-    (11 + 4 * real (nat (4 * \<lceil>log 2 (1 / real_of_rat (\<delta>_of x))\<rceil> + 23)) + 
+    (13 + 4 * real (nat (4 * \<lceil>log 2 (1 / real_of_rat (\<delta>_of x))\<rceil> + 23)) + 
     2 * log 2 (log 2 (real (n_of x) + 13))))
     \<in> O[?F](\<lambda>x. (ln (ln (real (n_of x))) + ln (1 / real_of_rat (\<delta>_of x))) / (real_of_rat (\<delta>_of x))\<^sup>2)"
     apply (subst (4) div_commute)

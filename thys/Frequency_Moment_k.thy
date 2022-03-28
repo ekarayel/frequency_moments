@@ -1,7 +1,7 @@
 section \<open>Frequency Moment $k$\<close>
 
 theory Frequency_Moment_k
-  imports Main Median_Method.Median Product_PMF_Ext Lp.Lp List_Ext Encoding Frequency_Moments Landau_Ext
+  imports Main Median_Method.Median Product_PMF_Ext Lp.Lp List_Ext Frequency_Moments Landau_Ext
 begin
 
 text \<open>This section contains a formalization of the algorithm for the $k$-th frequency moment.
@@ -832,12 +832,12 @@ fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat)
   "fk_space_usage (k, n, m, \<epsilon>, \<delta>) = (
     let s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k) / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
     let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil> in 
-    5 +
+    4 +
     2 * log 2 (s\<^sub>1 + 1) +
     2 * log 2 (s\<^sub>2 + 1) +
     2 * log 2 (real k + 1) +
     2 * log 2 (real m + 1) +
-    s\<^sub>1 * s\<^sub>2 * (3 + 2 * log 2 (real n+1) + 2 * log 2 (real m+1)))"
+    s\<^sub>1 * s\<^sub>2 * (2 + 2 * log 2 (real n+1) + 2 * log 2 (real m+1)))"
 
 definition encode_fk_state :: "fk_state \<Rightarrow> bool list option" where
   "encode_fk_state = 
@@ -850,11 +850,7 @@ definition encode_fk_state :: "fk_state \<Rightarrow> bool list option" where
 lemma "inj_on encode_fk_state (dom encode_fk_state)"
   apply (rule encoding_imp_inj)
   apply (simp add:encode_fk_state_def)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  apply (rule dependent_encoding, metis nat_encoding)
-  by (metis encode_extensional dependent_encoding nat_encoding)
+  by (intro dependent_encoding exp_goloumb_encoding fun_encoding)
 
 theorem fk_exact_space_usage:
   assumes "k \<ge> 1"
@@ -878,11 +874,11 @@ proof (cases "as = []")
     have h_1: "fst x \<le> 0" using h_a by force
     have h_2: "snd x \<le> 0" using h_a by force
     
-    have "bit_count  ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) x) \<le>  ereal (2 * log 2 (1 + real 0) + 1) +  ereal (2 * log 2 (1 + real 0) + 1)"
+    have "bit_count  ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) x) \<le>  ereal (2 * log 2 (real 0 + 1) + 1) +  ereal (2 * log 2 (real 0 + 1) + 1)"
       apply (subst dependent_bit_count_2)
       apply (rule add_mono)
-       apply (rule nat_bit_count_est, rule h_1)
-      by (rule nat_bit_count_est, rule h_2)
+       apply (rule exp_goloumb_bit_count_est, rule h_1)
+      by (rule exp_goloumb_bit_count_est, rule h_2)
     also have "... = 2"
       by simp
     finally show "bit_count  ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) x) \<le> 2" by simp
@@ -892,17 +888,17 @@ proof (cases "as = []")
     bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S N\<^sub>S \<times>\<^sub>S N\<^sub>S) (\<lambda>_\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0, 0)))
     \<le> ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + 
     ereal (2 * log 2 (real k + 1) + 1) + ereal (2 * log 2 (real 0 + 1) + 1) + 
-   (ereal (real s\<^sub>1 * real s\<^sub>2) * (w + 1) + 1)"
+   (ereal (real s\<^sub>1 * real s\<^sub>2) * w)"
     apply (rule add_mono)
     apply (rule add_mono)
     apply (rule add_mono)
-       apply (rule add_mono, rule nat_bit_count)
-      apply (rule nat_bit_count)
-     apply (rule nat_bit_count)
-     apply (rule nat_bit_count)
-    apply (simp add:fun\<^sub>S_def)
-    apply (rule list_bit_count_est[where xs="map (\<lambda>_\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0, 0)) (List.product [0..<s\<^sub>1] [0..<s\<^sub>2])", simplified])
-    by (subst w_def, metis h)
+       apply (rule add_mono, rule exp_goloumb_bit_count)
+      apply (rule exp_goloumb_bit_count)
+     apply (rule exp_goloumb_bit_count)
+     apply (rule exp_goloumb_bit_count)
+    apply (rule fun_bit_count_est[where xs="(List.product [0..<s\<^sub>1] [0..<s\<^sub>2])", simplified], simp)
+    apply (subst w_def)
+    using h by simp
   also have "... \<le> ereal (fk_space_usage (k, n, length as, \<epsilon>, \<delta>))" 
     apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] w_def True)
     apply (rule mult_left_mono) 
@@ -942,23 +938,18 @@ next
       using count_le_length b0 apply (simp add:PiE_iff case_prod_beta) 
       using dual_order.strict_trans1 by fastforce
     have b3: "y \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})" using b0 PiE_iff by blast
-    hence "bit_count (encode_fk_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> 
+    have "bit_count (encode_fk_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> 
       ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + (
       ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ( 
       ereal (2 * log 2 (real k + 1) + 1) + (
       ereal (2 * log 2 (real (length as) + 1) + 1) + (
-       (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 (n+1) + 1) + ereal (2 * log 2 (length as+1) + 1)) + 1))+ 1))))"
-      apply (simp add:encode_fk_state_def dependent_bit_count PiE_iff comp_def fun\<^sub>S_def
-          del: plus_ereal.simps sum_list_ereal times_ereal.simps)
-      apply (rule add_mono, simp add: nat_bit_count[simplified])
-      apply (rule add_mono, simp add: nat_bit_count[simplified])
-      apply (rule add_mono, simp add: nat_bit_count[simplified])
-      apply (rule add_mono, simp add: nat_bit_count[simplified])
-      apply (rule list_bit_count_est[where xs="map y (List.product [0..<s\<^sub>1] [0..<s\<^sub>2])", simplified])
+       (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 (real n+1) + 1) + ereal (2 * log 2 (real (length as)+1) + 1))))))))"
+      unfolding encode_fk_state_def dependent_bit_count
+      apply (intro add_mono exp_goloumb_bit_count)
+      apply (rule  fun_bit_count_est[where xs="(List.product [0..<s\<^sub>1] [0..<s\<^sub>2])", simplified], simp add:b3)
       apply (subst dependent_bit_count_2)
       apply (rule add_mono)
-      apply (rule nat_bit_count_est, metis b1)
-      by (rule nat_bit_count_est, metis b2)
+      using b1 b2 exp_goloumb_bit_count_est by auto
     also have "... \<le> ?rhs"
       using n_nonzero length_xs_gr_0 apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric,simplified])
       by (simp add:algebra_simps)
@@ -1106,7 +1097,7 @@ proof -
 
   have l1: "(\<lambda>x. real (nat \<lceil>3 * real (k_of x) * real (n_of x) powr (1 - 1 / real (k_of x)) / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>) *
           real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) *
-          (3 + 2 * log 2 (real (n_of x) + 1) + 2 * log 2 (real (m_of x) + 1))) \<in> O[?F](g)"
+          (2 + 2 * log 2 (real (n_of x) + 1) + 2 * log 2 (real (m_of x) + 1))) \<in> O[?F](g)"
     apply (simp add:g_def)
     apply (rule landau_o.mult)
      apply (rule landau_o.mult, simp add:l6, simp add:l9)

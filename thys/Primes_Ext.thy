@@ -6,7 +6,8 @@ theory Primes_Ext
   imports "HOL-Computational_Algebra.Primes" "Bertrands_Postulate.Bertrand" 
 begin
 
-definition prime_above :: "nat \<Rightarrow> nat" where "prime_above n = (SOME x. x \<in> {n..(2*n+2)} \<and> prime x)"
+definition prime_above :: "nat \<Rightarrow> nat" 
+  where "prime_above n = (SOME x. x \<in> {n..(2*n+2)} \<and> prime x)"
 
 lemma ex_subset:
   assumes "\<exists>x \<in> A. P x"

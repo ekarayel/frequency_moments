@@ -1,7 +1,7 @@
 section "Frequency Moments"
 
 theory Frequency_Moments
-  imports Main HOL.List HOL.Rat List_Ext Encoding     Universal_Hash_Families.Field
+  imports Main HOL.List HOL.Rat List_Ext Encoding Universal_Hash_Families.Field
     Interpolation_Polynomials_HOL_Algebra.Interpolation_Polynomial_Cardinalities
 begin
 
@@ -15,47 +15,94 @@ lemma F_gr_0:
   shows "F k as > 0"
 proof -
   have "rat_of_nat 1 \<le> rat_of_nat (card (set as))"
-    apply (rule of_nat_mono)
     using assms card_0_eq[where A="set as"] 
-    by (metis List.finite_set One_nat_def Suc_leI neq0_conv set_empty)
+    by (intro of_nat_mono)
+     (metis List.finite_set One_nat_def Suc_leI neq0_conv set_empty)
+  also have "... = (\<Sum>x\<in>set as. 1)" by simp
+  also have "... \<le> (\<Sum>x\<in>set as. rat_of_nat (count_list as x) ^ k)"
+    by (intro sum_mono one_le_power)
+     (metis  count_list_gr_1  of_nat_1 of_nat_le_iff)
   also have "... \<le> F k as"
-    apply (simp add:F_def)
-    apply (rule sum_mono[where K="set as" and f="\<lambda>_.(1::rat)", simplified])
-    by (metis  count_list_gr_1  of_nat_1 of_nat_power_le_of_nat_cancel_iff one_le_power)
-  finally show  "F k as > 0" by simp
+    by (simp add:F_def)
+  finally show ?thesis by simp
+qed
+
+definition P\<^sub>S :: "nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool list option" where
+  "P\<^sub>S p n f = (if p > 1 \<and> f \<in> bounded_degree_polynomials (Field.mod_ring p) n then
+    ([0..<n] \<rightarrow>\<^sub>S N\<^sub>F p) (\<lambda>i \<in> {..<n}. ring.coeff (Field.mod_ring p) f i) else None)"
+
+lemma poly_encoding:
+  "is_encoding (P\<^sub>S p n)"
+proof (cases "p > 1")
+  case True
+  interpret cring "Field.mod_ring p"
+    using mod_ring_is_cring True by blast
+  have a:"inj_on (\<lambda>x. (\<lambda>i \<in> {..<n}. (coeff x i))) (bounded_degree_polynomials (mod_ring p) n)"
+  proof (rule inj_onI)
+    fix x y
+    assume b:"x \<in> bounded_degree_polynomials (mod_ring p) n"
+    assume c:"y \<in> bounded_degree_polynomials (mod_ring p) n"
+    assume d:"restrict (coeff x) {..<n} = restrict (coeff y) {..<n}"
+    have "coeff x i = coeff y i" for i
+    proof (cases "i < n")
+      case True
+      then show ?thesis by (metis lessThan_iff restrict_apply d)
+    next
+      case False
+      hence e: "i \<ge> n" by linarith
+      have "coeff x i = \<zero>\<^bsub>mod_ring p\<^esub>"
+        using b e by (subst coeff_length, auto simp:bounded_degree_polynomials_length)
+      also have "... = coeff y i"
+        using c e by (subst coeff_length, auto simp:bounded_degree_polynomials_length)
+      finally show ?thesis by simp
+    qed
+    then show "x = y"
+      using b c univ_poly_carrier 
+      by (subst coeff_iff_polynomial_cond) (auto simp:bounded_degree_polynomials_length) 
+  qed
+
+  have "is_encoding (\<lambda>f. P\<^sub>S p n f)"
+    unfolding P\<^sub>S_def using a True
+    by (intro encoding_compose[where f="([0..<n] \<rightarrow>\<^sub>S N\<^sub>F p)"] fun_encoding fixed_encoding) 
+     auto
+  thus ?thesis by simp
+next
+  case False
+  hence "is_encoding (\<lambda>f. P\<^sub>S p n f)"
+    unfolding P\<^sub>S_def using encoding_triv by simp
+  then show ?thesis by simp
 qed
 
 lemma bounded_degree_polynomial_bit_count:
-  assumes "p > 0"
+  assumes "p > 1"
   assumes "x \<in> bounded_degree_polynomials (Field.mod_ring p) n"
-  shows "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal (real n * (2 * log 2 p + 2) + 1)" (is "_ \<le> ?rhs")
+  shows "bit_count (P\<^sub>S p n x) \<le> ereal (real n * (log 2 p + 1))"
 proof -
-  have a:"length x \<le> n" 
-    using  assms(2) by (simp add:bounded_degree_polynomials_length)
-  have b:"\<And>y. y \<in> set x \<Longrightarrow> y \<le> p-1"
-  proof -
-    fix y
-    assume "y \<in> set x"
-    moreover have "x \<in> (carrier (poly_ring (Field.mod_ring p)))" 
-      using bounded_degree_polynomials_def assms(2) by blast
-    ultimately have "y \<in> carrier (Field.mod_ring p)"
-      using univ_poly_carrier polynomial_def 
-      by (metis empty_iff list.set(1) subset_code(1))
-    hence "y < p"
-      by (simp add:Field.mod_ring_def)
-    thus "y \<le> p -1"
-      using assms(1) by simp
-  qed
+  interpret cring "Field.mod_ring p"
+    using mod_ring_is_cring assms by blast
 
-  have "bit_count (list\<^sub>S N\<^sub>S x) \<le> ereal (length x) * (ereal (2 * log 2 (1 + real (p - 1)) + 1) + 1) + 1"
-    apply (rule list_bit_count_est)
-    apply (rule nat_bit_count_est[where m="p-1"])
-    using b by simp
-  also have "... \<le> ereal (n * ((2 * log 2 p + 1) + 1) + 1)"
-    apply (simp, rule mult_mono)
-    using a assms by simp+
-  also have "... \<le> ?rhs"
-    by (simp add:ac_simps)
+  have a: "x \<in> carrier (poly_ring (mod_ring p))"
+    using assms(2) by (simp add:bounded_degree_polynomials_def)
+
+  have "real_of_int \<lfloor>log 2 (p-1)\<rfloor>+1 \<le> log 2 (p-1) + 1"
+    using floor_eq_iff by (intro add_mono, auto) 
+  also have "... \<le> log 2 p + 1"
+    using assms by (intro add_mono, auto)
+  finally have b: "\<lfloor>log 2 (p-1)\<rfloor>+1 \<le> log 2 p + 1"
+    by simp
+
+  have "bit_count (P\<^sub>S p n x) = (\<Sum> k \<leftarrow> [0..<n]. bit_count (N\<^sub>F p (coeff x k)))"
+    using assms restrict_extensional 
+    by (auto intro!:arg_cong[where f="sum_list"] simp add:P\<^sub>S_def fun_bit_count lessThan_atLeast0)
+  also have "... = (\<Sum> k \<leftarrow> [0..<n]. ereal (floorlog 2 (p-1)))"
+    using coeff_in_carrier[OF a] mod_ring_carr 
+    by (subst bounded_nat_bit_count_2, auto)
+  also have "... = n * ereal (floorlog 2 (p-1))"
+    by (simp add: sum_list_triv)
+  also have "... = n * real_of_int (\<lfloor>log 2 (p-1)\<rfloor>+1)" 
+    using assms(1) by (simp add:floorlog_def)
+  also have "... \<le> ereal (real n * (log 2 p + 1))" 
+    by (subst ereal_less_eq, intro mult_left_mono b, auto)
   finally show ?thesis by simp
 qed
 

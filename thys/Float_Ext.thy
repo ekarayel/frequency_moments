@@ -151,12 +151,12 @@ lemma suc_n_le_2_pow_n:
   by (induction n, simp, simp)
 
 lemma float_bit_count_1:
-  "bit_count (F\<^sub>S f) \<le> 4 + 2 * (log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1))" (is "?lhs \<le> ?rhs")
+  "bit_count (F\<^sub>S f) \<le> 6 + 2 * (log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1))" (is "?lhs \<le> ?rhs")
 proof -
   have "?lhs = bit_count (I\<^sub>S (mantissa f)) + bit_count (I\<^sub>S (exponent f))"
-    by (simp add:F\<^sub>S_def dependent_bit_count del:I\<^sub>S.simps)
-  also have "... \<le> ereal (2 * log 2 (real_of_int (\<bar>mantissa f\<bar> + 1)) + 2) + ereal (2 * log 2 (real_of_int (\<bar>exponent f\<bar> + 1)) + 2)"
-    by (intro int_bit_count add_mono)
+    by (simp add:F\<^sub>S_def dependent_bit_count)
+  also have "... \<le> ereal (2 * log 2 (real_of_int (\<bar>mantissa f\<bar> + 1)) + 3) + ereal (2 * log 2 (real_of_int (\<bar>exponent f\<bar> + 1)) + 3)"
+    by (intro int_bit_count_est_1 add_mono) auto
   also have "... = ?rhs"
     by simp
   finally show ?thesis by simp
@@ -166,7 +166,7 @@ lemma float_bit_count_2:
   fixes m :: int
   fixes e :: int
   defines "f \<equiv> float_of (m * 2 powr e)"
-  shows "bit_count (F\<^sub>S f) \<le> 4 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
+  shows "bit_count (F\<^sub>S f) \<le> 6 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
 proof -
   have b:" (r + 1) * int i \<le> r * (2 ^ i - 1) + 1" if b_assms: "r \<ge> 1" for r :: int and i :: nat
   proof (cases "i > 0")
@@ -232,16 +232,16 @@ proof -
        (metis (mono_tags, opaque_lifting) numeral_One of_int_add of_int_le_iff of_int_mult of_int_numeral)
     then show ?thesis by (simp add:log_mult[symmetric])
   qed
-  have "bit_count (F\<^sub>S f) \<le> 4 + 2 * (log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1))"
+  have "bit_count (F\<^sub>S f) \<le> 6 + 2 * (log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1))"
     using float_bit_count_1 by simp
-  also have "... \<le> 4 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
+  also have "... \<le> 6 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
     using a by simp
   finally show ?thesis by simp
 qed
 
 lemma float_bit_count_zero:
-  "bit_count (F\<^sub>S (float_of 0)) = 4"
-  by (simp add:F\<^sub>S_def N\<^sub>S_def dependent_bit_count  zero_float.abs_eq[symmetric])
+  "bit_count (F\<^sub>S (float_of 0)) = 2"
+  by (simp add:F\<^sub>S_def dependent_bit_count int_bit_count zero_float.abs_eq[symmetric])
 
 lemma log_est: "log 2 (real n + 1) \<le> n"
 proof -
@@ -258,7 +258,7 @@ proof -
 qed
 
 lemma truncate_float_bit_count:
-  "bit_count (F\<^sub>S (float_of (truncate_down r x))) \<le> 8 + 4 * real r + 2*log 2 (2 + abs (log 2 (abs x)))" 
+  "bit_count (F\<^sub>S (float_of (truncate_down r x))) \<le> 10 + 4 * real r + 2*log 2 (2 + \<bar>log 2 \<bar>x\<bar>\<bar>)" 
   (is "?lhs \<le> ?rhs")
 proof -
   define m where "m = \<lfloor>x * 2 powr (real r - real_of_int \<lfloor>log 2 \<bar>x\<bar>\<rfloor>)\<rfloor>"
@@ -295,9 +295,9 @@ proof -
 
   have "?lhs =  bit_count (F\<^sub>S (float_of (real_of_int m * 2 powr real_of_int e)))"
     by (simp add:truncate_down_def round_down_def m_def[symmetric] a)
-  also have "... \<le> ereal (4 + (2 * log 2 (real_of_int (\<bar>m\<bar> + 2)) + 2 * log 2 (real_of_int (\<bar>e\<bar> + 1))))"
+  also have "... \<le> ereal (6 + (2 * log 2 (real_of_int (\<bar>m\<bar> + 2)) + 2 * log 2 (real_of_int (\<bar>e\<bar> + 1))))"
     using float_bit_count_2 by simp
-  also have "... \<le> ereal (4 + (2 * real (r+2) + 2 * (r + log 2 (2 + abs (log 2 (abs x))))))"
+  also have "... \<le> ereal (6 + (2 * real (r+2) + 2 * (r + log 2 (2 + abs (log 2 (abs x))))))"
     using c e
     by (subst ereal_less_eq, intro add_mono mult_left_mono, linarith+) 
   also have "... = ?rhs" by simp
