@@ -596,8 +596,8 @@ proof (cases "card (set as) \<ge> t")
   finally have a_le_p: "a < real p" by simp
   hence a_le_p: "a < int p" by linarith
 
-  have "prob {\<omega>. Q a \<omega> \<ge> t} \<le> 
-    prob {\<omega> \<in> Sigma_Algebra.space M. abs (real (Q a \<omega>) - expectation (\<lambda>\<omega>. real (Q a \<omega>))) \<ge> 3 * sqrt (m *(real_of_int a+1)/p)}"
+  have "prob {\<omega>. Q a \<omega> \<ge> t} \<le> prob {\<omega> \<in> Sigma_Algebra.space M. abs (real (Q a \<omega>) - 
+    expectation (\<lambda>\<omega>. real (Q a \<omega>))) \<ge> 3 * sqrt (m *(real_of_int a+1)/p)}"
   proof (rule pmf_mono'[OF M_def])
     fix \<omega>
     assume "\<omega> \<in> {\<omega>. t \<le> Q a \<omega>}"
@@ -714,7 +714,7 @@ proof (cases "card (set as) \<ge> t")
         using t_ge_0 t_le_m m_ge_0 p_ge_0 \<delta>'_le_1 by simp
 
       also have "... \<le>  real m * (real_of_int b + 1) / real p"      
-        by (intro  divide_right_mono mult_left_mono) (simp_all add:b_def)
+        by (intro divide_right_mono mult_left_mono) (simp_all add:b_def)
 
       finally have "real (Q b \<omega>) + 3 * sqrt (real m * (real_of_int b + 1) / real p) 
         \<le> real m * (real_of_int b + 1) / real p" by simp
@@ -762,7 +762,7 @@ proof (cases "card (set as) \<ge> t")
     by (rule pmf_mono'[OF M_def]) (simp add:has_no_collision_def M_def, force) 
 
   also have "... \<le> (5/2) * (real (card (set as)))\<^sup>2 * (real_of_int b)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
-    using collision_prob  b_ge_1 by blast
+    using collision_prob b_ge_1 by blast
 
   also have "... \<le> (5/2) * (real m)\<^sup>2 * (real_of_int b)\<^sup>2 * 2 powr - real r / (real p)\<^sup>2 + 1 / real p"
     by (intro divide_right_mono add_mono mult_right_mono mult_mono power_mono, simp_all add:m_def)
@@ -1008,6 +1008,12 @@ private lemma f_subset:
   shows "(\<lambda>x. f (g x)) ` A \<subseteq> (\<lambda>x. f (h x)) ` B"
   using assms by auto
 
+lemma ereal_mono: "x \<le> y \<Longrightarrow> ereal x \<le> ereal y"
+  by simp
+
+lemma log_mono: "a > 1 \<Longrightarrow> x \<le> y \<Longrightarrow> 0 < x \<Longrightarrow> log a x \<le> log a y"
+  by (subst log_le_cancel_iff, auto)
+
 lemma f0_exact_space_usage':
   defines "\<Omega> \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
   shows "AE \<omega> in \<Omega>. bit_count (encode_f0_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
@@ -1016,148 +1022,116 @@ proof -
   have log_2_4: "log 2 4 = 2" 
     by (metis log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
 
-  have b_4_22: "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
-    ereal (12 + 4 * real r + 2 * log 2 (log 2 (n+13)))" if a:"y \<in> {..<p}" for y
+  have a: "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
+    ereal (12 + 4 * real r + 2 * log 2 (log 2 (n+13)))" if a_1:"y \<in> {..<p}" for y
   proof (cases "y \<ge> 1")
     case True
 
-    have b_4_23: "0 < 2 + log 2 (real p)" 
-     apply (rule order_less_le_trans[where y="2+log 2 1"], simp)
-     using p_ge_0 by simp
+    have aux_1: " 0 < 2 + log 2 (real y)" 
+      using True by (intro add_pos_nonneg, auto)
+    have aux_2: "0 < 2 + log 2 (real p)"
+      using p_ge_1 by (intro add_pos_nonneg, auto)
 
-    have "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le>  ereal (10 + 4 * real r + 2 * log 2 (2 + \<bar>log 2 \<bar>real y\<bar>\<bar>))"
+    have "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
+      ereal (10 + 4 * real r + 2 * log 2 (2 + \<bar>log 2 \<bar>real y\<bar>\<bar>))"
       by (rule truncate_float_bit_count)
+    also have "... = ereal (10 + 4 * real r + 2 * log 2 (2 + (log 2 (real y))))"
+      using True by simp
     also have "... \<le> ereal (10 + 4 * real r + 2 * log 2 (2 + log 2 p))"
-      apply (simp)
-      apply (subst log_le_cancel_iff, simp, simp, simp add:b_4_23)
-      apply (subst abs_of_nonneg) using True apply simp
-      apply (simp, subst log_le_cancel_iff, simp, simp) using True apply simp
-       apply (simp add:p_ge_0)
-      using a by simp
+      using aux_1 aux_2 True p_ge_0 a_1 by simp
     also have "... \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 4 + log 2 (2 * n + 40)))"
-      apply simp
-      apply (subst log_le_cancel_iff, simp, simp add:_b_4_23)
-       apply (rule add_pos_pos, simp, simp)
-      apply (rule add_mono)
-       apply (metis dual_order.refl log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
-      apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
-      using p_le_n by simp
+      using log_2_4 p_le_n p_ge_0
+      by (intro ereal_mono add_mono mult_left_mono log_mono of_nat_mono add_pos_nonneg, auto)
+    also have "... = ereal (10 + 4 * real r + 2 * log 2 (log 2 (8 * n + 160)))"
+      by (simp add:log_mult[symmetric])
     also have "... \<le> ereal (10 + 4 * real r + 2 * log 2 (log 2 ((n+13) powr 2)))"
-      apply simp
-      apply (subst log_le_cancel_iff, simp, rule add_pos_pos, simp, simp, simp)
-      apply (subst log_mult[symmetric], simp, simp, simp, simp)
-      by (subst log_le_cancel_iff, simp, simp, simp, simp add:power2_eq_square algebra_simps)
+      by (intro ereal_mono add_mono mult_left_mono log_mono of_nat_mono add_pos_nonneg)
+       (auto simp add:power2_eq_square algebra_simps)
+    also have "... = ereal (10 +  4 * real r + 2 * log 2 (log 2 4 * log 2 (n + 13)))"
+      by (subst log_powr, simp_all add:log_2_4)
     also have "... = ereal (12 +  4 * real r + 2 * log 2 (log 2 (n + 13)))"
-      apply (subst log_powr, simp)
-      apply (simp)
-      apply (subst (3) log_2_4[symmetric]) 
-      by (subst log_mult, simp, simp, simp, simp, simp add:log_2_4)
+      by (subst log_mult, simp_all add:log_2_4)
     finally show ?thesis by simp
   next
     case False
-    hence "y = 0" using a by simp
+    hence "y = 0" using a_1 by simp
     then show ?thesis by (simp add:float_bit_count_zero)
   qed
 
-  have b: 
-    "\<And>x. x \<in> ({..<s} \<rightarrow>\<^sub>E space) \<Longrightarrow>
-        bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) \<le> 
-        f0_space_usage (n, \<epsilon>, \<delta>)"
+  have "bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) \<le> 
+        f0_space_usage (n, \<epsilon>, \<delta>)" if b: "x \<in> {..<s} \<rightarrow>\<^sub>E space" for x
   proof -
-    fix x
-    assume b_1:"x \<in> {..<s} \<rightarrow>\<^sub>E space"
-    have b_2: "x \<in> extensional {..<s}" using b_1 by (simp add:PiE_def) 
+    have c: "x \<in> extensional {..<s}" using b by (simp add:PiE_def) 
 
-    have "\<And>y. y \<in> {..<s} \<Longrightarrow> card (f0_sketch (x y)) \<le> t "
-      apply (simp add:f0_sketch_def)
-      apply (subst card_least, simp)
-      by simp
+    have d: "f0_sketch (x y) \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {..<p} "
+      if d_1: "y < s" for y
+    proof -
+      have "f0_sketch (x y) \<subseteq> (\<lambda>xa. float_of (truncate_down r (hash xa (x y)))) ` set as"
+        using least_subset by (auto simp add:f0_sketch_def tr_hash_def) 
+      also have "... \<subseteq> (\<lambda>k. float_of (truncate_down r (real k))) ` {..<p}"
+        using b hash_range as_lt_p d_1
+        by (intro f_subset[where f="\<lambda>x. float_of (truncate_down r (real x))"] image_subsetI)
+         (simp add: PiE_iff mod_ring_carr)
+      finally show ?thesis
+        by simp
+    qed
 
-    hence b_3: "\<And>y. y \<in> (\<lambda>z. f0_sketch (x z)) ` {..<s} \<Longrightarrow> card y \<le> t"
-      by force
+    have "\<And>y. y < s \<Longrightarrow> finite (f0_sketch (x y))"
+      unfolding f0_sketch_def by (rule finite_subset[OF least_subset], simp)
+    moreover have card_sketch: "\<And>y. y < s \<Longrightarrow> card (f0_sketch (x y)) \<le> t "
+      by (simp add:f0_sketch_def card_least)
+    moreover have "\<And>y z. y < s \<Longrightarrow> z \<in> f0_sketch (x y) \<Longrightarrow> 
+      bit_count (F\<^sub>S z) \<le> ereal (12 + 4 * real r + 2 * log 2 (log 2 (real n + 13)))"
+      using a d by auto
+    ultimately have e: "\<And>y. y < s \<Longrightarrow> bit_count (set\<^sub>S F\<^sub>S (f0_sketch (x y))) 
+      \<le> ereal (real t) * (ereal (12 + 4 * real r + 2 * log 2 (log 2 (real (n + 13)))) + 1) + 1"
+      using encode_float by (intro set_bit_count_est, auto)
 
-    have "\<And>y. y \<in> {..<s} \<Longrightarrow> f0_sketch (x y) \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {..<p} "
-      apply (simp add:f0_sketch_def tr_hash_def)
-      apply (rule order_trans[OF least_subset])
-      apply (rule f_subset[where f="\<lambda>x. float_of (truncate_down r (real x))"])
-      apply (rule image_subsetI, simp) 
-      using hash_range
-      using b_1 apply (simp add: PiE_iff mod_ring_carr )
-      using as_range n_le_p
-      by (meson lessThan_iff order_less_le_trans subset_code(1) zero_le)
-    hence b_4: "\<And>y. y \<in> (\<lambda>z. f0_sketch (x z)) ` {..<s} \<Longrightarrow> 
-      y \<subseteq> (\<lambda>k. float_of (truncate_down r k)) ` {..<p}"
-      by force
-
-    have b_4_1: "\<And>y z . y \<in> (\<lambda>z. f0_sketch (x z)) ` {..<s} \<Longrightarrow> z \<in> y \<Longrightarrow> 
-      bit_count (F\<^sub>S z) \<le> ereal (12 + 4 * real r + 2 * log 2 (log 2 (n+13)))"
-      using b_4_22 b_4 by blast
-
-    have "\<And>y. y \<in> {..<s} \<Longrightarrow> finite (f0_sketch (x y))"
-      apply (simp add:f0_sketch_def)
-      by (rule finite_subset[OF least_subset], simp)
-    hence b_5: "\<And>y. y \<in> (\<lambda>z. f0_sketch (x z)) ` {..<s} \<Longrightarrow> finite y" by force
+    have f: "\<And>y. y < s \<Longrightarrow> bit_count (P\<^sub>S p 2 (x y)) \<le> ereal (real 2 * (log 2 (real p) + 1))"
+      using p_ge_1 b
+      by (intro bounded_degree_polynomial_bit_count) (simp_all add:space_def PiE_def Pi_def)
 
     have "bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) =
       bit_count (N\<^sub>S s) + bit_count (N\<^sub>S t) +  bit_count (N\<^sub>S p) + bit_count (N\<^sub>S r) +
       bit_count (([0..<s] \<rightarrow>\<^sub>S P\<^sub>S p 2) x) +
       bit_count (([0..<s] \<rightarrow>\<^sub>S set\<^sub>S F\<^sub>S) (\<lambda>i\<in>{..<s}. f0_sketch (x i)))"
-      using b_2
-      apply (simp add:encode_f0_state_def dependent_bit_count lessThan_atLeast0
-        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] fun\<^sub>S_def)
-      by (simp add:ac_simps  lessThan_atLeast0)
+      by (simp add:encode_f0_state_def dependent_bit_count lessThan_atLeast0
+        s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] ac_simps)
     also have "... \<le> ereal (2* log 2 (real s + 1) + 1) + ereal  (2* log 2 (real t + 1) + 1)
       + ereal (2* log 2 (real p + 1) + 1) + ereal (2 * log 2 (real r + 1) + 1)
       + (ereal (real s) * (ereal (real 2 * (log 2 (real p) + 1)))) 
-      + (ereal (real s) * ((ereal (real t) * (ereal (12 + 4 * real r + 2 * log 2 (log 2 (real (n + 13))))
-           + 1) + 1)))"
-      apply (intro add_mono exp_goloumb_bit_count)
-       apply (rule fun_bit_count_est[where xs="[0..<s]", simplified])
-      using b_2 apply (simp add:lessThan_atLeast0)
-       apply (rule  bounded_degree_polynomial_bit_count[OF p_ge_1])
-      using b_1 space_def lessThan_atLeast0 apply blast
-      apply (rule fun_bit_count_est[where xs="[0..<s]", simplified], simp add:lessThan_atLeast0)
-      apply (rule set_bit_count_est[OF encode_float])
-      using b_5 apply simp
-      using b_3 apply simp
-       apply simp
-      using b_4_1 by (simp add:image_iff atLeast0LessThan, blast)
+      + (ereal (real s) * ((ereal (real t) * 
+            (ereal (12 + 4 * real r + 2 * log 2 (log 2 (real (n + 13)))) + 1) + 1)))"
+      using c e f
+      by (intro add_mono exp_goloumb_bit_count fun_bit_count_est[where xs="[0..<s]", simplified])
+       (simp_all add:lessThan_atLeast0)
     also have "... = ereal ( 4 + 2 * log 2 (real s + 1) + 2 * log 2 (real t + 1) + 
       2 * log 2 (real p + 1) + 2 * log 2 (real r + 1) + real s * (3 + 2 * log 2 (real p) + 
       real t * (13 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
-      apply (simp)
-      by (subst distrib_left[symmetric], simp) 
+      by (simp add:algebra_simps)
     also have "... \<le> ereal ( 4 + 2 * log 2 (real s + 1)  + 2 * log 2 (real t + 1) + 
       2 * log 2 (2 * (21 + real n)) + 2 * log 2 (real r + 1) + real s * (3 + 2 * log 2 (2 * (21 + real n)) + 
       real t * (13 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
-      apply (simp, rule add_mono, simp) using p_le_n apply simp
-      apply (rule mult_left_mono, simp)
-       apply (subst log_le_cancel_iff, simp, simp add:p_ge_0, simp)
-       using p_le_n apply simp
-      by simp
+      using p_le_n p_ge_0
+      by (intro ereal_mono add_mono mult_left_mono, auto)
+    also have "... =  ereal (6 + 2 * log 2 (real s + 1) + 2 * log 2 (real t + 1) + 
+      2 * log 2 (21 + real n) + 2 * log 2 (real r + 1) + real s * (5 + 2 * log 2 (21 + real n) + 
+      real t * (13 + (4 * real r + 2 * log 2 (log 2 (real n + 13))))))"
+      by (subst (1 2) log_mult, auto)
     also have "... \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
-      apply (subst log_mult, simp, simp, simp)
-      apply (subst log_mult, simp, simp, simp)
-      apply (simp add:s_def[symmetric] r_def[symmetric] t_def[symmetric] Let_def)
-      by (simp add:algebra_simps)
+      by (simp add:s_def[symmetric] r_def[symmetric] t_def[symmetric] Let_def)
+       (simp add:algebra_simps)
     finally show "bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) \<le> 
         f0_space_usage (n, \<epsilon>, \<delta>)" by simp
   qed
-  
-  have a:"\<And>y. y \<in> (\<lambda>x. (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) `
-             ({..<s} \<rightarrow>\<^sub>E space) \<Longrightarrow>
-         bit_count (encode_f0_state y) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
-    using b apply (simp add:image_def del:f0_space_usage.simps) by blast
-
-  show ?thesis
-    apply (subst AE_measure_pmf_iff, rule ballI)
-    apply (subst (asm) \<Omega>_def)
-    apply (subst (asm) f0_alg_sketch, simp)
-    apply (simp add:s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] Let_def \<Omega>\<^sub>0_def)
-    apply (subst (asm) set_prod_pmf, simp)
-    apply (simp add:comp_def space_def[symmetric])
-    using a
-    by (simp add:s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] Let_def)
+  hence "\<And>x. x \<in> set_pmf \<Omega>\<^sub>0 \<Longrightarrow>
+         bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i)))  \<le> ereal (f0_space_usage (n, \<epsilon>, \<delta>))"
+    by (simp add:\<Omega>\<^sub>0_def set_prod_pmf del:f0_space_usage.simps)
+  hence "\<And>y. y \<in> set_pmf \<Omega> \<Longrightarrow> bit_count (encode_f0_state y) \<le> ereal (f0_space_usage (n, \<epsilon>, \<delta>))"
+    by (simp add: \<Omega>_def f0_alg_sketch del:f0_space_usage.simps f0_init.simps)
+     (metis (no_types, lifting) image_iff pmf.set_map)
+  thus ?thesis
+    by (simp add: AE_measure_pmf_iff del:f0_space_usage.simps)
 qed
 
 end
@@ -1187,8 +1161,8 @@ proof -
   define \<epsilon>_of :: "nat \<times> rat \<times> rat \<Rightarrow> rat" where "\<epsilon>_of = (\<lambda>(n, \<epsilon>, \<delta>). \<epsilon>)"
   define \<delta>_of :: "nat \<times> rat \<times> rat \<Rightarrow> rat" where "\<delta>_of = (\<lambda>(n, \<epsilon>, \<delta>). \<delta>)"
 
-  define g where "g = (\<lambda>x. ln (1 / of_rat (\<epsilon>_of x)) * 
-    (ln (real (n_of x)) + 1 / (of_rat (\<delta>_of x))\<^sup>2 * (ln (ln (real (n_of x))) + ln (1 / of_rat (\<delta>_of x)))))"
+  define g where "g = (\<lambda>x. ln (1 / of_rat (\<epsilon>_of x)) * (ln (real (n_of x)) + 
+    1 / (of_rat (\<delta>_of x))\<^sup>2 * (ln (ln (real (n_of x))) + ln (1 / of_rat (\<delta>_of x)))))"
 
   have n_inf: "\<And>c. eventually (\<lambda>x. c \<le> (real (n_of x))) ?F" 
     apply (simp add:n_of_def case_prod_beta')
@@ -1323,8 +1297,8 @@ proof -
     apply (rule landau_ln_2[where a="2"], simp, simp, rule n_inf)
     by (rule sum_in_bigo, simp, simp add:unit_3)
   
-  have l6: "(\<lambda>x. log 2 (real (nat (4 * \<lceil>log 2 (1 / real_of_rat (\<delta>_of x))\<rceil> + 23)) + 1)) \<in> O[?F](g)"
-    apply (simp add:g_def log_def, rule landau_o.big_mult_1'[OF unit_4], rule landau_sum_2)
+  have l6: "(\<lambda>x. ln (real (nat (4 * \<lceil>ln (1 / real_of_rat (\<delta>_of x)) / ln 2\<rceil> + 23)) + 1)) \<in> O[?F](g)"
+    apply (simp add:g_def, rule landau_o.big_mult_1'[OF unit_4], rule landau_sum_2)
       apply (rule eventually_ln_ge_iff[OF n_inf])
      apply (rule l1)
     apply (subst (4) div_commute)
@@ -1353,10 +1327,10 @@ proof -
     by (subst ln_div, simp, simp, simp)
 
   have l8: "(\<lambda>x. real (nat \<lceil>80 / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>) * 
-    (13 + 4 * real (nat (4 * \<lceil>log 2 (1 / real_of_rat (\<delta>_of x))\<rceil> + 23)) + 
-    2 * log 2 (log 2 (real (n_of x) + 13))))
+    (13 + 4 * real (nat (4 * \<lceil>ln (1 / real_of_rat (\<delta>_of x))/ ln 2\<rceil> + 23)) + 
+    2 * ln (ln (real (n_of x) + 13)/ln 2)/ln 2))
     \<in> O[?F](\<lambda>x. (ln (ln (real (n_of x))) + ln (1 / real_of_rat (\<delta>_of x))) / (real_of_rat (\<delta>_of x))\<^sup>2)"
-    apply (subst (4) div_commute)
+    apply (subst (7) div_commute)
     apply (rule landau_o.mult)
      apply (rule landau_nat_ceil[OF unit_1], rule landau_const_inv, simp, simp)
     apply (subst (3) add.commute)
@@ -1375,27 +1349,28 @@ proof -
     apply (rule sum_in_bigo, simp)
     by (rule landau_ceil[OF unit_2], simp add:log_def, simp add:unit_2)
 
-  have "f0_space_usage = (\<lambda>x. f0_space_usage (n_of x, \<epsilon>_of x, \<delta>_of x))"
-    apply (rule ext)
-    by (simp add:case_prod_beta' n_of_def \<epsilon>_of_def \<delta>_of_def)
-  also have "... \<in>  O[?F](g)"
-    apply (simp add:Let_def)
-    apply (rule sum_in_bigo_r) 
+  have l9: 
+    "(\<lambda>x. real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) *
+          (5 + 2 * ln (21 + real (n_of x)) / ln 2 +
+           real (nat \<lceil>80 / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>) *
+          (13 + 4 * real (nat (4 * \<lceil>ln (1 / real_of_rat (\<delta>_of x)) / ln 2\<rceil> + 23)) + 
+        2 * ln (ln (real (n_of x) + 13) / ln 2) / ln 2)))
+    \<in> O[?F](g)"
      apply (simp add:g_def)
      apply (rule landau_o.mult, simp add:l7)
      apply (rule landau_sum)
         apply (rule eventually_ln_ge_iff[OF n_inf])
        apply (rule l1)
       apply (rule sum_in_bigo_r, simp add:log_def l4, simp add:unit_9)
-     apply (simp add:l8)
-    apply (rule sum_in_bigo_r, simp add:l6)
-    apply (rule sum_in_bigo_r, simp add:log_def l5)
-    apply (rule sum_in_bigo_r, simp add:log_def l3)
-    apply (rule sum_in_bigo_r, simp add:log_def l2)
-    by (simp add:unit_8)
+    by (simp add:l8)
+
+  have "f0_space_usage = (\<lambda>x. f0_space_usage (n_of x, \<epsilon>_of x, \<delta>_of x))"
+    by (simp add:case_prod_beta' n_of_def \<epsilon>_of_def \<delta>_of_def)
+  also have "... \<in>  O[?F](g)"
+    using unit_8 l2 l3 l5 l6 l9
+    by (simp add:Let_def)
+     (intro sum_in_bigo unit_8, simp_all add:log_def)
   also have "... = O[?F](?rhs)"
-    apply (rule arg_cong2[where f="bigo"], simp)
-    apply (rule ext)
     by (simp add:case_prod_beta' g_def n_of_def \<epsilon>_of_def \<delta>_of_def)
   finally show ?thesis
     by simp

@@ -638,6 +638,12 @@ proof -
     apply (subst eventually_prod2', simp)+
     by (rule eventually_at_rightI[where b="1"], simp, simp)
 
+  have zero_less_eps: "eventually (\<lambda>x. 0 < (real_of_rat (\<epsilon>_of x))) ?F"
+    apply (simp add:\<epsilon>_of_def case_prod_beta')
+    apply (subst eventually_prod2', simp)+
+    apply (subst eventually_prod1', simp)
+    by (rule eventually_at_rightI[where b="1"], simp, simp)
+
   have unit_1: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
     by (intro landau_o.big_mono eventually_mono[OF eventually_conj[OF zero_less_delta delta_inf[where c="1"]]])
      (simp, meson le_divide_eq_1_pos order_le_less power_le_one zero_less_of_rat_iff)
@@ -653,8 +659,6 @@ proof -
     by (rule landau_o.big_mono, simp, rule m_inf)
 
   have unit_5: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)))"
-    (*    apply (rule landau_o.big.compose[where h'="\<lambda>x. real (n_of x)" and F="at_top"], simp)
-    apply (simp add:n_of_def case_prod_beta) *)
     by (auto intro!: landau_o.big_mono eventually_mono [OF n_inf[where c="exp 1"]])
       (metis abs_ge_self linorder_not_le ln_ge_iff not_exp_le_zero order.trans)
 
@@ -670,12 +674,6 @@ proof -
 
   have unit_9: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x) * real (m_of x))"
     by (intro landau_o.big_mult_1 unit_3 unit_4)
-
-  have zero_less_eps: "eventually (\<lambda>x. 0 < (real_of_rat (\<epsilon>_of x))) ?F"
-    apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)+
-    apply (subst eventually_prod1', simp)
-    by (rule eventually_at_rightI[where b="1"], simp, simp)
 
   have l1: "(\<lambda>x. real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>)) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
     by (intro landau_real_nat  landau_rat_ceil[OF unit_1]) (simp add:of_rat_divide of_rat_power)
@@ -704,23 +702,19 @@ proof -
     by (intro landau_sum_1  eventually_ln_ge_iff n_inf m_inf landau_ln_2[where a="2"])
       (auto intro!: sum_in_bigo simp add:unit_3)
 
-  have l4': "(\<lambda>x. ln (9 + 2 * real (n_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
+  have l5: "(\<lambda>x. ln (9 + 2 * real (n_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
     by (intro landau_sum_1  eventually_ln_ge_iff n_inf m_inf landau_ln_2[where a="2"])
       (auto intro!: sum_in_bigo simp add:unit_3)
 
-  have l5: "(\<lambda>x. ln (real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>) + 1)) \<in> O[?F](g)"
+  have l6: "(\<lambda>x. ln (real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>) + 1)) \<in> O[?F](g)"
     unfolding g_def
     by (intro landau_o.big_mult_1 landau_ln_3 sum_in_bigo unit_6 unit_2 l1 unit_1, simp)
 
-  have l6: "(\<lambda>x. ln (8 + 2 * real (n_of x))) \<in> O[?F](g)"
+  have l7: "(\<lambda>x. ln (9 + 2 * real (n_of x))) \<in> O[?F](g)"
     unfolding g_def
-    by (intro landau_o.big_mult_1' unit_1 unit_2 l4)
+    by (intro landau_o.big_mult_1' unit_1 unit_2 l5)
 
-  have l6': "(\<lambda>x. ln (9 + 2 * real (n_of x))) \<in> O[?F](g)"
-    unfolding g_def
-    by (intro landau_o.big_mult_1' unit_1 unit_2 l4')
-
-  have l7: "(\<lambda>x. ln (real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) + 1) ) \<in> O[?F](g)"
+  have l8: "(\<lambda>x. ln (real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) + 1) ) \<in> O[?F](g)"
     unfolding g_def
     by (intro landau_o.big_mult_1 unit_6 landau_o.big_mult_1' unit_1 landau_ln_3  sum_in_bigo l2 unit_2) simp
 
@@ -728,7 +722,7 @@ proof -
       \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
     by (intro sum_in_bigo, auto simp: l3 l4 unit_6)
 
-  have l8: "(\<lambda>x. real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>) * real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) * 
+  have l10: "(\<lambda>x. real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>) * real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) * 
       (5 + 4 * ln (8 + 2 * real (n_of x)) / ln 2 + 2 * ln(real (m_of x) * (18 + 4 * real (n_of x)) + 1) / ln 2))
       \<in> O[?F](g)"
     unfolding g_def by (intro landau_o.mult, auto simp: l1 l2 l9)
@@ -736,7 +730,7 @@ proof -
   have "f2_space_usage = (\<lambda>x. f2_space_usage (n_of x, m_of x, \<epsilon>_of x, \<delta>_of x))"
     by (simp add:case_prod_beta' n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def)
   also have "... \<in> O[?F](g)"
-    by (auto intro!:sum_in_bigo simp:Let_def log_def l5 l6 l6' l7 l8 unit_8)
+    by (auto intro!:sum_in_bigo simp:Let_def log_def l6 l7 l8 l10 unit_8)
   also have "... = O[?F](?rhs)"
     by (simp add:case_prod_beta' g_def n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def)
   finally show ?thesis by simp
