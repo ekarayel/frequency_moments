@@ -68,6 +68,73 @@ proof -
 qed
 
 
+text \<open>Returns the i-th element from the list and the number of occurences of it after
+the i-th element. The following result establishes that the distribution of sketch is S.\<close> 
+definition sketch where "sketch as i = (as ! i, count_list (drop (i+1) as) (as ! i))"
+
+fun fk_update_2 :: "'a \<Rightarrow> (nat \<times> 'a \<times> nat) \<Rightarrow> ((nat \<times> 'a \<times> nat)) pmf" where
+  "fk_update_2 a (m,x,l) = 
+    do {
+      coin \<leftarrow> bernoulli_pmf (1/(real m+1));
+      return_pmf (m+1,if coin then (a,0) else (x, l + of_bool (x=a)))
+    }"
+
+text \<open>This result establishes that fk_update_2 simulates uniformly selecting an element from 
+  the list without knowing its length in advance.\<close>
+
+lemma fk_update_2_distr:
+  assumes "as \<noteq> []"
+  shows "fold (\<lambda>x s. s \<bind> fk_update_2 x) as (return_pmf (0,0,0)) =
+  pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (length as, sketch as k))"
+  using assms
+proof (induction as rule:rev_nonempty_induct)
+  case (single x)
+  show ?case using single 
+    by (simp add:bind_return_pmf pmf_of_set_singleton bernoulli_pmf_1 lessThan_def sketch_def) 
+next
+  case (snoc x xs)
+  let ?h = "(\<lambda>xs k. count_list (drop (Suc k) xs) (xs ! k))"
+  let ?q = "(\<lambda>xs k. (length xs, sketch xs k))"
+
+  have non_empty: " {..<Suc (length xs)} \<noteq> {}" " {..<length xs} \<noteq> {}" using snoc by auto
+
+  have fk_update_2_eta:"fk_update_2 x = (\<lambda>a. fk_update_2 x (fst a, fst (snd a), snd (snd a)))" 
+    by auto
+
+  have "pmf_of_set {..<length xs} \<bind> (\<lambda>k. bernoulli_pmf (1 / (real (length xs) + 1)) \<bind>
+    (\<lambda>coin. return_pmf (if coin then length xs else k))) = 
+    bernoulli_pmf (1 / (real (length xs) + 1)) \<bind> (\<lambda>y. pmf_of_set {..<length xs} \<bind>
+      (\<lambda>k. return_pmf (if y then length xs else k)))"
+    by (subst bind_commute_pmf, simp)
+  also have "... = pmf_of_set {..<length xs + 1}"
+    using snoc(1) non_empty
+    by (intro pmf_eqI, simp add: pmf_bind measure_pmf_of_set)
+     (simp add:indicator_def algebra_simps frac_eq_eq)
+  finally have b: "pmf_of_set {..<length xs} \<bind> (\<lambda>k. bernoulli_pmf (1 / (real (length xs) + 1)) \<bind>
+    (\<lambda>coin. return_pmf (if coin then length xs else k))) = pmf_of_set {..<length xs +1}" by simp
+   
+  have "fold (\<lambda>x s. (s \<bind> fk_update_2 x)) (xs@[x]) (return_pmf (0,0,0)) =
+    (pmf_of_set {..<length xs} \<bind> (\<lambda>k. return_pmf (length xs, sketch xs k))) \<bind> fk_update_2 x"
+    using snoc by (simp add:case_prod_beta')
+  also have "... = (pmf_of_set {..<length xs} \<bind> (\<lambda>k. return_pmf (length xs, sketch xs k))) \<bind> 
+    (\<lambda>(m,a,l). bernoulli_pmf (1 / (real m + 1)) \<bind> (\<lambda>coin. 
+    return_pmf (m + 1, if coin then (x, 0) else (a, (l + of_bool (a = x))))))"
+    by (subst fk_update_2_eta, subst fk_update_2.simps, simp add:case_prod_beta')
+  also have "... = pmf_of_set {..<length xs} \<bind> (\<lambda>k. bernoulli_pmf (1 / (real (length xs) + 1)) \<bind>
+    (\<lambda>coin. return_pmf (length xs + 1, if coin then (x, 0) else (xs ! k, ?h xs k + of_bool (xs ! k = x)))))"
+    by (subst bind_assoc_pmf, simp add: bind_return_pmf sketch_def)
+  also have "... = pmf_of_set {..<length xs} \<bind> (\<lambda>k. bernoulli_pmf (1 / (real (length xs) + 1)) \<bind>
+    (\<lambda>coin. return_pmf (if coin then length xs else k) \<bind> (\<lambda>k'. return_pmf (?q (xs@[x]) k'))))"
+    using non_empty
+    by (intro bind_pmf_cong, auto simp add:bind_return_pmf nth_append count_list_append sketch_def)
+  also have "... = pmf_of_set {..<length xs} \<bind> (\<lambda>k. bernoulli_pmf (1 / (real (length xs) + 1)) \<bind>
+    (\<lambda>coin. return_pmf (if coin then length xs else k))) \<bind> (\<lambda>k'. return_pmf (?q (xs@[x]) k'))"
+    by (subst bind_assoc_pmf, subst bind_assoc_pmf, simp)
+  also have "... = pmf_of_set {..<length (xs@[x])} \<bind> (\<lambda>k'. return_pmf (?q (xs@[x]) k'))"
+    by (subst b, simp)
+  finally show ?case by simp
+qed
+
 context
   fixes \<epsilon> \<delta> :: rat
   fixes n k :: nat
@@ -80,26 +147,6 @@ begin
 
 definition s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
 definition s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
-
-fun fk_update_1 :: "'a \<Rightarrow> nat \<Rightarrow> (nat \<times> nat \<Rightarrow> ('a \<times> nat)) \<Rightarrow> (nat \<times> nat \<Rightarrow> ('a \<times> nat)) pmf" where
-  "fk_update_1 a m r = 
-    do {
-      coins \<leftarrow> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. bernoulli_pmf (1/(real m+1)));
-      return_pmf (\<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
-        if coins i then 
-          (a,0) 
-        else (
-          let (x,l) = r i in (x, l + of_bool (x=a))
-        )
-      )
-    }"
-
-fun fk_update_2 :: "'a \<Rightarrow> nat \<Rightarrow> ('a \<times> nat) \<Rightarrow> (('a \<times> nat)) pmf" where
-  "fk_update_2 a m (x,l) = 
-    do {
-      coin \<leftarrow> bernoulli_pmf (1/(real m+1));
-      return_pmf (if coin then (a,0) else (x, l + of_bool (x=a)))
-    }"
 
 abbreviation "S \<equiv> {(u, v). v < count_list as u}"
 
@@ -157,174 +204,95 @@ proof -
     by (simp add:sum_count_set[where X="set as" and xs="as", simplified])
 qed
 
-text \<open>Returns the i-th element from the list and the number of occurences of it after
-the i-th element. The following result establishes that the distribution of sketch is S.\<close> 
-definition sketch where "sketch i = (as ! i, count_list (drop (i+1) as) (as ! i))"
 
 lemma sketch_samples_from_S:
   assumes "as \<noteq> []"
-  shows "pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (sketch k)) = pmf_of_set S"
+  shows "pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (sketch as k)) = pmf_of_set S"
 proof -
   have "x < y \<Longrightarrow> y < length as \<Longrightarrow> 
     count_list (drop (y+1) as) (as ! y) < count_list (drop (x+1) as) (as ! y)" for x y
     by (intro count_list_lt_suffix suffix_drop_drop, simp_all)
      (metis Suc_diff_Suc diff_Suc_Suc diff_add_inverse lessI less_natE)
-  hence a1: "inj_on sketch {k. k < length as}"
+  hence a1: "inj_on (sketch as) {k. k < length as}"
     unfolding sketch_def by (intro inj_onI) (metis Pair_inject mem_Collect_eq nat_neq_iff)
 
   have "x < length as \<Longrightarrow> count_list (drop (x+1) as) (as ! x) < count_list as (as ! x)" for x
     by (rule count_list_lt_suffix, auto simp add:suffix_drop)
-  hence "sketch ` {k. k < length as} \<subseteq> S"
+  hence "sketch as ` {k. k < length as} \<subseteq> S"
     by (intro image_subsetI, simp add:sketch_def)
-  moreover have "card S \<le> card (sketch ` {k. k < length as})"
+  moreover have "card S \<le> card (sketch as ` {k. k < length as})"
     by (simp add: card_space[OF assms(1)] card_image[OF a1])
-  ultimately have "sketch ` {k. k < length as} = S"
+  ultimately have "sketch as ` {k. k < length as} = S"
     using fin_space[OF assms(1)] by (intro card_seteq, simp_all)
-  hence "bij_betw sketch {k. k < length as} S"
+  hence "bij_betw (sketch as) {k. k < length as} S"
     using a1 by (simp add:bij_betw_def)
-  hence "map_pmf sketch (pmf_of_set {k. k < length as}) = pmf_of_set S"
+  hence "map_pmf (sketch as) (pmf_of_set {k. k < length as}) = pmf_of_set S"
     using assms by (intro map_pmf_of_set_bij_betw, auto)
   thus ?thesis by (simp add: sketch_def map_pmf_def lessThan_def)
 qed
 
-text \<open>This result establishes that fk_update_2 simulates uniformly selecting an element from 
-  the list without knowing its length in advance.\<close>
-
-lemma fk_update_2_distr:
-  assumes "as \<noteq> []"
-  shows "fold (\<lambda>x (c,state). (c+1, state \<bind> fk_update_2 x c)) as (0, return_pmf (0,0)) =
-  (length as, pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (sketch k)))"
-  unfolding sketch_def using assms
-proof (induction as rule:rev_nonempty_induct)
-  case (single x)
-  show ?case using single 
-    by (simp add:bind_return_pmf pmf_of_set_singleton bernoulli_pmf_1 lessThan_def) 
-next
-  case (snoc x xs)
-  (* Because the result is established using induction over the stream. The definition for 
-  sketch in the context is not usefule. The following is an abbreviaton for sketch that is 
-  parameterized over the sequence. *)
-  let ?sketch = "(\<lambda>xs k. return_pmf (xs ! k, count_list (drop (Suc k) xs) (xs ! k)))"
-
-  have non_empty: " {..<Suc (length xs)} \<noteq> {}" " {..<length xs} \<noteq> {}" using snoc by auto
-
-  have fk_update_2_eta:"\<And>c. fk_update_2 x c = (\<lambda>a. fk_update_2 x c (fst a,snd a))" 
-    by auto
-  have a: "\<And>y. pmf_of_set {..<length xs} \<bind> (\<lambda>k. ?sketch xs k \<bind>
-          (\<lambda>xa. return_pmf (if y then (x, 0) else (fst xa, snd xa + (of_bool (fst xa = x))))))
-      = pmf_of_set {..<length xs} \<bind> (\<lambda>k. return_pmf (if y then (length xs) else k) \<bind> ?sketch (xs@[x]))"
-    using non_empty
-    by (intro bind_pmf_cong) (simp_all add:bind_return_pmf nth_append count_list_append)
-
-  have b: "bernoulli_pmf (1 / (real (length xs) + 1)) \<bind> (\<lambda>y. pmf_of_set {..<length xs} \<bind>
-    (\<lambda>k. return_pmf (if y then length xs else k))) = pmf_of_set {..<length xs + 1}"
-    using snoc(1) non_empty
-    by (intro pmf_eqI, simp add: pmf_bind measure_pmf_of_set)
-     (simp add:indicator_def algebra_simps frac_eq_eq)
-
-  have "pmf_of_set {..<length xs} \<bind> ?sketch xs \<bind> fk_update_2 x (length xs) = 
-    pmf_of_set {..<length xs} \<bind> ?sketch xs \<bind> (\<lambda>a. bernoulli_pmf (1 / (real (length xs) + 1)) \<bind>
-       (\<lambda>coin. return_pmf (if coin then (x, 0) else (fst a, snd a + of_bool (fst a = x)))))"
-    by (subst fk_update_2_eta, subst fk_update_2.simps, simp)
-  also have "... = bernoulli_pmf (1 / (real (length xs) + 1)) \<bind> (\<lambda>coin. pmf_of_set {..<length xs} \<bind>
-       (\<lambda>k. ?sketch xs k \<bind> (\<lambda>a. return_pmf (if coin then (x, 0) else (fst a, snd a + of_bool (fst a = x))))))"
-    by (subst bind_commute_pmf, subst bind_assoc_pmf, simp)
-  also have "... = bernoulli_pmf (1 / (real (length xs) + 1)) \<bind> (\<lambda>y. pmf_of_set {..<length xs} \<bind> 
-    (\<lambda>k. return_pmf (if y then length xs else k))) \<bind> ?sketch (xs@[x])"
-    by (simp add:a del:drop_append)  (simp add: bind_assoc_pmf[symmetric])
-  also have "... = pmf_of_set {..<length (xs @ [x])} \<bind> ?sketch (xs@[x])"
-    by (subst b, simp)
-  finally have d:"pmf_of_set {..<length xs} \<bind> ?sketch xs \<bind> fk_update_2 x (length xs) = 
-    pmf_of_set {..<length (xs @ [x])} \<bind> ?sketch (xs@[x])" 
-    by simp
-
-  have "fold (\<lambda>x (c,state). (c+1, state \<bind> fk_update_2 x c)) (xs@[x]) (0, return_pmf (0,0)) = 
-    (length  xs + 1, pmf_of_set {..<length xs} \<bind> ?sketch xs \<bind> fk_update_2 x (length xs))"
-    using snoc by (simp add:case_prod_beta')
-  also have "... = (length (xs@[x]), pmf_of_set {..<length (xs @ [x])} \<bind> ?sketch (xs@[x]))"
-    by (subst d, simp)
-  finally show ?case by simp
-qed
-
-definition if_then_else where "if_then_else p q r = (if p then q else r)"
-
-text \<open>This definition is introduced to be able to temporarily substitute @{term "(if p then q else r)"}
-with @{term "if_then_else p q r"}, which unblocks the simplifier to process @{term "q"} and @{term "r"}.\<close>
-
 lemma lift_eval_to_prod_pmf:
-  "fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update_1 x c)) as (0, return_pmf (\<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0,0)))
-  = (length as, prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) 
-  (\<lambda>_. (snd (fold (\<lambda>x (c,state). (c+1, state \<bind> fk_update_2 x c)) as (0, return_pmf (0,0))))))"
+  "fold (\<lambda>x s. s \<bind> fk_update x) as (fk_init k \<delta> \<epsilon> n) = 
+  prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. fold (\<lambda>x s. s \<bind> fk_update_2 x) as (return_pmf (0,0,0))) 
+    \<bind> (\<lambda>x. return_pmf (s\<^sub>1,s\<^sub>2,k, length as, \<lambda>i\<in>{0..<s\<^sub>1}\<times>{0..<s\<^sub>2}. snd (x i)))"
 proof (induction as rule:rev_induct)
   case Nil
-  show ?case
-    by simp
-next
-  case (snoc x xs)
-  obtain t1 t2 where t_def: 
-    "(t1,t2) = fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update_2 x c)) xs (0, return_pmf (0,0))"
-    by (metis (no_types, lifting) surj_pair)
-  have a:"fk_update_1 x (length xs) = (\<lambda>a. fk_update_1 x (length xs) a)" 
-    by auto
-  have c:"\<And>c. fk_update_2 x c = (\<lambda>a. fk_update_2 x c (fst a,snd a))" 
-    by auto
-  have "fst (fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update_2 x c)) xs (0, return_pmf (0,0))) = length xs"
-    by (induction xs rule:rev_induct, simp, simp add:case_prod_beta)
-  hence d:"t1 = length xs" 
-    by (metis t_def fst_conv)
-
-
-  show ?case using snoc
-    apply (simp del:fk_update_2.simps fk_update_1.simps)
-    apply (simp add:t_def[symmetric])
-    apply (subst a[simplified])
-    apply (subst pair_pmfI)
-    apply (subst pair_pmf_ptw, simp)
-    apply (subst bind_assoc_pmf)
-    apply (subst bind_return_pmf)
-    apply (subst if_then_else_def[symmetric])
-    apply (simp add:comp_def cong:restrict_cong)
-    apply (subst map_ptw, simp)
-    apply (subst if_then_else_def)
-    apply (rule arg_cong2[where f="prod_pmf"], simp)
-    apply (rule ext)
-    apply (subst c, subst fk_update_2.simps, simp)
-    apply (simp add:d)
-    apply (subst pair_pmfI)
-    apply (rule arg_cong2[where f="bind_pmf"], simp)
-    by force
-qed
-
-lemma fk_alg_aux_1:
-  assumes "as \<noteq> []"
-  shows "fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)  = 
-    map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x)) 
-    (snd (fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update_1 x c)) as (0, return_pmf (\<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0,0)))))"
-  using assms(1)
-proof (induction as rule:rev_nonempty_induct)
-  case (single x)
   then show ?case 
-    by (simp add: map_bind_pmf bind_return_pmf s\<^sub>1_def s\<^sub>2_def Let_def restrict_def)
+    by (auto simp:Let_def s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] bind_return_pmf)
 next
   case (snoc x xs)
-  obtain t1 t2 where t:
-    "fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update_1 x c)) xs (0, return_pmf (\<lambda>i. if i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} then (0,0) else undefined)) 
-    = (t1,t2)"
-    by fastforce
 
-  have "fst (fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update_1 x c)) xs (0, return_pmf (\<lambda>i. if i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} then (0,0) else undefined)))
-    = length xs"
-    by (induction xs rule:rev_induct, simp, simp add:split_beta) 
-  hence t1: "t1 = length xs" using t fst_conv by auto
+  have fk_update_2_eta:"fk_update_2 x = (\<lambda>a. fk_update_2 x (fst a, fst (snd a), snd (snd a)))" 
+    by auto
 
-  show ?case using snoc
-    apply (simp add:  s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] t del:fk_update_1.simps fk_update.simps)
-    apply (subst bind_map_pmf)
-    apply (subst map_bind_pmf)
-    apply simp
-    by (subst map_bind_pmf, simp add:t1)
+  have a: "fk_update x (s\<^sub>1, s\<^sub>2, k, length xs, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. snd (f i)) =
+    prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>i. fk_update_2 x (f i)) \<bind> 
+    (\<lambda>a. return_pmf (s\<^sub>1,s\<^sub>2, k, Suc (length xs), \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. snd (a i)))"
+    if b:"f \<in> set_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. fold (\<lambda>a s. s \<bind> fk_update_2 a) xs (return_pmf (0, 0, 0))))"
+    for f
+  proof -
+    have c:"fst (f i) = length xs" if d:"i \<in> {0..<s\<^sub>1} \<times>{0..<s\<^sub>2}" for i
+    proof (cases "xs = []")
+      case True
+      then show ?thesis using b d by (simp add: set_Pi_pmf)
+    next  
+      case False
+      hence "{..<length xs} \<noteq> {}" by force
+      thus ?thesis using b d 
+        by (simp add:set_Pi_pmf fk_update_2_distr[OF False] PiE_dflt_def) force
+    qed
+    show ?thesis
+    apply (subst fk_update_2_eta, subst fk_update_2.simps, simp)
+    apply (subst Pi_pmf_bind[where d'="undefined"], simp)
+    apply (subst Pi_pmf_return_pmf)
+     apply (simp add:bind_return_pmf)
+    apply (subst bind_assoc_pmf)
+    apply (rule bind_pmf_cong) defer
+     apply (simp add:bind_return_pmf)
+     apply (rule ext)
+       apply (simp add:case_prod_beta)
+      apply (rule Pi_pmf_cong, simp, simp)
+      using c by simp
+  qed
+ 
+  have "fold (\<lambda>x s. s \<bind> fk_update x) (xs @ [x]) (fk_init k \<delta> \<epsilon> n) = 
+     (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. fold (\<lambda>x s. s \<bind> fk_update_2 x) xs (return_pmf (0,0,0))) 
+    \<bind> (\<lambda>x. return_pmf (s\<^sub>1,s\<^sub>2,k, length xs, \<lambda>i\<in>{0..<s\<^sub>1}\<times>{0..<s\<^sub>2}. snd (x i)))) \<bind> fk_update x"
+    using snoc
+    by (simp add:restrict_def del:fk_init.simps)
+  also have "... =  prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. fold (\<lambda>a s. s \<bind> fk_update_2 a) xs (return_pmf (0, 0, 0))) \<bind>
+    (\<lambda>f. prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>i. fk_update_2 x (f i))) \<bind>
+    (\<lambda>a. return_pmf (s\<^sub>1, s\<^sub>2, k, Suc (length xs), \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. snd (a i)))"
+    apply (subst (1 2) bind_assoc_pmf)
+    apply (rule bind_pmf_cong, simp)
+    apply (simp add: bind_return_pmf del:fk_update.simps)
+    using a by simp
+  also have "... = (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. fold (\<lambda>a s. s \<bind> fk_update_2 a) (xs@[x]) (return_pmf (0,0,0))) 
+    \<bind> (\<lambda>a. return_pmf (s\<^sub>1,s\<^sub>2,k, length (xs@[x]), \<lambda>i\<in>{0..<s\<^sub>1}\<times>{0..<s\<^sub>2}. snd (a i))))"
+    by (simp, subst Pi_pmf_bind, auto)
+
+  finally show ?case by blast
 qed
-
 
 lemma power_diff_sum:
   fixes a b :: "'a :: {comm_ring_1,power}"
@@ -598,17 +566,29 @@ theorem fk_alg_sketch:
 proof -
   let ?f = "map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as,x))"
 
-  have "?lhs = ?f ((snd (fold (\<lambda>x (c, state). (c + 1, state \<bind> fk_update_1 x c)) as
-          (0, return_pmf (\<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0, 0))))))" 
-    using fk_alg_aux_1[OF assms(1)] by simp
-  also have "... = ?f (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})
-    (\<lambda>_. snd (fold (\<lambda>x (c, state). (c + 1, state \<bind> fk_update_2 x c)) as (0, return_pmf (0, 0)))))"
+  have "?lhs = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. fold (\<lambda>x s. s \<bind> fk_update_2 x) as (return_pmf (0, 0, 0))) \<bind>
+    (\<lambda>x. return_pmf (s\<^sub>1, s\<^sub>2, k, length as, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. snd (x i)))"
     by (subst lift_eval_to_prod_pmf, simp)
-  also have "... = ?f (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) 
-    (\<lambda>_. pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (sketch k))))"
+  also have "... = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (length as, sketch as k))) \<bind>
+    (\<lambda>x. return_pmf (s\<^sub>1, s\<^sub>2, k, length as, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. snd (x i)))"
     by (subst fk_update_2_distr[OF assms], simp)
+  also have "... = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {..<length as} \<bind> 
+    (\<lambda>k. return_pmf (sketch as k)) \<bind> (\<lambda>s. return_pmf (length as, s))) \<bind>
+    (\<lambda>x. return_pmf (s\<^sub>1, s\<^sub>2, k, length as, \<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. snd (x i)))"
+    by (subst bind_assoc_pmf, subst bind_return_pmf, simp)
+  also have "... = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (sketch as k))) \<bind>
+    (\<lambda>x. return_pmf (s\<^sub>1, s\<^sub>2, k, length as, restrict x ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})))"
+    apply (subst Pi_pmf_bind[where d'="undefined"], simp)
+    apply (subst Pi_pmf_return_pmf, simp)
+    apply (subst bind_assoc_pmf)
+    by (simp add:bind_return_pmf cong:restrict_cong)
+  also have "... = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set S) \<bind>
+    (\<lambda>x. return_pmf (s\<^sub>1, s\<^sub>2, k, length as, restrict x ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})))"
+    by (subst sketch_samples_from_S[OF assms], simp)
+  also have "... = prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set S) \<bind> (\<lambda>x. return_pmf (s\<^sub>1, s\<^sub>2, k, length as, x))"
+    by (rule bind_pmf_cong, auto simp add:PiE_dflt_def set_Pi_pmf) 
   also have "... = ?rhs"
-    by (subst sketch_samples_from_S[OF assms(1)], simp)
+    by (simp add:map_pmf_def)
   finally show ?thesis by simp
 qed
 
