@@ -1,7 +1,7 @@
 section \<open>Lists\<close>
 
 theory List_Ext
-  imports Main "HOL.List"
+  imports Main "HOL.List" "HOL-Library.Sublist"
 begin
 
 text \<open>This section contains results about lists in addition to "HOL.List"\<close>
@@ -12,6 +12,45 @@ lemma count_list_gr_1:
 
 lemma count_list_append: "count_list (xs@ys) v = count_list xs v + count_list ys v"
   by (induction xs, simp, simp)
+
+lemma count_list_lt_suffix:
+  assumes "suffix a b"
+  assumes "x \<in> {b ! i| i. i <  length b - length a}"
+  shows  "count_list a x < count_list b x"
+proof -
+  have "length a \<le> length b" using assms(1) 
+    by (simp add: suffix_length_le)
+  hence "x \<in> set (nths b {i. i < length b - length a})"
+    using assms diff_commute by (auto simp add:set_nths) 
+  hence a:"x \<in> set (take (length b - length a) b)"
+    by (subst (asm) lessThan_def[symmetric], simp)
+  have "b = (take (length b - length a) b)@drop (length b - length a) b"
+    by simp
+  also have "... = (take (length b - length a) b)@a"
+    using assms(1) suffix_take by auto 
+  finally have b:"b = (take (length b - length a) b)@a" by simp
+
+  have "count_list a x < 1 + count_list a x" by simp
+  also have "... \<le> count_list (take (length b - length a) b) x + count_list a x"
+    using a count_list_gr_1
+    by (intro add_mono, fast, simp)  
+  also have "... = count_list b x"
+    using b count_list_append by metis
+  finally show ?thesis by simp
+qed
+
+lemma suffix_drop_drop:
+  assumes "x \<ge> y"
+  shows "suffix (drop x a) (drop y a)"
+proof -
+  have "drop y a = take (x - y) (drop y a)@drop (x- y) (drop y a)"
+    by (subst append_take_drop_id, simp)
+  also have " ... = take (x-y) (drop y a)@drop x a"
+    using assms by simp
+  finally have "drop y a = take (x-y) (drop y a)@drop x a" by simp
+  thus ?thesis 
+    by (auto simp add:suffix_def) 
+qed
 
 lemma count_list_card: "count_list xs x = card {k. k < length xs \<and> xs ! k = x}"
 proof -

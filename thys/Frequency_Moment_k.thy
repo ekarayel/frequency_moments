@@ -33,11 +33,56 @@ fun fk_update :: "nat \<Rightarrow> fk_state \<Rightarrow> fk_state pmf" where
 fun fk_result :: "fk_state \<Rightarrow> rat pmf" where
   "fk_result (s\<^sub>1, s\<^sub>2, k, m, r) = 
     return_pmf (median s\<^sub>2 (\<lambda>i\<^sub>2 \<in> {0..<s\<^sub>2}.
-      (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1} . rat_of_nat (let t = snd (r (i\<^sub>1, i\<^sub>2)) + 1 in m * (t^k - (t - 1)^k))) / (rat_of_nat s\<^sub>1))
+      (\<Sum>i\<^sub>1\<in>{0..<s\<^sub>1}. rat_of_nat (let t = snd (r (i\<^sub>1, i\<^sub>2)) + 1 in m * (t^k - (t - 1)^k))) / (rat_of_nat s\<^sub>1))
     )"
 
-fun fk_update' :: "'a \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> nat \<Rightarrow> ('a \<times> nat)) \<Rightarrow> (nat \<times> nat \<Rightarrow> ('a \<times> nat)) pmf" where
-  "fk_update' a s\<^sub>1 s\<^sub>2 m r = 
+lemma bernoulli_pmf_1: "bernoulli_pmf 1 = return_pmf True"
+  by (rule pmf_eqI, simp add:indicator_def)
+
+fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
+  "fk_space_usage (k, n, m, \<epsilon>, \<delta>) = (
+    let s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k) / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
+    let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil> in 
+    4 +
+    2 * log 2 (s\<^sub>1 + 1) +
+    2 * log 2 (s\<^sub>2 + 1) +
+    2 * log 2 (real k + 1) +
+    2 * log 2 (real m + 1) +
+    s\<^sub>1 * s\<^sub>2 * (2 + 2 * log 2 (real n+1) + 2 * log 2 (real m+1)))"
+
+definition encode_fk_state :: "fk_state \<Rightarrow> bool list option" where
+  "encode_fk_state = 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
+    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
+    N\<^sub>S \<times>\<^sub>S  
+    N\<^sub>S \<times>\<^sub>S  
+    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (N\<^sub>S \<times>\<^sub>S N\<^sub>S))))"
+
+lemma "inj_on encode_fk_state (dom encode_fk_state)"
+proof -
+  have "is_encoding encode_fk_state"
+    by (simp add:encode_fk_state_def)
+     (intro dependent_encoding exp_goloumb_encoding fun_encoding)
+
+  thus ?thesis by (rule encoding_imp_inj)
+qed
+
+
+context
+  fixes \<epsilon> \<delta> :: rat
+  fixes n k :: nat
+  fixes as
+  assumes k_ge_1: "k \<ge> 1"
+  assumes \<epsilon>_range: "\<epsilon> \<in> {0<..<1}"
+  assumes \<delta>_range: "\<delta> > 0"
+  assumes as_range: "set as \<subseteq> {..<n}"
+begin
+
+definition s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
+definition s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
+
+fun fk_update_1 :: "'a \<Rightarrow> nat \<Rightarrow> (nat \<times> nat \<Rightarrow> ('a \<times> nat)) \<Rightarrow> (nat \<times> nat \<Rightarrow> ('a \<times> nat)) pmf" where
+  "fk_update_1 a m r = 
     do {
       coins \<leftarrow> prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. bernoulli_pmf (1/(real m+1)));
       return_pmf (\<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. 
@@ -49,190 +94,156 @@ fun fk_update' :: "'a \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Ri
       )
     }"
 
-fun fk_update'' :: "'a \<Rightarrow> nat \<Rightarrow> ('a \<times> nat) \<Rightarrow> (('a \<times> nat)) pmf" where
-  "fk_update'' a m (x,l) = 
+fun fk_update_2 :: "'a \<Rightarrow> nat \<Rightarrow> ('a \<times> nat) \<Rightarrow> (('a \<times> nat)) pmf" where
+  "fk_update_2 a m (x,l) = 
     do {
       coin \<leftarrow> bernoulli_pmf (1/(real m+1));
-      return_pmf ( 
-        if coin then 
-          (a,0) 
-        else (
-          (x, l + of_bool (x=a))
-        )
-      )
+      return_pmf (if coin then (a,0) else (x, l + of_bool (x=a)))
     }"
 
-lemma bernoulli_pmf_1: "bernoulli_pmf 1 = return_pmf True"
-    by (rule pmf_eqI, simp add:indicator_def)
+abbreviation "S \<equiv> {(u, v). v < count_list as u}"
 
 lemma split_space:
-  "(\<Sum>a\<in>{(u, v). v < count_list as u}. (f (snd a))) = 
-  (\<Sum>u \<in> set as. (\<Sum>v \<in>{0..<count_list as u}. (f v)))" (is "?lhs = ?rhs")
+  "(\<Sum>a\<in>S. f (snd a)) = (\<Sum>u \<in> set as. (\<Sum>v \<in>{0..<count_list as u}. f v))"
 proof -
   define A where "A = (\<lambda>u. {u} \<times> {v. v < count_list as u})"
 
-  have a :"\<And>u v. u < count_list as v \<Longrightarrow> v \<in> set as" 
-    by (subst count_list_gr_1, force)
+  have a: "inj_on snd (A x)" for x 
+    by (simp add:A_def inj_on_def) 
 
-  have "?lhs = sum (f \<circ> snd)  (\<Union> (A ` set as))"
-    apply (rule sum.cong, rule order_antisym)
-    apply (rule subsetI, simp add:A_def case_prod_beta' mem_Times_iff a)
-    apply (rule subsetI, simp add:A_def case_prod_beta' mem_Times_iff a)
-    by simp
+  have "\<And>u v. u < count_list as v \<Longrightarrow> v \<in> set as"
+    by (subst count_list_gr_1, force)
+  hence "S = \<Union> (A ` set as)"
+    by (auto simp add:set_eq_iff A_def)
+  hence "(\<Sum>a\<in>S. f (snd a)) = sum (f \<circ> snd)  (\<Union> (A ` set as))"
+    by (intro sum.cong, auto)
   also have "... = sum (\<lambda>x. sum (f \<circ> snd) (A x)) (set as)"
     by (rule sum.UNION_disjoint, simp, simp add:A_def, simp add:A_def, blast) 
-  also have "... = ?rhs"
-    apply (rule sum.cong, simp)
-    apply (subst sum.reindex[symmetric])
-     apply (simp add:A_def inj_on_def) 
-    apply (simp add:A_def)
-    apply (rule sum.cong)
-    using lessThan_atLeast0 apply blast
-    by simp
+  also have "... = sum (\<lambda>x. sum f (snd ` A x)) (set as)"
+    by (intro sum.cong, auto simp add:sum.reindex[OF a])
+  also have "... = (\<Sum>u \<in> set as. (\<Sum>v \<in>{0..<count_list as u}. f v))"
+    unfolding A_def by (intro sum.cong, auto)
   finally show ?thesis by blast
 qed
 
 lemma
   assumes "as \<noteq> []"
-  shows fin_space: "finite {(u, v). v < count_list as u}" and
-  non_empty_space: "{(u, v). v < count_list as u} \<noteq> {}" and
-  card_space: "card {(u, v). v < count_list as u} = length as"
+  shows fin_space: "finite S" 
+    and non_empty_space: "S \<noteq> {}"
+    and card_space: "card S = length as"
 proof -
-  have "{(u, v). v < count_list as u} \<subseteq> set as \<times> {k. k < length as}"
-    apply (rule subsetI, simp add:case_prod_beta mem_Times_iff count_list_gr_1)
-    by (metis count_le_length order_less_le_trans)
-
-  thus fin_space: "finite  {(u, v). v < count_list as u}"
+  have "S \<subseteq> set as \<times> {k. k < length as}"
+  proof (rule subsetI)
+    fix x
+    assume a:"x \<in> S"
+    have "fst x \<in> set as"
+      using a by (simp add:case_prod_beta count_list_gr_1)
+    moreover have "snd x < length as"
+      using a count_le_length order_less_le_trans
+      by (simp add:case_prod_beta) fast
+    ultimately show "x \<in> set as \<times> {k. k < length as}"
+      by (simp add:mem_Times_iff)
+  qed
+  thus fin_space: "finite  S"
     using finite_subset by blast
 
-  have "(as ! 0, 0) \<in> {(u, v). v < count_list as u}" 
-    apply (simp)
+  have "(as ! 0, 0) \<in> S" 
     using assms(1) 
-    by (metis count_list_gr_1 gr0I length_greater_0_conv not_one_le_zero nth_mem)
-  thus "{(u, v). v < count_list as u} \<noteq> {}" by blast
+    by (simp, metis count_list_gr_1 gr0I length_greater_0_conv not_one_le_zero nth_mem)
+  thus "S \<noteq> {}" by blast
 
-  show "card {(u, v). v < count_list as u} = length as"
-    using fin_space split_space[where f="\<lambda>_. (1::nat)", where as="as"]
+  show "card S = length as"
+    using fin_space split_space[where f="\<lambda>_. (1::nat)"]
     by (simp add:sum_count_set[where X="set as" and xs="as", simplified])
 qed
 
-lemma fk_alg_aux_5:
+text \<open>Returns the i-th element from the list and the number of occurences of it after
+the i-th element. The following result establishes that the distribution of sketch is S.\<close> 
+definition sketch where "sketch i = (as ! i, count_list (drop (i+1) as) (as ! i))"
+
+lemma sketch_samples_from_S:
   assumes "as \<noteq> []"
-  shows "pmf_of_set {k. k < length as} \<bind> (\<lambda>k. return_pmf (as ! k, count_list (drop (k+1) as) (as ! k)))
-  = pmf_of_set {(u,v). v < count_list as u}"
+  shows "pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (sketch k)) = pmf_of_set S"
 proof -
-  define f where "f = (\<lambda>k. (as ! k, count_list (drop (k+1) as) (as ! k)))"
+  have "x < y \<Longrightarrow> y < length as \<Longrightarrow> 
+    count_list (drop (y+1) as) (as ! y) < count_list (drop (x+1) as) (as ! y)" for x y
+    by (intro count_list_lt_suffix suffix_drop_drop, simp_all)
+     (metis Suc_diff_Suc diff_Suc_Suc diff_add_inverse lessI less_natE)
+  hence a1: "inj_on sketch {k. k < length as}"
+    unfolding sketch_def by (intro inj_onI) (metis Pair_inject mem_Collect_eq nat_neq_iff)
 
-  have a3: "\<And>x y. y < length as \<Longrightarrow> x < y \<Longrightarrow> as ! x = as ! y \<Longrightarrow>
-           count_list (drop (Suc x) as) (as ! x) \<noteq> count_list (drop (Suc y) as) (as ! y)" 
-    (is "\<And>x y. _ \<Longrightarrow> _ \<Longrightarrow> _ \<Longrightarrow> ?ths x y")
-  proof -
-    fix x y
-    assume a3_1: "y < length as"
-    assume a3_2: "x < y"
-    assume a3_3: "as ! x = as ! y"
-    have a3_4: "drop (Suc x) as = take (y-x) (drop (Suc x) as)@ drop (Suc y) as"
-      apply (subst append_take_drop_id[where xs="drop (Suc x) as" and n="y - x", symmetric])
-      using a3_2 by simp
-    have "count_list (drop (Suc x) as) (as ! x) = count_list (take (y-x) (drop (Suc x) as)) (as ! y) +
-        count_list (drop (Suc y) as) (as ! y)"
-      using a3_3 by (subst a3_4, simp add:count_list_append)
-    moreover have "count_list (take (y-x) (drop (Suc x) as)) (as ! y) \<ge> 1"
-      apply (subst count_list_gr_1[symmetric])  
-      apply (simp add:set_conv_nth)
-      apply (rule exI[where x="y-x-1"])
-      apply (subst nth_take, meson diff_less a3_2  zero_less_diff zero_less_one)
-      apply (subst nth_drop) using a3_1 a3_2 apply simp
-      apply (rule conjI, rule arg_cong2[where f="(!)"], simp)
-      using a3_2 apply simp
-      apply (rule conjI)
-      using a3_1 a3_2 apply simp
-      by (meson diff_less a3_2  zero_less_diff zero_less_one)
-    ultimately show "?ths x y" by presburger
-  qed
-
-  have a1: "inj_on f {k. k < length as}"
-  proof (rule inj_onI)
-    fix x y
-    assume "x \<in> {k. k < length as}"
-    moreover assume "y \<in> {k. k < length as}"
-    moreover assume "f x = f y"
-    ultimately show "x = y"
-      apply (cases "x < y", simp add:f_def, metis a3) 
-      apply (cases "y < x", simp add:f_def, metis a3) 
-      by simp
-  qed
-  have a2_1: " \<And>x. x < length as \<Longrightarrow> count_list (drop (Suc x) as) (as ! x) < count_list as (as ! x)"
-  proof -
-    fix x
-    assume a:"x < length as"
-    have "1 \<le> count_list (take (Suc x) as) (as ! x)"
-      apply (subst count_list_gr_1[symmetric])
-      using a by (simp add: take_Suc_conv_app_nth)
-    hence "count_list (drop (Suc x) as) (as ! x) < count_list (take (Suc x) as) (as ! x) + count_list (drop (Suc x) as) (as ! x)"
-      by (simp)
-    also have "... = count_list as (as ! x)"
-      by (simp add:count_list_append[symmetric])
-    finally show "count_list (drop (Suc x) as) (as ! x) < count_list as (as ! x)"
-      by blast
-  qed
-  have a2: "f ` {k. k < length as} = {(u, v). v < count_list as u}"
-    apply (rule card_seteq) 
-      apply (metis fin_space[OF assms(1)])
-     apply (rule image_subsetI, simp add:f_def)
-    apply (metis a2_1)
-    apply (subst card_image[OF a1])
-    by (subst card_space[OF assms(1)], simp)
-
-  have "bij_betw f {k. k < length as} {(u, v). v < count_list as u}"
-    using a1 a2 by (simp add:bij_betw_def)
-  thus ?thesis
-    using assms apply (subst map_pmf_def[symmetric])
-    by (rule map_pmf_of_set_bij_betw, simp add:f_def, blast, simp)
+  have "x < length as \<Longrightarrow> count_list (drop (x+1) as) (as ! x) < count_list as (as ! x)" for x
+    by (rule count_list_lt_suffix, auto simp add:suffix_drop)
+  hence "sketch ` {k. k < length as} \<subseteq> S"
+    by (intro image_subsetI, simp add:sketch_def)
+  moreover have "card S \<le> card (sketch ` {k. k < length as})"
+    by (simp add: card_space[OF assms(1)] card_image[OF a1])
+  ultimately have "sketch ` {k. k < length as} = S"
+    using fin_space[OF assms(1)] by (intro card_seteq, simp_all)
+  hence "bij_betw sketch {k. k < length as} S"
+    using a1 by (simp add:bij_betw_def)
+  hence "map_pmf sketch (pmf_of_set {k. k < length as}) = pmf_of_set S"
+    using assms by (intro map_pmf_of_set_bij_betw, auto)
+  thus ?thesis by (simp add: sketch_def map_pmf_def lessThan_def)
 qed
 
-lemma fk_alg_aux_4:
+text \<open>This result establishes that fk_update_2 simulates uniformly selecting an element from 
+  the list without knowing its length in advance.\<close>
+
+lemma fk_update_2_distr:
   assumes "as \<noteq> []"
-  shows "fold (\<lambda>x (c,state). (c+1, state \<bind> fk_update'' x c)) as (0, return_pmf (0,0)) =
-  (length as, pmf_of_set {k. k < length as} \<bind> (\<lambda>k. return_pmf (as ! k, count_list (drop (k+1) as) (as ! k))))"
-  using assms
+  shows "fold (\<lambda>x (c,state). (c+1, state \<bind> fk_update_2 x c)) as (0, return_pmf (0,0)) =
+  (length as, pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (sketch k)))"
+  unfolding sketch_def using assms
 proof (induction as rule:rev_nonempty_induct)
   case (single x)
-  have a:"bernoulli_pmf 1 = return_pmf True"
-    by (rule pmf_eqI, simp add:indicator_def)
   show ?case using single 
-    by (simp add:bind_return_pmf pmf_of_set_singleton a) 
+    by (simp add:bind_return_pmf pmf_of_set_singleton bernoulli_pmf_1 lessThan_def) 
 next
   case (snoc x xs)
-  have c:"\<And>c. fk_update'' x c = (\<lambda>a. fk_update'' x c (fst a,snd a))" 
-    by auto
-  have a: "\<And>y. pmf_of_set {k. k < length xs} \<bind> (\<lambda>k. return_pmf (xs ! k, count_list (drop (Suc k) xs) (xs ! k)) \<bind>
-          (\<lambda>xa. return_pmf (if y then (x, 0) else (fst xa, snd xa + (of_bool (fst xa = x))))))
-      = pmf_of_set {k. k < length xs} \<bind> (\<lambda>k. return_pmf (if y then (length xs) else k) \<bind> (\<lambda>k. return_pmf ((xs@[x]) ! k, count_list (drop (Suc k) (xs@[x])) ((xs@[x]) ! k))))"
-    apply (simp add:bind_return_pmf)
-    apply (rule bind_pmf_cong, simp)
-    apply (subst (asm) set_pmf_of_set)
-    using snoc apply blast apply simp
-    by (simp add:nth_append count_list_append)
+  (* Because the result is established using induction over the stream. The definition for 
+  sketch in the context is not usefule. The following is an abbreviaton for sketch that is 
+  parameterized over the sequence. *)
+  let ?sketch = "(\<lambda>xs k. return_pmf (xs ! k, count_list (drop (Suc k) xs) (xs ! k)))"
 
-  show ?case using snoc 
-    apply (simp del:drop_append, subst c, subst fk_update''.simps)
-    apply (subst bind_commute_pmf)
-    apply (subst bind_assoc_pmf)
-    apply (simp add:a del:drop_append)
-    apply (subst bind_assoc_pmf[symmetric])
-    apply (subst bind_assoc_pmf[symmetric])
-    apply (rule arg_cong2[where f="bind_pmf"])
-     apply (rule pmf_eqI)
-     apply (subst pmf_bind)
-     apply (subst pmf_of_set, blast, simp)
-     apply (subst pmf_bind)
-     apply (simp)
-     apply (subst measure_pmf_of_set, blast, simp)
-     apply (simp add:indicator_def)
-     apply (subst frac_eq_eq, simp, linarith)
-     apply (simp add:algebra_simps)
+  have non_empty: " {..<Suc (length xs)} \<noteq> {}" " {..<length xs} \<noteq> {}" using snoc by auto
+
+  have fk_update_2_eta:"\<And>c. fk_update_2 x c = (\<lambda>a. fk_update_2 x c (fst a,snd a))" 
+    by auto
+  have a: "\<And>y. pmf_of_set {..<length xs} \<bind> (\<lambda>k. ?sketch xs k \<bind>
+          (\<lambda>xa. return_pmf (if y then (x, 0) else (fst xa, snd xa + (of_bool (fst xa = x))))))
+      = pmf_of_set {..<length xs} \<bind> (\<lambda>k. return_pmf (if y then (length xs) else k) \<bind> ?sketch (xs@[x]))"
+    using non_empty
+    by (intro bind_pmf_cong) (simp_all add:bind_return_pmf nth_append count_list_append)
+
+  have b: "bernoulli_pmf (1 / (real (length xs) + 1)) \<bind> (\<lambda>y. pmf_of_set {..<length xs} \<bind>
+    (\<lambda>k. return_pmf (if y then length xs else k))) = pmf_of_set {..<length xs + 1}"
+    using snoc(1) non_empty
+    by (intro pmf_eqI, simp add: pmf_bind measure_pmf_of_set)
+     (simp add:indicator_def algebra_simps frac_eq_eq)
+
+  have "pmf_of_set {..<length xs} \<bind> ?sketch xs \<bind> fk_update_2 x (length xs) = 
+    pmf_of_set {..<length xs} \<bind> ?sketch xs \<bind> (\<lambda>a. bernoulli_pmf (1 / (real (length xs) + 1)) \<bind>
+       (\<lambda>coin. return_pmf (if coin then (x, 0) else (fst a, snd a + of_bool (fst a = x)))))"
+    by (subst fk_update_2_eta, subst fk_update_2.simps, simp)
+  also have "... = bernoulli_pmf (1 / (real (length xs) + 1)) \<bind> (\<lambda>coin. pmf_of_set {..<length xs} \<bind>
+       (\<lambda>k. ?sketch xs k \<bind> (\<lambda>a. return_pmf (if coin then (x, 0) else (fst a, snd a + of_bool (fst a = x))))))"
+    by (subst bind_commute_pmf, subst bind_assoc_pmf, simp)
+  also have "... = bernoulli_pmf (1 / (real (length xs) + 1)) \<bind> (\<lambda>y. pmf_of_set {..<length xs} \<bind> 
+    (\<lambda>k. return_pmf (if y then length xs else k))) \<bind> ?sketch (xs@[x])"
+    by (simp add:a del:drop_append)  (simp add: bind_assoc_pmf[symmetric])
+  also have "... = pmf_of_set {..<length (xs @ [x])} \<bind> ?sketch (xs@[x])"
+    by (subst b, simp)
+  finally have d:"pmf_of_set {..<length xs} \<bind> ?sketch xs \<bind> fk_update_2 x (length xs) = 
+    pmf_of_set {..<length (xs @ [x])} \<bind> ?sketch (xs@[x])" 
     by simp
+
+  have "fold (\<lambda>x (c,state). (c+1, state \<bind> fk_update_2 x c)) (xs@[x]) (0, return_pmf (0,0)) = 
+    (length  xs + 1, pmf_of_set {..<length xs} \<bind> ?sketch xs \<bind> fk_update_2 x (length xs))"
+    using snoc by (simp add:case_prod_beta')
+  also have "... = (length (xs@[x]), pmf_of_set {..<length (xs @ [x])} \<bind> ?sketch (xs@[x]))"
+    by (subst d, simp)
+  finally show ?case by simp
 qed
 
 definition if_then_else where "if_then_else p q r = (if p then q else r)"
@@ -240,10 +251,10 @@ definition if_then_else where "if_then_else p q r = (if p then q else r)"
 text \<open>This definition is introduced to be able to temporarily substitute @{term "(if p then q else r)"}
 with @{term "if_then_else p q r"}, which unblocks the simplifier to process @{term "q"} and @{term "r"}.\<close>
 
-lemma fk_alg_aux_2:
-  "fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update' x s\<^sub>1 s\<^sub>2 c)) as (0, return_pmf (\<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0,0)))
-  =  (length as, prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. (snd (fold (\<lambda>x (c,state). (c+1, state \<bind> fk_update'' x c)) as (0, return_pmf (0,0))))))"
-  (is "?lhs = ?rhs")
+lemma lift_eval_to_prod_pmf:
+  "fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update_1 x c)) as (0, return_pmf (\<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0,0)))
+  = (length as, prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) 
+  (\<lambda>_. (snd (fold (\<lambda>x (c,state). (c+1, state \<bind> fk_update_2 x c)) as (0, return_pmf (0,0))))))"
 proof (induction as rule:rev_induct)
   case Nil
   show ?case
@@ -251,19 +262,20 @@ proof (induction as rule:rev_induct)
 next
   case (snoc x xs)
   obtain t1 t2 where t_def: 
-    "(t1,t2) = fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update'' x c)) xs (0, return_pmf (0,0))"
+    "(t1,t2) = fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update_2 x c)) xs (0, return_pmf (0,0))"
     by (metis (no_types, lifting) surj_pair)
-  have a:"fk_update' x s\<^sub>1 s\<^sub>2 (length xs) = (\<lambda>a. fk_update' x s\<^sub>1 s\<^sub>2 (length xs) a)" 
+  have a:"fk_update_1 x (length xs) = (\<lambda>a. fk_update_1 x (length xs) a)" 
     by auto
-  have c:"\<And>c. fk_update'' x c = (\<lambda>a. fk_update'' x c (fst a,snd a))" 
+  have c:"\<And>c. fk_update_2 x c = (\<lambda>a. fk_update_2 x c (fst a,snd a))" 
     by auto
-  have "fst (fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update'' x c)) xs (0, return_pmf (0,0))) = length xs"
+  have "fst (fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update_2 x c)) xs (0, return_pmf (0,0))) = length xs"
     by (induction xs rule:rev_induct, simp, simp add:case_prod_beta)
   hence d:"t1 = length xs" 
     by (metis t_def fst_conv)
 
+
   show ?case using snoc
-    apply (simp del:fk_update''.simps fk_update'.simps)
+    apply (simp del:fk_update_2.simps fk_update_1.simps)
     apply (simp add:t_def[symmetric])
     apply (subst a[simplified])
     apply (subst pair_pmfI)
@@ -276,7 +288,7 @@ next
     apply (subst if_then_else_def)
     apply (rule arg_cong2[where f="prod_pmf"], simp)
     apply (rule ext)
-    apply (subst c, subst fk_update''.simps, simp)
+    apply (subst c, subst fk_update_2.simps, simp)
     apply (simp add:d)
     apply (subst pair_pmfI)
     apply (rule arg_cong2[where f="bind_pmf"], simp)
@@ -284,63 +296,53 @@ next
 qed
 
 lemma fk_alg_aux_1:
-  fixes k :: nat
-  fixes \<epsilon> :: rat
-  assumes "\<delta> > 0"
-  assumes "set as \<subseteq> {0..<n}"
   assumes "as \<noteq> []"
-  defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
-  defines "s\<^sub>1 \<equiv> nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  defines "s\<^sub>2 \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
-  shows "sketch = 
+  shows "fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)  = 
     map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x)) 
-    (snd (fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update' x s\<^sub>1 s\<^sub>2 c)) as (0, return_pmf (\<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0,0)))))"
-  using assms(3)
-proof (subst sketch_def, induction as rule:rev_nonempty_induct)
+    (snd (fold (\<lambda>x (c, state). (c+1, state \<bind> fk_update_1 x c)) as (0, return_pmf (\<lambda>i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0,0)))))"
+  using assms(1)
+proof (induction as rule:rev_nonempty_induct)
   case (single x)
   then show ?case 
-    apply (simp add: map_bind_pmf bind_return_pmf s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
-    apply (rule arg_cong2[where f="bind_pmf"], simp)
-    by (rule ext, subst restrict_def, simp)
+    by (simp add: map_bind_pmf bind_return_pmf s\<^sub>1_def s\<^sub>2_def Let_def restrict_def)
 next
   case (snoc x xs)
   obtain t1 t2 where t:
-    "fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update' x s\<^sub>1 s\<^sub>2 c)) xs (0, return_pmf (\<lambda>i. if i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} then (0,0) else undefined)) 
+    "fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update_1 x c)) xs (0, return_pmf (\<lambda>i. if i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} then (0,0) else undefined)) 
     = (t1,t2)"
     by fastforce
 
-  have "fst (fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update' x s\<^sub>1 s\<^sub>2 c)) xs (0, return_pmf (\<lambda>i. if i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} then (0,0) else undefined)))
+  have "fst (fold (\<lambda>x (c, state). (Suc c, state \<bind> fk_update_1 x c)) xs (0, return_pmf (\<lambda>i. if i \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} then (0,0) else undefined)))
     = length xs"
     by (induction xs rule:rev_induct, simp, simp add:split_beta) 
   hence t1: "t1 = length xs" using t fst_conv by auto
 
   show ?case using snoc
-    apply (simp add:  s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] t del:fk_update'.simps fk_update.simps)
+    apply (simp add:  s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] t del:fk_update_1.simps fk_update.simps)
     apply (subst bind_map_pmf)
     apply (subst map_bind_pmf)
     apply simp
     by (subst map_bind_pmf, simp add:t1)
 qed
 
+
 lemma power_diff_sum:
+  fixes a b :: "'a :: {comm_ring_1,power}"
   assumes "k > 0"
-  shows "(a :: 'a :: {comm_ring_1,power})^k -b^k = (a-b) * sum (\<lambda>i. a^i * b^(k-1-i)) {0..<k}" (is "?lhs = ?rhs")
+  shows "a^k - b^k = (a-b) * (\<Sum>i = 0..<k. a ^ i * b ^ (k - 1 - i))" (is "?lhs = ?rhs")
 proof -
+  have insert_lb: "m < n \<Longrightarrow> insert m {Suc m..<n} = {m..<n}" for m n :: nat
+    by auto
+
   have "?rhs = sum (\<lambda>i. a * (a^i * b^(k-1-i))) {0..<k} - sum (\<lambda>i. b * (a^i * b^(k-1-i))) {0..<k}"
     by (simp add: sum_distrib_left[symmetric] algebra_simps)
+  also have "... = sum ((\<lambda>i. (a^i * b^(k-i))) \<circ> (\<lambda>i. i+1)) {0..<k} - sum (\<lambda>i. (a^i * (b^(1+(k-1-i))))) {0..<k}"
+    by (simp add:algebra_simps)
   also have "... = sum ((\<lambda>i. (a^i * b^(k-i))) \<circ> (\<lambda>i. i+1)) {0..<k} - sum (\<lambda>i. (a^i * b^(k-i))) {0..<k}"
-    apply (rule arg_cong2[where f="(-)"])
-    apply (rule sum.cong, simp, simp add:algebra_simps)
-    apply (rule sum.cong, simp)
-    apply (subst mult.assoc[symmetric], subst mult.commute, subst mult.assoc)
-    by (rule arg_cong2[where f="(*)"], simp, simp add: power_eq_if)
-  also have "... = sum (\<lambda>i. (a^i * b^(k-i))) (insert k {1..<k}) - sum (\<lambda>i. (a^i * b^(k-i))) (insert 0 {1..<k})"
-    apply (rule arg_cong2[where f="(-)"])
-    apply (subst sum.reindex[symmetric], simp)
-     apply (rule sum.cong) using assms apply (simp add:atLeastLessThanSuc, simp)
-    apply (rule sum.cong) using assms Icc_eq_insert_lb_nat 
-     apply (metis One_nat_def Suc_pred atLeastLessThanSuc_atLeastAtMost le_add1 le_add_same_cancel1)
-    by simp
+    by (intro arg_cong2[where f="(-)"] sum.cong arg_cong2[where f="(*)"] arg_cong2[where f="(\<lambda>x y. x ^ y)"], auto)
+  also have "... = sum (\<lambda>i. (a^i * b^(k-i))) (insert k {1..<k}) - sum (\<lambda>i. (a^i * b^(k-i))) (insert 0 {Suc 0..<k})"
+    using assms
+    by (subst sum.reindex[symmetric], simp, subst insert_lb, auto)
   also have "... = ?lhs"
     by simp
   finally show ?thesis by presburger
@@ -353,22 +355,17 @@ lemma power_diff_est:
   shows "a^k -b^k \<le> (a-b) * k * a^(k-1)"
 proof -
   have " \<And>i. i < k \<Longrightarrow> a ^ i * b ^ (k - 1 - i) \<le> a ^ i * a ^ (k-1-i)"
-    apply (rule mult_left_mono, rule power_mono, metis assms(2), metis assms(3))
-    using assms by simp
+    using assms by (intro mult_left_mono power_mono) auto
   also have "\<And>i. i < k \<Longrightarrow> a ^ i * a ^ (k - 1 - i) = a ^ (k - Suc 0)"
-    apply (subst power_add[symmetric])
-    apply (rule arg_cong2[where f="power"], simp)
-    using assms(1) by simp
-  finally have t: "\<And>i. i < k \<Longrightarrow> a ^ i * b ^ (k - 1 - i) \<le> a ^ (k - Suc 0)"
+    using assms(1) by (subst power_add[symmetric], simp)
+  finally have a: "\<And>i. i < k \<Longrightarrow> a ^ i * b ^ (k - 1 - i) \<le> a ^ (k - Suc 0)"
     by blast
-  have "a^k - b^k = (a-b) * sum  (\<lambda>i. a^i * b^(k-1-i)) {0..<k}"
+  have "a^k - b^k = (a-b) * (\<Sum>i = 0..<k. a ^ i * b ^ (k - 1 - i))"
     by (rule power_diff_sum[OF assms(1)])
-  also have "... \<le> (a-b) * k * a^(k-Suc 0)"
-    apply (subst mult.assoc)
-    apply (rule mult_left_mono)
-     apply (rule sum_mono[where g="\<lambda>_. a^(k-1)" and K="{0..<k}", simplified])
-     apply (metis t)
-    using assms(2) by auto
+  also have "... \<le> (a-b) * (\<Sum>i = 0..<k.  a^(k-1))"
+    using a assms by (intro mult_left_mono sum_mono, auto)
+  also have "... = (a-b) * (k * a^(k-Suc 0))"
+    by simp
   finally show ?thesis by simp
 qed
 
@@ -377,119 +374,109 @@ lemma Holder_inequality_sum:
   assumes "p > (0::real)" "q > 0" "1/p + 1/q = 1"
   assumes "finite A"
   shows "\<bar>sum (\<lambda>x. f x * g x) A\<bar> \<le> (sum (\<lambda>x. \<bar>f x\<bar> powr p) A) powr (1/p) * (sum (\<lambda>x. \<bar>g x\<bar> powr q) A) powr (1/q)"
-  using assms apply (simp add: lebesgue_integral_count_space_finite[symmetric])
-  apply (rule Lp.Holder_inequality)
-  by (simp add:integrable_count_space)+
+proof -
+  have "\<bar>LINT x|count_space A. f x * g x\<bar> \<le> 
+    (LINT x|count_space A. \<bar>f x\<bar> powr p) powr (1 / p) * 
+    (LINT x|count_space A. \<bar>g x\<bar> powr q) powr (1 / q)"
+    using assms integrable_count_space
+    by (intro Lp.Holder_inequality, auto)
+  thus ?thesis
+    using assms by (simp add: lebesgue_integral_count_space_finite[symmetric])
+qed
+
+lemma real_count_list_pos:
+  assumes "x \<in> set as"
+  shows "real (count_list as x) > 0"
+  using count_list_gr_1 assms by force
 
 lemma fk_estimate:
   assumes "as \<noteq> []"
-  assumes "set as \<subseteq> {0..<n}"
-  assumes "k \<ge> 1"
   shows "real (length as) * real_of_rat (F (2*k-1) as) \<le> real n powr (1 - 1 / real k) * (real_of_rat (F k as))^2"
   (is "?lhs \<le> ?rhs")
 proof (cases "k \<ge> 2")
   case True
   define M where "M = Max (count_list as ` set as)" 
+  have "M \<in> count_list as ` set as"
+    unfolding M_def using assms by (intro Max_in, auto)
   then obtain m where m_in: "m \<in> set as" and m_def: "M = count_list as m"
-    by (metis (mono_tags, lifting) List.finite_set Max_in finite_imageI image_iff image_is_empty set_empty assms(1))
+    by blast
 
-  have a2: "real M > 0" apply (simp add:M_def)
-    by (metis (mono_tags, opaque_lifting) List.finite_set assms(1) Max_in bot_nat_0.not_eq_extremum count_list_gr_1 finite_imageI imageE image_is_empty linorder_not_less set_empty zero_less_one)
+  have a2: "real M > 0" using m_in count_list_gr_1 by (simp add:m_def, force)
   have a1: "2*k-1 = (k-1) + k" by simp
   have a4: "(k-1) = k * ((k-1)/k)" by simp
 
-  have a3: "M powr k \<le> real_of_rat (F k as)"
-    apply (simp add:m_def F_def of_rat_sum of_rat_power)
-    apply (subst powr_realpow, simp) 
-    using m_in  count_list_gr_1 apply force
-    by (rule member_le_sum, metis m_in, simp, simp)
+  have " 0 < real (count_list as m)" 
+    using m_in count_list_gr_1 by force
+  hence "M powr k = real (count_list as m) ^ k"
+    by (simp add: powr_realpow m_def)
+  also have "... \<le> (\<Sum>x\<in>set as. real (count_list as x) ^ k)"
+    using m_in by (intro member_le_sum, simp_all)
+  also have "... \<le> real_of_rat (F k as)"
+    by (simp add:F_def of_rat_sum of_rat_power)
+  finally have a3: "M powr k \<le> real_of_rat (F k as)" by simp
 
   have a5: "0 \<le> real_of_rat (F k as)" 
-    using F_gr_0[OF assms(1)] 
-    by (simp add: order_le_less)
-  hence a6: "real_of_rat (F k as) = real_of_rat (F k as) powr 1" by simp
+    using F_gr_0[OF assms(1)] by (simp add: order_le_less)
 
   have "real (k - 1) / real k + 1 = real (k - 1) / real k + real k / real k"
     using assms True by simp
   also have "... =  real (2 * k - 1) / real k"
-    apply (subst add_divide_distrib[symmetric])
-    apply (rule arg_cong2[where f="(/)"])
-    apply (subst of_nat_diff) using True apply linarith
-    apply (subst of_nat_diff) using True apply linarith
-    by simp+
+    using a1 by (subst add_divide_distrib[symmetric], force)
   finally have a7: "real (k - 1) / real k + 1 = real (2 * k - 1) / real k"
     by blast
 
-  have a: "real_of_rat (F (2*k-1) as) \<le> M powr (k-1) * (real_of_rat (F k as)) "
-    using a1 apply (simp add:F_def of_rat_sum sum_distrib_left of_rat_mult power_add of_rat_power)
-    apply (rule sum_mono)
-    apply (rule mult_right_mono)
-     apply (subst powr_realpow)
-      apply (metis a2)
-     apply (subst power_mono)
-    by (simp add:M_def)+
-  also have "... \<le>  (real_of_rat (F k as)) powr ((k-1)/k) * (real_of_rat (F k as))"
-    apply (rule mult_right_mono)
-     apply (subst a4)
-     apply (subst powr_powr[symmetric])
-    by (subst powr_mono2, simp, simp, metis a3, simp, metis a5)
+  have "real_of_rat (F (2*k-1) as) = 
+    (\<Sum>x\<in>set as. real (count_list as x) ^ (k - 1) * real (count_list as x) ^ k)" 
+    using a1 by (simp add:F_def of_rat_sum sum_distrib_left of_rat_mult power_add of_rat_power)
+  also have "... \<le> (\<Sum>x\<in>set as. real M ^ (k - 1) * real (count_list as x) ^ k)"
+    by (intro sum_mono mult_right_mono power_mono of_nat_mono) (auto simp:M_def)
+  also have "... = M powr (k-1) * of_rat (F k as)" using a2
+    by (simp add:sum_distrib_left F_def of_rat_mult of_rat_sum of_rat_power powr_realpow)
+  also have "... = (M powr k) powr (real (k - 1) / real k) * of_rat (F k as) powr 1"
+    using a5 by (simp add:powr_powr)
+  also have "... \<le>  (real_of_rat (F k as)) powr ((k-1)/k) * (real_of_rat (F k as) powr 1)"
+    using a3 a5 by (intro mult_right_mono powr_mono2, auto)
   also have "... = (real_of_rat (F k as)) powr ((2*k-1) / k)"
-    apply (subst (2) a6)
-    apply (subst powr_add[symmetric])
-    by (rule arg_cong2[where f="(powr)"], simp, metis a7)
+    by (subst powr_add[symmetric], subst a7, simp)
   finally have a: "real_of_rat (F (2*k-1) as) \<le> (real_of_rat (F k as)) powr ((2*k-1) / k)"
     by blast
 
   have b1: "card (set as) \<le> n"
-    by (rule card_mono[where B="{0..<n}", simplified], rule assms(2))
+    using card_mono[OF _ as_range] by simp
 
-  have "real (length as) = abs (sum (\<lambda>x. real (count_list as x)) (set as))"
-    apply (subst of_nat_sum[symmetric])
-    by (simp add: sum_count_set)
-  also have "... \<le> (real (card (set as))) powr ((k-Suc 0)/k) * (sum (\<lambda>x. abs (real (count_list as x)) powr k) (set as)) powr (1/k)"
-    apply (rule Holder_inequality_sum[where p="k/(k-1)" and q="k" and A="set as" and f="\<lambda>_.1", simplified])
-    using assms True apply (simp)
-    using assms True apply (simp)
-    apply (subst add_divide_distrib[symmetric])
-    using assms True by simp
-  also have "... \<le> real n powr (1 - 1 / real k) * real_of_rat (F k as) powr (1/real k)"
-    apply (rule mult_mono)
-       apply (subst of_nat_diff) using assms True apply linarith
-       apply (subst diff_divide_distrib) using assms True apply simp
-       apply (rule powr_mono2, force, simp)
-    using b1  of_nat_le_iff apply blast
-      apply (rule powr_mono2, force)
-       apply (rule sum_mono[where f="\<lambda>_. 0", simplified])
-       apply simp
-      apply (simp add:F_def of_rat_sum of_rat_power)
-    apply (rule sum_mono)
-      apply (subst powr_realpow, simp)
-    using count_list_gr_1 
-    by (metis gr0I not_one_le_zero, simp, simp, simp)
-  finally have b: "real (length as) \<le> real n powr (1 - 1 / real k) * real_of_rat (F k as) powr (1/real k)"
+  have "length as = abs (sum (\<lambda>x. real (count_list as x)) (set as))"
+    by (subst of_nat_sum[symmetric], simp add: sum_count_set)
+  also have "... \<le> card (set as) powr ((k-Suc 0)/k) * 
+    (sum (\<lambda>x. \<bar>real (count_list as x)\<bar> powr k) (set as)) powr (1/k)"
+    using assms True
+    by (intro Holder_inequality_sum[where p="k/(k-1)" and q="k" and f="\<lambda>_.1", simplified])
+     (auto simp add:algebra_simps add_divide_distrib[symmetric])
+  also have "... = (card (set as)) powr ((k-1) / real k) * of_rat (F k as) powr (1/ k)"
+    using real_count_list_pos
+    by (simp add:F_def of_rat_sum of_rat_power powr_realpow)
+  also have "... = (card (set as)) powr (1 - 1 / real k) * of_rat (F k as) powr (1/ k)"
+    using k_ge_1
+    by (subst of_nat_diff[OF k_ge_1], subst diff_divide_distrib, simp)
+  also have "... \<le> n powr (1 - 1 / real k) * of_rat (F k as) powr (1/ k)"
+    using k_ge_1 b1
+    by (intro mult_right_mono powr_mono2, auto)
+  finally have b: "length as \<le> n powr (1 - 1 / real k) * of_rat (F k as) powr (1/real k)"
     by blast
 
   have c:"1 / real k + real (2 * k - 1) / real k = real 2"
-    apply (subst add_divide_distrib[symmetric])
-    apply (subst of_nat_diff) using True apply linarith
-    using assms(2) True by simp
+    using True by (subst add_divide_distrib[symmetric], simp_all add:of_nat_diff)
 
-  have "?lhs \<le> real n powr (1 - 1 / real k) * real_of_rat (F k as) powr (1/real k) *  (real_of_rat (F k as)) powr ((2*k-1) / k)"
-    apply (rule mult_mono, metis b, metis a, simp, simp add:F_def)
-    apply (rule sum_mono[where f="\<lambda>_. (0::rat)", simplified])
-    by auto
-  also have "... \<le> ?rhs"
-    apply (subst mult.assoc, subst powr_add[symmetric], subst mult_left_mono)
-    apply (subst c, subst powr_realpow)
-    using  F_gr_0[OF assms(1)] by simp+
+  have "?lhs \<le> n powr (1 - 1/k) * of_rat (F k as) powr (1/k) * (of_rat (F k as)) powr ((2*k-1) / k)"
+    using a b F_ge_0 by (intro mult_mono mult_nonneg_nonneg, auto)
+  also have "... = ?rhs"
+    using c F_gr_0[OF assms] by (simp add:powr_add[symmetric] powr_realpow[symmetric])
   finally show ?thesis
     by blast
 next
   case False
-  have "n > 0" 
-    apply (cases "n=0") 
-    using assms(1) assms(2) equals0I by (simp, blast)
-  moreover have "k = 1" using assms False by linarith
+  have "n = 0 \<Longrightarrow> False" using as_range assms by auto
+  hence "n > 0" by auto
+  moreover have "k = 1" using assms k_ge_1 False by linarith
   ultimately show ?thesis
     apply (simp add:power2_eq_square)
     apply (rule mult_right_mono)
@@ -499,8 +486,7 @@ qed
 
 lemma fk_alg_core_exp:
   assumes "as \<noteq> []"
-  assumes "k \<ge> 1"
-  shows "has_bochner_integral (measure_pmf (pmf_of_set {(u, v). v < count_list as u}))
+  shows "has_bochner_integral (pmf_of_set S)
         (\<lambda>a. real (length as) * real (Suc (snd a) ^ k - snd a ^ k)) (real_of_rat (F k as))"
 proof -
   show ?thesis
@@ -517,20 +503,18 @@ proof -
     apply (subst of_nat_diff) 
     apply (simp add: power_mono)
     apply (subst sum_Suc_diff', simp, simp)
-    using assms by linarith
+    using assms k_ge_1 by linarith
 qed
 
 lemma fk_alg_core_var:
   assumes "as \<noteq> []"
-  assumes "k \<ge> 1"
-  assumes "set as \<subseteq> {0..<n}"
-  shows "prob_space.variance (measure_pmf (pmf_of_set {(u, v). v < count_list as u}))
+  shows "prob_space.variance (pmf_of_set S)
         (\<lambda>a. real (length as) * real (Suc (snd a) ^ k - snd a ^ k))
-         \<le> (real_of_rat (F k as))\<^sup>2 * real k * real n powr (1 - 1 / real k)"
+         \<le> (of_rat (F k as))\<^sup>2 * real k * real n powr (1 - 1 / real k)"
 proof -
   define f :: "nat \<times> nat \<Rightarrow> real" 
     where "f = (\<lambda>x. (real (length as) * real (Suc (snd x) ^ k - snd x ^ k)))"
-  define \<Omega> where "\<Omega> = pmf_of_set {(u, v). v < count_list as u}"
+  define \<Omega> where "\<Omega> = pmf_of_set S"
   
   have integrable: "\<And>k f. integrable (measure_pmf \<Omega>) (\<lambda>\<omega>. (f \<omega>)::real)"
     apply (simp add:\<Omega>_def)
@@ -538,24 +522,19 @@ proof -
     apply (subst set_pmf_of_set)
     using assms(1) fin_space non_empty_space by auto
 
-  have k_g_0: "k > 0" using assms by linarith
+  have k_g_0: "k > 0" using k_ge_1 by linarith
 
-  have c:"\<And>a v. v < count_list as a \<Longrightarrow> real (Suc v ^ k) - real (v ^ k) \<le> real k * real (count_list as a) ^ (k - Suc 0)"
+  have c:"real (Suc v ^ k) - real (v ^ k) \<le> real k * real (count_list as a) ^ (k - Suc 0)"
+    if c_1: "v < count_list as a" for a v
   proof -
-    fix a v
-    assume c_1: "v < count_list as a"
     have "real (Suc v ^ k) - real (v ^ k) \<le> (real (v+1) - real v) * real k * (1 + real v) ^ (k - Suc 0)"
-      using k_g_0 power_diff_est[where a="Suc v" and b="v" and k ="k"]
-      by simp
+      using k_g_0 power_diff_est[where a="Suc v" and b="v"] by simp
     moreover have "(real (v+1) - real v) = 1" by auto
     ultimately have "real (Suc v ^ k) - real (v ^ k) \<le> real k * (1 + real v) ^ (k - Suc 0)"
       by auto
     also have "... \<le> real k * real (count_list as a) ^ (k- Suc 0)"
-      apply (rule mult_left_mono, rule power_mono)
-      using c_1 apply linarith
-      by simp+
-    finally show "real (Suc v ^ k) - real (v ^ k) \<le> real k * real (count_list as a) ^ (k- Suc 0)"
-      by blast
+      using c_1 by (intro mult_left_mono power_mono, auto)
+    finally show ?thesis by blast
   qed
       
   have "real (length as) * (\<Sum>a\<in> set as. (\<Sum>v \<in> {0..< count_list as a}. (real (Suc v ^ k - v ^ k))\<^sup>2))
@@ -573,7 +552,7 @@ proof -
     apply (subst of_nat_diff, rule power_mono, simp, simp)
     apply (subst sum_Suc_diff', simp, simp add: zero_power[OF k_g_0] sum_distrib_left)
     apply (subst power_add[symmetric]) 
-    using assms by (simp add: mult_2)
+    using assms k_ge_1 by (simp add: mult_2)
   also have "... = real (length as) * real k * real_of_rat (F (2*k-1) as)"
     apply (subst mult.assoc)
     apply (rule arg_cong2[where f="(*)"], simp)
@@ -582,7 +561,7 @@ proof -
     apply (subst mult.commute)
     apply (subst mult.assoc)
     apply (rule mult_left_mono)
-    using fk_estimate[OF assms(1) assms(3) assms(2)] 
+    using fk_estimate[OF assms]    
     by (simp add: mult.commute, simp)
   finally have b: "real (length as) * (\<Sum>a\<in> set as. (\<Sum>v \<in> {0..< count_list as a}. (real (Suc v ^ k - v ^ k))\<^sup>2))
     \<le> real k * ((real_of_rat (F k as))\<^sup>2 * real n powr (1 - 1 / real k))"
@@ -613,41 +592,36 @@ proof -
 qed
 
 theorem fk_alg_sketch:
-  fixes \<epsilon> :: rat
-  assumes "k \<ge> 1"
-  assumes "\<delta> > 0"
-  assumes "set as \<subseteq> {0..<n}"
   assumes "as \<noteq> []"
-  defines "sketch \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
-  defines "s\<^sub>1 \<equiv> nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  defines "s\<^sub>2 \<equiv> nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
-  shows "sketch = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x)) 
-    (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list as u}))" 
-  apply (simp add:sketch_def)
-  using fk_alg_aux_1[OF assms(2) assms(3) assms(4), where k="k" and \<epsilon>="\<epsilon>"]
-  apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
-  apply (rule arg_cong2[where f="map_pmf"], simp)
-  using fk_alg_aux_2
-  apply (subst fk_alg_aux_2[simplified], simp)
-  apply (subst fk_alg_aux_4[OF assms(4), simplified], simp)
-  by (subst fk_alg_aux_5[OF assms(4), simplified], simp)
+  shows "fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n) = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x)) 
+    (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set S))" (is "?lhs = ?rhs")
+proof -
+  let ?f = "map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as,x))"
 
-lemma fk_alg_correct:
-  assumes "k \<ge> 1"
-  assumes "\<epsilon> \<in> {0<..<1}"
-  assumes "\<delta> > 0"
-  assumes "set as \<subseteq> {0..<n}"
+  have "?lhs = ?f ((snd (fold (\<lambda>x (c, state). (c + 1, state \<bind> fk_update_1 x c)) as
+          (0, return_pmf (\<lambda>i\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2}. (0, 0))))))" 
+    using fk_alg_aux_1[OF assms(1)] by simp
+  also have "... = ?f (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})
+    (\<lambda>_. snd (fold (\<lambda>x (c, state). (c + 1, state \<bind> fk_update_2 x c)) as (0, return_pmf (0, 0)))))"
+    by (subst lift_eval_to_prod_pmf, simp)
+  also have "... = ?f (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) 
+    (\<lambda>_. pmf_of_set {..<length as} \<bind> (\<lambda>k. return_pmf (sketch k))))"
+    by (subst fk_update_2_distr[OF assms], simp)
+  also have "... = ?rhs"
+    by (subst sketch_samples_from_S[OF assms(1)], simp)
+  finally show ?thesis by simp
+qed
+
+lemma fk_alg_correct':
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n) \<bind> fk_result"
   shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - F k as\<bar> \<le> \<delta> * F k as) \<ge> 1 - of_rat \<epsilon>"
 proof (cases "as = []")
   case True
-  have a: "nat \<lceil>- (18 * ln (real_of_rat \<epsilon>))\<rceil> > 0"  using assms by simp 
-  show ?thesis using True apply (simp add:F_def M_def bind_return_pmf median_const[OF a] Let_def)
-    using assms(2) by simp
+  have a: "nat \<lceil>- (18 * ln (real_of_rat \<epsilon>))\<rceil> > 0"  using \<epsilon>_range by simp 
+  show ?thesis using True \<epsilon>_range 
+    by (simp add:F_def M_def bind_return_pmf median_const[OF a] Let_def)
 next
   case False
-  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
 
   define f :: "(nat \<times> nat \<Rightarrow> (nat \<times> nat)) \<Rightarrow> rat"
     where "f = (\<lambda>x. median s\<^sub>2 (\<lambda>i\<^sub>2\<in>{0..<s\<^sub>2}.
@@ -662,35 +636,35 @@ next
     where "f' = (\<lambda>x. median s\<^sub>2 (f1 x))"
 
   have "set as \<noteq> {}" using assms False by blast
-  hence n_nonzero: "n > 0" using assms(4) by fastforce
+  hence n_nonzero: "n > 0" using as_range by fastforce
 
-  have fk_nonzero: "F k as > 0" using F_gr_0 assms False by simp
+  have fk_nonzero: "F k as > 0"
+    using F_gr_0[OF False] by simp
 
   have s1_nonzero: "s\<^sub>1 > 0"
     apply (simp add:s\<^sub>1_def)
-    apply (rule divide_pos_pos)
-    apply (rule mult_pos_pos)
-    using assms apply linarith
+    apply (intro divide_pos_pos mult_pos_pos, simp)
+    using k_ge_1 apply linarith
     apply (simp add:n_nonzero)
-    by (meson assms zero_less_of_rat_iff zero_less_power)
-  have s2_nonzero: "s\<^sub>2 > 0" using assms by (simp add:s\<^sub>2_def) 
+    by (meson \<delta>_range zero_less_of_rat_iff zero_less_power)
+  have s2_nonzero: "s\<^sub>2 > 0" using \<epsilon>_range by (simp add:s\<^sub>2_def) 
   have real_of_rat_f: "\<And>x. f' x = real_of_rat (f x)"
     using s2_nonzero apply (simp add:f_def f'_def f1_def f2_def median_rat median_restrict)
     apply (rule arg_cong2[where f="median"], simp)
     by (simp add:of_rat_divide of_rat_sum of_rat_mult)
 
-  define \<Omega> where "\<Omega> = pmf_of_set {(u, v). v < count_list as u}"
+  define \<Omega> where "\<Omega> = pmf_of_set S"
   have fin_omega: "finite (set_pmf \<Omega>)"
     apply (subst \<Omega>_def, subst set_pmf_of_set)
-    using assms(5) fin_space non_empty_space False by auto
+    using assms fin_space non_empty_space False by auto
   have fin_omega_2: "finite (set_pmf ((prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))))"
     apply (subst set_prod_pmf, simp)
     apply (rule finite_PiE, simp)
     by (simp add:fin_omega)
 
   have a:"fold (\<lambda>x state. state \<bind> fk_update x) as (fk_init k \<delta> \<epsilon> n) = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x)) 
-    (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list as u}))"
-    apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) False])
+    (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set S))"
+    apply (subst fk_alg_sketch[OF False])
     by (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
 
   have fk_result_exp: "fk_result = (\<lambda>(x,y,z,u,v). fk_result (x,y,z,u,v))" 
@@ -715,10 +689,10 @@ next
             (real_of_rat (F k as))"
     apply (simp add:f2_def \<Omega>_def of_rat_mult  of_rat_sum of_rat_power)
     apply (rule has_bochner_integral_prod_pmf_sliceI, simp, simp)
-    by (rule fk_alg_core_exp, metis False, metis assms(1))
+    by (rule fk_alg_core_exp[OF False])
 
   have "3 * real k * real n powr (1 - 1 / real k) = (real_of_rat \<delta>)\<^sup>2 * (3 * real k * real n powr (1 - 1 / real k) / (real_of_rat \<delta>)\<^sup>2)"
-    using assms by simp
+    using \<delta>_range by simp
   also have "... \<le>  (real_of_rat \<delta>)\<^sup>2 * (real s\<^sub>1)"
     apply (rule mult_mono, simp)
     apply (simp add:s\<^sub>1_def) 
@@ -746,7 +720,7 @@ next
     apply (rule order_trans [where y="(real_of_rat (F k as))\<^sup>2 *
                  real k * real n powr (1 - 1 / real k)"])
     apply (simp add: \<Omega>_def)
-    using assms False fk_alg_core_var[where k="k"] apply simp
+    using assms False fk_alg_core_var apply simp
     using f2_var_1 by blast
 
   have f1_exp_1: "(real_of_rat (F k as)) = (\<Sum>i \<in> {0..<s\<^sub>1}. (real_of_rat (F k as))/real s\<^sub>1)"
@@ -796,7 +770,7 @@ next
     assume d_1:"i < s\<^sub>2"
     define a where "a = real_of_rat (\<delta> * F k as)"
     have d_2: "0 < a" apply (simp add:a_def)
-      using assms fk_nonzero mult_pos_pos by blast
+      using assms \<delta>_range fk_nonzero mult_pos_pos by blast
     have d_3: "integrable (measure_pmf (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))) (\<lambda>x. (f1 x i)\<^sup>2)"
       by (rule integrable_measure_pmf_finite[OF fin_omega_2])
     have "?lhs i \<le> measure_pmf.prob (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))
@@ -818,53 +792,23 @@ next
     apply (subst c[symmetric])
     apply (simp add:f'_def)
     apply (rule prob_space.median_bound_2[where X="\<lambda>i \<omega>. f1 \<omega> i" and M="(prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. \<Omega>))", simplified])
-         apply (simp add:prob_space_measure_pmf)
-        using assms(2) apply simp
-       using assms(2) apply simp
+        apply (simp add:prob_space_measure_pmf)
+    using \<epsilon>_range apply simp
+       using \<epsilon>_range apply simp
        apply (simp add:f1_def f2_def)
        apply (rule indep_vars_restrict_intro'[where f="snd"], simp, simp, simp add:restrict_dfl_def, simp add:s1_nonzero, simp)
      apply (simp add: s\<^sub>2_def) 
-       using of_nat_ceiling apply blast 
+       using of_nat_ceiling apply blast
      using d by simp
 qed
 
-fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat) \<Rightarrow> real" where
-  "fk_space_usage (k, n, m, \<epsilon>, \<delta>) = (
-    let s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k) / (real_of_rat \<delta>)\<^sup>2 \<rceil> in
-    let s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil> in 
-    4 +
-    2 * log 2 (s\<^sub>1 + 1) +
-    2 * log 2 (s\<^sub>2 + 1) +
-    2 * log 2 (real k + 1) +
-    2 * log 2 (real m + 1) +
-    s\<^sub>1 * s\<^sub>2 * (2 + 2 * log 2 (real n+1) + 2 * log 2 (real m+1)))"
-
-definition encode_fk_state :: "fk_state \<Rightarrow> bool list option" where
-  "encode_fk_state = 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
-    N\<^sub>S \<times>\<^sub>S  
-    N\<^sub>S \<times>\<^sub>S  
-    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (N\<^sub>S \<times>\<^sub>S N\<^sub>S))))"
-
-lemma "inj_on encode_fk_state (dom encode_fk_state)"
-  apply (rule encoding_imp_inj)
-  apply (simp add:encode_fk_state_def)
-  by (intro dependent_encoding exp_goloumb_encoding fun_encoding)
-
-theorem fk_exact_space_usage:
-  assumes "k \<ge> 1"
-  assumes "\<epsilon> \<in> {0<..<1}"
-  assumes "\<delta> > 0"
-  assumes "set as \<subseteq> {0..<n}"
+lemma fk_exact_space_usage':
   defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
   shows "AE \<omega> in M. bit_count (encode_fk_state \<omega>) \<le> fk_space_usage (k, n, length as, \<epsilon>, \<delta>)" (is "AE \<omega> in M. (_  \<le> ?rhs)")
 proof (cases "as = []")
   case True
   have a:"M = fk_init k \<delta> \<epsilon> n"
     using True by (simp add:M_def)
-  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
   define w where "w = (2::ereal)"
 
   have h: "\<And>x. x \<in> (\<lambda>x. (0, 0)) ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> bit_count ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) x) \<le> 2"
@@ -889,18 +833,12 @@ proof (cases "as = []")
     \<le> ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + 
     ereal (2 * log 2 (real k + 1) + 1) + ereal (2 * log 2 (real 0 + 1) + 1) + 
    (ereal (real s\<^sub>1 * real s\<^sub>2) * w)"
-    apply (rule add_mono)
-    apply (rule add_mono)
-    apply (rule add_mono)
-       apply (rule add_mono, rule exp_goloumb_bit_count)
-      apply (rule exp_goloumb_bit_count)
-     apply (rule exp_goloumb_bit_count)
-     apply (rule exp_goloumb_bit_count)
+    apply (intro add_mono exp_goloumb_bit_count)
     apply (rule fun_bit_count_est[where xs="(List.product [0..<s\<^sub>1] [0..<s\<^sub>2])", simplified], simp)
     apply (subst w_def)
     using h by simp
   also have "... \<le> ereal (fk_space_usage (k, n, length as, \<epsilon>, \<delta>))" 
-    apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] w_def True)
+    apply (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] w_def True Let_def)
     apply (rule mult_left_mono) 
     by simp+
   finally have "bit_count (N\<^sub>S s\<^sub>1) + (bit_count (N\<^sub>S s\<^sub>2) + (bit_count (N\<^sub>S k) + (bit_count (N\<^sub>S 0) +
@@ -912,28 +850,26 @@ proof (cases "as = []")
         del:fk_space_usage.simps) 
 next
   case False
-  define s\<^sub>1 where "s\<^sub>1 = nat \<lceil>3*real k*(real n) powr (1-1/ real k)/ (real_of_rat \<delta>)\<^sup>2\<rceil>"
-  define s\<^sub>2 where "s\<^sub>2 = nat \<lceil>-(18 * ln (real_of_rat \<epsilon>))\<rceil>"
 
-  have a:"M = map_pmf (\<lambda>x. (s\<^sub>1,s\<^sub>2,k,length as, x))
-    (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set {(u,v). v < count_list as u}))"
+  have a:"M = map_pmf (\<lambda>x.(s\<^sub>1,s\<^sub>2,k,length as, x)) (prod_pmf ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) (\<lambda>_. pmf_of_set S))"
     apply (subst M_def)
-    apply (subst fk_alg_sketch[OF assms(1) assms(3) assms(4) False])
+    apply (subst fk_alg_sketch[OF False])
     by (simp add:s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric])
 
   have "set as \<noteq> {}" using assms False by blast
-  hence n_nonzero: "n > 0" using assms(4) by fastforce
+  hence n_nonzero: "n > 0" using as_range by fastforce
   have length_xs_gr_0: "length as > 0" using False by blast
 
-  have b:"\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E {(u, v). v < count_list as u} \<Longrightarrow>
+  have b:"\<And>y. y\<in>{0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E S \<Longrightarrow>
        bit_count (encode_fk_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> ?rhs"
   proof -
     fix y
-    assume b0:"y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E {(u, v). v < count_list as u}"
+    assume b0:"y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E S"
     have "\<And>x. x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> 1 \<le> count_list as (fst x)"
       using b0 by (simp add:PiE_iff case_prod_beta, fastforce)
     hence b1:"\<And>x. x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> fst x \<le> n"
-      by (metis assms(4) atLeastLessThan_iff count_notin in_mono less_or_eq_imp_le not_one_le_zero)
+      using as_range 
+      by (meson count_list_gr_1 le_eq_less_or_eq lessThan_iff subset_eq)
     have b2: "\<And>x. x \<in> y ` ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2}) \<Longrightarrow> snd x \<le> length as"
       using count_le_length b0 apply (simp add:PiE_iff case_prod_beta) 
       using dual_order.strict_trans1 by fastforce
@@ -943,7 +879,8 @@ next
       ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ( 
       ereal (2 * log 2 (real k + 1) + 1) + (
       ereal (2 * log 2 (real (length as) + 1) + 1) + (
-       (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 (real n+1) + 1) + ereal (2 * log 2 (real (length as)+1) + 1))))))))"
+       (ereal (real s\<^sub>1 * real s\<^sub>2) * ((ereal (2 * log 2 (real n+1) + 1) + 
+        ereal (2 * log 2 (real (length as)+1) + 1))))))))"
       unfolding encode_fk_state_def dependent_bit_count
       apply (intro add_mono exp_goloumb_bit_count)
       apply (rule  fun_bit_count_est[where xs="(List.product [0..<s\<^sub>1] [0..<s\<^sub>2])", simplified], simp add:b3)
@@ -951,7 +888,7 @@ next
       apply (rule add_mono)
       using b1 b2 exp_goloumb_bit_count_est by auto
     also have "... \<le> ?rhs"
-      using n_nonzero length_xs_gr_0 apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric,simplified])
+      using n_nonzero length_xs_gr_0 apply (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric,simplified] Let_def)
       by (simp add:algebra_simps)
     finally show "bit_count (encode_fk_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> ?rhs"
       by blast
@@ -964,6 +901,26 @@ next
     apply (subst PiE_def[symmetric])
     by (metis b)
 qed
+
+end
+
+theorem fk_exact_space_usage:
+  assumes "k \<ge> 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
+  assumes "\<delta> > 0"
+  assumes "set as \<subseteq> {..<n}"
+  defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n)"
+  shows "AE \<omega> in M. bit_count (encode_fk_state \<omega>) \<le> fk_space_usage (k, n, length as, \<epsilon>, \<delta>)" (is "AE \<omega> in M. (_  \<le> ?rhs)")
+  unfolding M_def using fk_exact_space_usage'[OF assms(1,2,3,4)] by blast
+
+lemma fk_alg_correct:
+  assumes "k \<ge> 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
+  assumes "\<delta> > 0"
+  assumes "set as \<subseteq> {..<n}"
+  defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n) \<bind> fk_result"
+  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - F k as\<bar> \<le> \<delta> * F k as) \<ge> 1 - of_rat \<epsilon>"
+  unfolding M_def using fk_alg_correct'[OF assms(1,2,3,4)] by blast
 
 lemma fk_asympotic_space_complexity:
   "fk_space_usage \<in> 
@@ -995,41 +952,30 @@ proof -
 
   have m_inf: "\<And>c. eventually (\<lambda>x. c \<le> (real (m_of x))) ?F" 
     apply (simp add:m_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
-    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
+    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)+
     apply (subst eventually_prod1', simp add:prod_filter_eq_bot)
     by (meson eventually_at_top_linorder nat_ceiling_le_eq)
 
   have eps_inf: "\<And>c. eventually (\<lambda>x. c \<le> 1 / (real_of_rat (\<epsilon>_of x))) ?F"
     apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     apply (subst eventually_prod1', simp)
     by (rule inv_at_right_0_inf)
 
   have delta_inf: "\<And>c. eventually (\<lambda>x. c \<le> 1 / (real_of_rat (\<delta>_of x))) ?F"
     apply (simp add:\<delta>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     by (rule inv_at_right_0_inf)
 
   have zero_less_eps: "eventually (\<lambda>x. 0 < (real_of_rat (\<epsilon>_of x))) ?F"
     apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     apply (subst eventually_prod1', simp)
     by (rule eventually_at_rightI[where b="1"], simp, simp)
 
   have zero_less_delta: "eventually (\<lambda>x. 0 < (real_of_rat (\<delta>_of x))) ?F"
     apply (simp add:\<delta>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
-    apply (subst eventually_prod2', simp)
+    apply (subst eventually_prod2', simp)+
     by (rule eventually_at_rightI[where b="1"], simp, simp)
 
   have unit_9: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x) powr (1 - 1 / real (k_of x)))"
@@ -1075,7 +1021,7 @@ proof -
     by (rule landau_o.big_mult_1[OF unit_4 unit_2])
 
   have unit_1: "(\<lambda>_. 1) \<in> O[?F](g)"
-    apply (simp add:g_def)
+    unfolding g_def
     by (rule landau_o.big_mult_1[OF unit_5 unit_3])
 
   have l6: "(\<lambda>x. real (nat \<lceil>3 * real (k_of x) * real (n_of x) powr (1 - 1 / real (k_of x)) / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>))
@@ -1128,18 +1074,12 @@ proof -
     by (rule sum_in_bigo, simp, simp add:unit_8, simp add: unit_9)
 
   have l3: "(\<lambda>x. ln (real (k_of x) + 1)) \<in> O[?F](g)"
-    apply (simp add:g_def)
-    apply (rule landau_o.big_mult_1)
-    apply (rule landau_o.big_mult_1)
-      apply (simp add:l7)
-    by (rule unit_2, rule unit_3)
+    unfolding g_def using unit_2 unit_3 l7
+    by (intro landau_o.big_mult_1, auto)
 
   have l4: " (\<lambda>x. ln (real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>) + 1)) \<in> O[?F](g)"
-    apply (simp add:g_def)
-    apply (rule landau_o.big_mult_1)
-     apply (rule landau_o.big_mult_1'[OF unit_4])
-     apply (rule landau_ln_3, simp)
-    by (rule sum_in_bigo, simp add:l9, rule unit_2, rule unit_3)
+    unfolding g_def using l9 unit_2 unit_3
+    by (intro landau_o.big_mult_1'[OF unit_4] landau_o.big_mult_1 landau_ln_3 sum_in_bigo, auto)
 
   have l5: "(\<lambda>x. ln (real (nat \<lceil>3 * real (k_of x) * real (n_of x) powr (1 - 1 / real (k_of x)) / (real_of_rat (\<delta>_of x))\<^sup>2\<rceil>) + 1)) 
     \<in> O[?F](g)"
@@ -1152,19 +1092,11 @@ proof -
     by (rule unit_2, rule unit_3, rule unit_1)
 
   have "fk_space_usage = (\<lambda>x. fk_space_usage (k_of x, n_of x, m_of x, \<epsilon>_of x, \<delta>_of x))"
-    apply (rule ext)
     by (simp add:case_prod_beta' k_of_def n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def)
   also have "... \<in> O[?F](g)"
-    apply (simp add: Let_def)
-    apply (rule sum_in_bigo_r, simp add:l1)
-    apply (rule sum_in_bigo_r, simp add:l2 log_def)
-    apply (rule sum_in_bigo_r, simp add:l3 log_def)
-    apply (rule sum_in_bigo_r, simp add:l4 log_def)
-    apply (rule sum_in_bigo_r, simp add:l4 log_def)
-    by (simp add:l5, simp add:unit_1)
+    using l1 l2 l3 l4 l5 unit_1
+    by (simp add:Let_def, intro sum_in_bigo, simp_all add:log_def)
   also have "... = O[?F](?rhs)"
-    apply (rule arg_cong2[where f="bigo"], simp)
-    apply (rule ext)
     by (simp add:case_prod_beta' g1_def g_def n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def k_of_def)
   finally show ?thesis by simp
 qed

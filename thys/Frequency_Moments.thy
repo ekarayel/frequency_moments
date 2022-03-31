@@ -10,6 +10,9 @@ text \<open>This section contains a definition of the frequency moments of a str
 definition F where
   "F k xs = (\<Sum> x \<in> set xs. (rat_of_nat (count_list xs x)^k))"
 
+lemma F_ge_0: "F k as \<ge> 0"
+  unfolding F_def by (rule sum_nonneg, simp)
+
 lemma F_gr_0:
   assumes "as \<noteq> []"
   shows "F k as > 0"
