@@ -402,8 +402,9 @@ lemma mean_rv_var:
 proof -
   have a: "\<Omega>.indep_vars (\<lambda>_. borel) (\<lambda>i\<^sub>1 x. sketch_rv (x (i\<^sub>1, i))) {0..<s\<^sub>1}"
     using assms
+    unfolding \<Omega>\<^sub>p_def \<Omega>_def
     by (intro indep_vars_restrict_intro'[where f="fst"])
-     (auto simp add:\<Omega>\<^sub>p_def \<Omega>_def restrict_dfl_def case_prod_beta lessThan_atLeast0)
+     (auto simp add: restrict_dfl_def case_prod_beta lessThan_atLeast0)
 
   have p_sq_ne_1: "(real p)^2 \<noteq> 1" 
     by (metis p_gt_1 less_numeral_extra(4) of_nat_power one_less_power pos2 semiring_char_0_class.of_nat_eq_1_iff)
@@ -458,7 +459,7 @@ lemma f2_alg_correct':
    "\<P>(\<omega> in measure_pmf result. \<bar>\<omega> - F 2 as\<bar> \<le> \<delta> * F 2 as) \<ge> 1-of_rat \<epsilon>"
 proof -
   have a: "\<Omega>.indep_vars (\<lambda>_. borel) (\<lambda>i \<omega>. mean_rv \<omega> i) {0..<s\<^sub>2}" 
-    using s1_gt_0
+    using s1_gt_0 unfolding \<Omega>\<^sub>p_def \<Omega>_def
     by (intro indep_vars_restrict_intro'[where f="snd"])
       (auto simp: \<Omega>\<^sub>p_def \<Omega>_def mean_rv_def restrict_dfl_def)
 

@@ -1008,12 +1008,6 @@ private lemma f_subset:
   shows "(\<lambda>x. f (g x)) ` A \<subseteq> (\<lambda>x. f (h x)) ` B"
   using assms by auto
 
-lemma ereal_mono: "x \<le> y \<Longrightarrow> ereal x \<le> ereal y"
-  by simp
-
-lemma log_mono: "a > 1 \<Longrightarrow> x \<le> y \<Longrightarrow> 0 < x \<Longrightarrow> log a x \<le> log a y"
-  by (subst log_le_cancel_iff, auto)
-
 lemma f0_exact_space_usage':
   defines "\<Omega> \<equiv> fold (\<lambda>a state. state \<bind> f0_update a) as (f0_init \<delta> \<epsilon> n)"
   shows "AE \<omega> in \<Omega>. bit_count (encode_f0_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"

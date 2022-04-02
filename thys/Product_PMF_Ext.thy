@@ -108,25 +108,25 @@ proof -
 qed
 
 lemma indep_vars_restrict_intro':
-  assumes "M = measure_pmf (Pi_pmf I d p)"
   assumes "finite I"
   assumes "\<And>i \<omega>. i \<in> J \<Longrightarrow> X i \<omega> = X i (restrict_dfl \<omega> (f -` {i} \<inter> I) d)"
   assumes "J = f ` I"
   assumes "\<And>\<omega> i. i \<in> J \<Longrightarrow>  X i \<omega> \<in> space (M' i)"
-  shows "prob_space.indep_vars M M' (\<lambda>i \<omega>. X i \<omega>) J"
+  shows "prob_space.indep_vars (measure_pmf (Pi_pmf I d p)) M' (\<lambda>i \<omega>. X i \<omega>) J"
 proof -
+  define M where "M \<equiv> measure_pmf (Pi_pmf I d p)"
   interpret prob_space "M"
-    using assms(1) prob_space_measure_pmf by blast
+    using M_def prob_space_measure_pmf by blast
   have "indep_vars (\<lambda>_. discrete) (\<lambda>i x. restrict_dfl x (f -` {i} \<inter> I) d) (f ` I)" 
-    unfolding assms(1)  by (rule indep_vars_restrict'[OF assms(2)])
+    unfolding M_def  by (rule indep_vars_restrict'[OF assms(1)])
   hence "indep_vars M' (\<lambda>i \<omega>. X i (restrict_dfl \<omega> ( f -` {i} \<inter> I) d)) (f ` I)"
-    using assms(5)
-    by (intro indep_vars_compose2[where Y="X" and N="M'" and M'="\<lambda>_. discrete"])  (auto simp:assms(4))
+    using assms(4)
+    by (intro indep_vars_compose2[where Y="X" and N="M'" and M'="\<lambda>_. discrete"])  (auto simp:assms(3))
   hence "indep_vars M' (\<lambda>i \<omega>. X i \<omega>) (f ` I)"
-    using assms(3)[symmetric]
-    by (simp add:assms(4) cong:indep_vars_cong)
+    using assms(2)[symmetric]
+    by (simp add:assms(3) cong:indep_vars_cong)
   thus ?thesis
-    using assms(4) by simp 
+    unfolding M_def using assms(3) by simp 
 qed
 
 lemma  
@@ -179,16 +179,6 @@ proof -
   finally show ?thesis by simp
 qed
 
-lemma has_bochner_integral_prod_pmf_sliceI: (* TODO Remove *)
-  fixes f :: "'a \<Rightarrow> ('b :: {second_countable_topology,banach,real_normed_field})"
-  assumes "finite I"
-  assumes "i \<in> I"
-  assumes "has_bochner_integral (measure_pmf (M i)) f r"
-  shows "has_bochner_integral (Pi_pmf I d M) (\<lambda>x. (f (x i))) r"
-  using assms integrable_Pi_pmf_slice[OF assms(1,2), where M="M" and f="f"] 
-    expectation_Pi_pmf_slice[OF assms(1,2), where M="M" and f="f"]
-  by (simp add:has_bochner_integral_iff) 
-
 lemma variance_prod_pmf_slice:
   fixes f :: "'a \<Rightarrow> real"
   assumes "i \<in> I" "finite I"
@@ -209,5 +199,10 @@ proof -
   thus ?thesis
     using assms a b c by (simp add: measure_pmf.variance_eq)
 qed
+
+lemma Pi_pmf_bind_return:
+  assumes "finite I"
+  shows "Pi_pmf I d (\<lambda>i. M i \<bind> (\<lambda>x. return_pmf (f i x))) = Pi_pmf I d' M \<bind> (\<lambda>x. return_pmf (\<lambda>i. if i \<in> I then f i (x i) else d))"
+  using assms by (simp add: Pi_pmf_bind[where d'="d'"])
 
 end

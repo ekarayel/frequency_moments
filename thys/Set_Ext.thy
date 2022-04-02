@@ -1,5 +1,5 @@
 theory Set_Ext
-  imports Main
+  imports Main "HOL.Transcendental" "HOL-Library.Extended_Real"
 begin
 
 lemma card_ordered_pairs:
@@ -33,5 +33,11 @@ proof -
     by (cases "card M \<ge> 0", auto simp:power2_eq_square algebra_simps)
   finally show ?thesis by simp
 qed
+
+lemma ereal_mono: "x \<le> y \<Longrightarrow> ereal x \<le> ereal y"
+  by simp
+
+lemma log_mono: "a > 1 \<Longrightarrow> x \<le> y \<Longrightarrow> 0 < x \<Longrightarrow> log a x \<le> log a y"
+  by (subst log_le_cancel_iff, auto)
 
 end
