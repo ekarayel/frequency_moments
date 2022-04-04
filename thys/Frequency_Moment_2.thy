@@ -5,6 +5,7 @@ theory Frequency_Moment_2
     Universal_Hash_Families.Carter_Wegman_Hash_Family Frequency_Moments Landau_Ext
     Universal_Hash_Families.Field Landau_Symbols.Landau_More
     Equivalence_Relation_Enumeration.Equivalence_Relation_Enumeration Product_PMF_Ext
+    Set_Ext
 begin
 
 text \<open>This section contains a formalization of the algorithm for the second frequency moment.
@@ -606,70 +607,42 @@ proof -
 
   define g where "g = (\<lambda>x. (1/ (of_rat (\<delta>_of x))\<^sup>2) * (ln (1 / of_rat (\<epsilon>_of x))) * (ln (real (n_of x)) + ln (real (m_of x))))"
 
-  have n_inf: "\<And>c. eventually (\<lambda>x. c \<le> (real (n_of x))) ?F" 
-    apply (simp add:n_of_def case_prod_beta')
-    apply (subst eventually_prod1', simp add:prod_filter_eq_bot)
-    by (meson eventually_at_top_linorder nat_ceiling_le_eq)
-
-  have m_inf: "\<And>c. eventually (\<lambda>x. c \<le> (real (m_of x))) ?F" 
-    apply (simp add:m_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp add:prod_filter_eq_bot)
-    apply (subst eventually_prod1', simp add:prod_filter_eq_bot)
-    by (meson eventually_at_top_linorder nat_ceiling_le_eq)
-
-  have eps_inf: "\<And>c. eventually (\<lambda>x. c \<le> 1 / (real_of_rat (\<epsilon>_of x))) ?F"
-    apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)+
-    apply (subst eventually_prod1', simp)
-    by (rule inv_at_right_0_inf)
-
-  have delta_inf: "\<And>c. eventually (\<lambda>x. c \<le> 1 / (real_of_rat (\<delta>_of x))) ?F"
-    apply (simp add:\<delta>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)+
-    by (rule inv_at_right_0_inf)
-
-  have zero_less_eps: "eventually (\<lambda>x. 0 < (real_of_rat (\<epsilon>_of x))) ?F"
-    apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)+
-    apply (subst eventually_prod1', simp)
-    by (rule eventually_at_rightI[where b="1"], simp, simp)
-
-  have zero_less_delta: "eventually (\<lambda>x. 0 < (real_of_rat (\<delta>_of x))) ?F"
-    apply (simp add:\<delta>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)+
-    by (rule eventually_at_rightI[where b="1"], simp, simp)
-
-  have zero_less_eps: "eventually (\<lambda>x. 0 < (real_of_rat (\<epsilon>_of x))) ?F"
-    apply (simp add:\<epsilon>_of_def case_prod_beta')
-    apply (subst eventually_prod2', simp)+
-    apply (subst eventually_prod1', simp)
-    by (rule eventually_at_rightI[where b="1"], simp, simp)
+  have evt: "(\<And>x. 
+    0 < real_of_rat (\<delta>_of x) \<and> 0 < real_of_rat (\<epsilon>_of x) \<and> 
+    1/real_of_rat (\<delta>_of x) \<ge> \<delta> \<and> 1/real_of_rat (\<epsilon>_of x) \<ge> \<epsilon> \<and>
+    real (n_of x) \<ge> n \<and> real (m_of x) \<ge> m\<Longrightarrow> P x) 
+    \<Longrightarrow> eventually P ?F"  (is "(\<And>x. ?prem x \<Longrightarrow> _) \<Longrightarrow> _")
+    for \<delta> \<epsilon> n m P
+    apply (rule eventually_mono[where P="?prem" and Q="P"])
+    apply (simp add:\<epsilon>_of_def case_prod_beta' \<delta>_of_def n_of_def m_of_def)
+     apply (intro eventually_conj eventually_prod1' eventually_prod2' 
+        sequentially_inf eventually_at_right_less inv_at_right_0_inf)
+    by (auto simp add:prod_filter_eq_bot)
 
   have unit_1: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
-    by (intro landau_o.big_mono eventually_mono[OF eventually_conj[OF zero_less_delta delta_inf[where c="1"]]])
-     (simp, meson le_divide_eq_1_pos order_le_less power_le_one zero_less_of_rat_iff)
+    using one_le_power
+    by (intro landau_o.big_mono evt[where \<delta>="1"], auto simp add:power_one_over[symmetric])
 
   have unit_2: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
-    by (intro landau_o.big_mono  eventually_mono[OF eventually_conj[OF zero_less_eps eps_inf[where c="exp 1"]]])
-     (simp, meson abs_ge_self dual_order.trans exp_gt_zero ln_ge_iff order_trans_rules(22))
+    by (intro landau_o.big_mono  evt[where \<epsilon>="exp 1"])
+     (auto intro!:iffD2[OF ln_ge_iff] simp add:abs_ge_iff)
 
   have unit_3: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x))"
-    by (rule landau_o.big_mono, simp, rule n_inf)
+    by (intro landau_o.big_mono evt, auto)
 
   have unit_4: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (m_of x))"
-    by (rule landau_o.big_mono, simp, rule m_inf)
+    by (intro landau_o.big_mono evt, auto)
 
   have unit_5: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)))"
-    by (auto intro!: landau_o.big_mono eventually_mono [OF n_inf[where c="exp 1"]])
+    by (auto intro!: landau_o.big_mono evt[where n="exp 1"])
       (metis abs_ge_self linorder_not_le ln_ge_iff not_exp_le_zero order.trans)
 
   have unit_6: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
-    by (intro landau_sum_1 eventually_ln_ge_iff n_inf m_inf unit_5)
+    by (intro landau_sum_1 evt unit_5 iffD2[OF ln_ge_iff], auto)
 
   have unit_7: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. 1 / real_of_rat (\<epsilon>_of x))"
-    by (intro landau_o.big_mono  eventually_mono [OF eventually_conj[OF zero_less_eps eps_inf[where c="1"]]])
-     simp
-
+    by (intro landau_o.big_mono  evt[where \<epsilon>="1"], auto)
+ 
   have unit_8: "(\<lambda>_. 1) \<in> O[?F](g)" 
     unfolding g_def by (intro landau_o.big_mult_1 unit_1 unit_2 unit_6)
 
@@ -680,7 +653,7 @@ proof -
     by (intro landau_real_nat  landau_rat_ceil[OF unit_1]) (simp add:of_rat_divide of_rat_power)
 
   have "(\<lambda>x. - ( ln (real_of_rat (\<epsilon>_of x)))) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
-    by (intro landau_o.big_mono eventually_mono[OF zero_less_eps]) (subst ln_div, auto)
+    by (intro landau_o.big_mono evt) (subst ln_div, auto)
   hence l2: "(\<lambda>x. real (nat \<lceil>- (18 * ln (real_of_rat (\<epsilon>_of x)))\<rceil>)) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
     by (intro landau_real_nat landau_ceil[OF unit_2], simp)
 
@@ -690,22 +663,21 @@ proof -
 
   have "(\<lambda>x. ln (real (m_of x) * (18 + 4 * real (n_of x)) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x) * real (m_of x)))"
      apply (rule landau_ln_2[where a="2"], simp, simp)
-      apply (rule eventually_mono[OF eventually_conj[OF m_inf[where c="2"] n_inf[where c="1"]]])
+      apply (rule evt[where m="2" and n="1"])
      apply (metis dual_order.trans mult_left_mono mult_of_nat_commute of_nat_0_le_iff verit_prod_simplify(1))
     using l3_aux by simp
   also have "(\<lambda>x. ln (real (n_of x) * real (m_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln(real (m_of x)))"
-    by (intro landau_o.big_mono eventually_mono[OF eventually_conj[OF m_inf[where c="1"] n_inf[where c="1"]]])
-     (simp add:ln_mult)
+    by (intro landau_o.big_mono evt[where m="1" and n="1"], auto simp add:ln_mult)
   finally have l3: "(\<lambda>x. ln (real (m_of x) * (18 + 4 * real (n_of x)) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
     using  landau_o.big_trans by simp
 
   have l4: "(\<lambda>x. ln (8 + 2 * real (n_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
-    by (intro landau_sum_1  eventually_ln_ge_iff n_inf m_inf landau_ln_2[where a="2"])
-      (auto intro!: sum_in_bigo simp add:unit_3)
+    by (intro landau_sum_1  evt[where n="2"] landau_ln_2[where a="2"] iffD2[OF ln_ge_iff])
+     (auto intro!: sum_in_bigo simp add:unit_3)
 
   have l5: "(\<lambda>x. ln (9 + 2 * real (n_of x))) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
-    by (intro landau_sum_1  eventually_ln_ge_iff n_inf m_inf landau_ln_2[where a="2"])
-      (auto intro!: sum_in_bigo simp add:unit_3)
+    by (intro landau_sum_1  evt[where n="2"] landau_ln_2[where a="2"] iffD2[OF ln_ge_iff])
+     (auto intro!: sum_in_bigo simp add:unit_3)
 
   have l6: "(\<lambda>x. ln (real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>) + 1)) \<in> O[?F](g)"
     unfolding g_def

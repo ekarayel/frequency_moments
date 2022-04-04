@@ -6,14 +6,6 @@ begin
 
 text \<open>This section contains results about Landau Symbols in addition to "HOL-Library.Landau".\<close>
 
-text \<open>The following lemma is an intentional copy of @{thm [source] sum_in_bigo} with order of assumptions reversed *)\<close>
-
-lemma sum_in_bigo_r: 
-  assumes "f2 \<in> O[F'](g)"
-  assumes "f1 \<in> O[F'](g)"
-  shows "(\<lambda>x. f1 x + f2 x) \<in> O[F'](g)"
-  by (rule sum_in_bigo[OF assms(2) assms(1)]) 
-
 lemma landau_sum:
   assumes "eventually (\<lambda>x. g1 x \<ge> (0::real)) F'" 
   assumes "eventually (\<lambda>x. g2 x \<ge> 0) F'" 
@@ -185,61 +177,35 @@ lemma landau_nat_ceil:
   assumes "(\<lambda>_. 1) \<in> O[F'](g)"
   assumes "f \<in> O[F'](g)"
   shows "(\<lambda>x. real (nat \<lceil>f x\<rceil>)) \<in> O[F'](g)"
-  apply (rule landau_real_nat)
-  by (rule landau_ceil[OF assms(1) assms(2)])
+  using assms
+  by (intro landau_real_nat landau_ceil, auto)
 
-lemma landau_const_inv:
-  assumes "c > (0::real)"
-  assumes "(\<lambda>x. 1 / f x) \<in> O[F'](g)"
-  shows "(\<lambda>x. c / f x) \<in> O[F'](g)"
+lemma eventually_prod1'':
+  assumes "B \<noteq> bot"
+  assumes " (\<forall>\<^sub>F x in A. P x)"
+  shows "(\<forall>\<^sub>F x in A \<times>\<^sub>F B. P (fst x))"
 proof -
-  obtain d where a: "d > 0" and b: "eventually (\<lambda>x. abs (1 / f x) \<le> d * abs (g x)) F'"
-    using assms(2) by (simp add:bigo_def, blast)
-  have c:"eventually (\<lambda>x. \<bar>c\<bar> / \<bar>f x\<bar> \<le> (c)*d * abs (g x)) F'"
-    apply (rule eventually_mono[OF b])
-    using assms(1)
-    apply simp 
-    by (metis Groups.mult_ac(2) Groups.mult_ac(3) divide_inverse inverse_eq_divide less_imp_le mult_le_cancel_left not_less)
-  show ?thesis
-    apply (simp add:bigo_def)
-    apply (rule exI[where x="c*d"])
-    apply (rule conjI, rule mult_pos_pos[OF assms(1) a])
-    by (rule c)
+  have "(\<forall>\<^sub>F x in A \<times>\<^sub>F B. P (fst x)) = (\<forall>\<^sub>F (x,y) in A \<times>\<^sub>F B. P x)"
+    by (simp add:case_prod_beta')
+  also have "... = (\<forall>\<^sub>F x in A. P x)"
+    by (subst eventually_prod1[OF assms(1)], simp)
+  finally show ?thesis using assms(2) by simp
 qed
 
-lemma eventually_nonneg_div:
-  assumes "eventually (\<lambda>x. (0::real) \<le> f x) F'"
-  assumes "eventually (\<lambda>x. 0 < g x) F'"
-  shows "eventually (\<lambda>x. 0 \<le> f x / g x) F'"
-  by (rule eventually_mono[OF eventually_conj[OF assms(1) assms(2)]], simp)
-
-lemma eventually_nonneg_add:
-  assumes "eventually (\<lambda>x. (0::real) \<le> f x) F'"
-  assumes "eventually (\<lambda>x. 0 \<le> g x) F'"
-  shows "eventually (\<lambda>x. 0 \<le> f x + g x) F'"
-  by (rule eventually_mono[OF eventually_conj[OF assms(1) assms(2)]], simp)
-
-lemma eventually_ln_ge_iff:
-  assumes "eventually (\<lambda>x. (exp (c::real)) \<le> f x) F'"
-  shows "eventually (\<lambda>x. c \<le> ln (f x)) F'"
-  by (rule eventually_mono[OF assms(1)])
-   (meson ln_ge_iff  exp_gt_zero order_less_le_trans)
-
-lemma div_commute: "(a::real) / b = (1/b) * a" by simp
-
-lemma eventually_prod1':
-  assumes "B \<noteq> bot"
-  shows "(\<forall>\<^sub>F x in A \<times>\<^sub>F B. P (fst x)) \<longleftrightarrow> (\<forall>\<^sub>F x in A. P x)"
-  apply (subst (2) eventually_prod1[OF assms(1), symmetric])
-  apply (rule arg_cong2[where f="eventually"])
-  by (rule ext, simp add:case_prod_beta, simp)
-
-lemma eventually_prod2':
+lemma eventually_prod2'':
   assumes "A \<noteq> bot"
-  shows "(\<forall>\<^sub>F x in A \<times>\<^sub>F B. P (snd x)) \<longleftrightarrow> (\<forall>\<^sub>F x in B. P x)"
-  apply (subst (2) eventually_prod2[OF assms(1), symmetric])
-  apply (rule arg_cong2[where f="eventually"])
-  by (rule ext, simp add:case_prod_beta, simp)
+  assumes " (\<forall>\<^sub>F x in B. P x)"
+  shows "(\<forall>\<^sub>F x in A \<times>\<^sub>F B. P (snd x))"
+proof -
+  have "(\<forall>\<^sub>F x in A \<times>\<^sub>F B. P (snd x)) = (\<forall>\<^sub>F (x,y) in A \<times>\<^sub>F B. P y)"
+    by (simp add:case_prod_beta')
+  also have "... = (\<forall>\<^sub>F x in B. P x)"
+    by (subst eventually_prod2[OF assms(1)], simp)
+  finally show ?thesis using assms(2) by simp
+qed
+
+lemma sequentially_inf: "\<forall>\<^sub>F x in sequentially. n \<le> real x"
+  by (meson eventually_at_top_linorder nat_ceiling_le_eq)
 
 instantiation rat :: linorder_topology
 begin
