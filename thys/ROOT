@@ -1,8 +1,7 @@
-session FrequencyMoments = HOL +
+session FrequencyMoments = "HOL-Probability" +
   sessions
     "Bertrands_Postulate"
     "HOL-Algebra"
-    "HOL-Probability"
     "Lp"
     "Median_Method"
     "Interpolation_Polynomials_HOL_Algebra"

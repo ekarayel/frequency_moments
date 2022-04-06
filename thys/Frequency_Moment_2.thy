@@ -3,7 +3,7 @@ section \<open>Frequency Moment $2$\<close>
 theory Frequency_Moment_2
   imports Main Median_Method.Median Primes_Ext List_Ext 
     Universal_Hash_Families.Carter_Wegman_Hash_Family Frequency_Moments Landau_Ext
-    Universal_Hash_Families.Field Landau_Symbols.Landau_More
+    Universal_Hash_Families.Field
     Equivalence_Relation_Enumeration.Equivalence_Relation_Enumeration Product_PMF_Ext
     Set_Ext
 begin
@@ -49,17 +49,17 @@ fun f2_space_usage :: "(nat \<times> nat \<times> rat \<times> rat) \<Rightarrow
 
 definition encode_f2_state :: "f2_state \<Rightarrow> bool list option" where
   "encode_f2_state = 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
-    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S P\<^sub>S p 4) \<times>\<^sub>S
-    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S))))"
+    N\<^sub>e \<Join>\<^sub>e (\<lambda>s\<^sub>1. 
+    N\<^sub>e \<Join>\<^sub>e (\<lambda>s\<^sub>2. 
+    N\<^sub>e \<Join>\<^sub>e (\<lambda>p. 
+    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e P\<^sub>e p 4) \<times>\<^sub>e
+    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e I\<^sub>e))))"
 
 lemma "inj_on encode_f2_state (dom encode_f2_state)"
 proof -
   have " is_encoding encode_f2_state"
     unfolding encode_f2_state_def
-    by (intro dependent_encoding exp_goloumb_encoding fun_encoding list_encoding int_encoding poly_encoding)
+    by (intro dependent_encoding exp_golomb_encoding fun_encoding list_encoding int_encoding poly_encoding)
       
   thus ?thesis
     by (rule encoding_imp_inj)
@@ -489,11 +489,11 @@ proof -
     by (cases "n \<le> 2", simp_all)
   finally have p_bound: "p \<le> 2 * n + 8" 
     by simp
-  have "bit_count (N\<^sub>S p) \<le> ereal (2 * log 2 (real p + 1) + 1)"
-    by (rule exp_goloumb_bit_count)
+  have "bit_count (N\<^sub>e p) \<le> ereal (2 * log 2 (real p + 1) + 1)"
+    by (rule exp_golomb_bit_count)
   also have "... \<le> ereal (2 * log 2 (2 * real n + 9) + 1)"
     using p_bound by simp
-  finally have p_bit_count: "bit_count (N\<^sub>S p) \<le> ereal (2 * log 2 (2 * real n + 9) + 1)"
+  finally have p_bit_count: "bit_count (N\<^sub>e p) \<le> ereal (2 * log 2 (2 * real n + 9) + 1)"
     by simp
 
   have a: "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. 
@@ -504,28 +504,28 @@ proof -
     hence y_ext: "y \<in> extensional (set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))"
       by (simp add:lessThan_atLeast0)
 
-    have h_bit_count_aux: "bit_count (P\<^sub>S p 4 (y x)) \<le> ereal (4 + 4 * log 2 (8 + 2 * real n))"
+    have h_bit_count_aux: "bit_count (P\<^sub>e p 4 (y x)) \<le> ereal (4 + 4 * log 2 (8 + 2 * real n))"
       if b:"x \<in>  set (List.product [0..<s\<^sub>1] [0..<s\<^sub>2])" for x
     proof -
       have "y x \<in> bounded_degree_polynomials (Field.mod_ring p) 4"
         using b a by force
-      hence "bit_count (P\<^sub>S p 4 (y x)) \<le> ereal ( real 4 * (log 2 (real p) + 1))"
+      hence "bit_count (P\<^sub>e p 4 (y x)) \<le> ereal ( real 4 * (log 2 (real p) + 1))"
         by (rule bounded_degree_polynomial_bit_count[OF p_gt_1] )
       also have "... \<le> ereal (real 4 * (log 2 (8 + 2 * real n) + 1) )"
         using p_gt_0 p_bound by simp
       also have "... \<le> ereal (4 + 4 * log 2 (8 + 2 * real n))"
         by simp
-      finally show "bit_count (P\<^sub>S p 4 (y x)) \<le> ereal (4 + 4 * log 2 (8 + 2 * real n))"
+      finally show ?thesis
         by blast
     qed
 
     have h_bit_count: 
-      "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S P\<^sub>S p 4) y) \<le> ereal (real s\<^sub>1 * real s\<^sub>2 * (4 + 4 * log 2 (8 + 2 * real n)))"
-      using fun_bit_count_est[where e="P\<^sub>S p 4", OF y_ext h_bit_count_aux]
+      "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e P\<^sub>e p 4) y) \<le> ereal (real s\<^sub>1 * real s\<^sub>2 * (4 + 4 * log 2 (8 + 2 * real n)))"
+      using fun_bit_count_est[where e="P\<^sub>e p 4", OF y_ext h_bit_count_aux]
       by simp
 
     have sketch_bit_count_aux:
-      "bit_count (I\<^sub>S (sum_list (map (f2_hash p (y x)) as))) \<le> ereal (1 + 2 * log 2 (real (length as) * (18 + 4 * real n) + 1))" (is "?lhs x \<le> ?rhs")
+      "bit_count (I\<^sub>e (sum_list (map (f2_hash p (y x)) as))) \<le> ereal (1 + 2 * log 2 (real (length as) * (18 + 4 * real n) + 1))" (is "?lhs \<le> ?rhs")
       if " x \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2}" for x
     proof -
       have "\<bar>sum_list (map (f2_hash p (y x)) as)\<bar> \<le> sum_list (map (abs \<circ> (f2_hash p (y x))) as)" 
@@ -537,32 +537,32 @@ proof -
       also have "... \<le> int (length as) * (9+2*(int n))"
         using p_bound by (intro mult_mono, auto)
       finally  have "\<bar>sum_list (map (f2_hash p (y x)) as)\<bar> \<le> int (length as) * (9 + 2 * int n)" by simp
-      hence "?lhs x \<le> ereal (2 * log 2 (real_of_int (2* (int (length as) * (9 + 2 * int n)) + 1)) + 1)"
+      hence "?lhs \<le> ereal (2 * log 2 (real_of_int (2* (int (length as) * (9 + 2 * int n)) + 1)) + 1)"
         by (rule int_bit_count_est)
       also have "... = ?rhs" by (simp add:algebra_simps)
-      finally show "?lhs x \<le> ?rhs" by simp
+      finally show "?thesis" by simp
     qed
 
     have 
-      "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))
+      "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e I\<^sub>e) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))
       \<le> ereal (real (length (List.product [0..<s\<^sub>1] [0..<s\<^sub>2]))) * (ereal (1 + 2 * log 2 (real (length as) * (18 + 4 * real n) + 1)))"
       by (intro fun_bit_count_est)  
        (simp_all add:extensional_def lessThan_atLeast0 sketch_bit_count_aux del:f2_hash.simps)
     also have "... = ereal (real s\<^sub>1 * real s\<^sub>2 * (1 + 2 * log 2 (real (length as) * (18 + 4 * real n) + 1)))"
       by simp
     finally have sketch_bit_count: 
-       "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as))) \<le>
+       "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e I\<^sub>e) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as))) \<le>
       ereal (real s\<^sub>1 * real s\<^sub>2 * (1 + 2 * log 2 (real (length as) * (18 + 4 * real n) + 1)))" by simp
 
     have "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as))) \<le> 
-      bit_count (N\<^sub>S s\<^sub>1) + bit_count (N\<^sub>S s\<^sub>2) +bit_count (N\<^sub>S p) +
-      bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S P\<^sub>S p 4) y) +
-      bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S I\<^sub>S) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))"   
+      bit_count (N\<^sub>e s\<^sub>1) + bit_count (N\<^sub>e s\<^sub>2) +bit_count (N\<^sub>e p) +
+      bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e P\<^sub>e p 4) y) +
+      bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e I\<^sub>e) (\<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as)))"   
       by (simp add:Let_def s\<^sub>1_def s\<^sub>2_def encode_f2_state_def dependent_bit_count add.assoc)
     also have "... \<le> ereal (2 * log 2 (real s\<^sub>1 + 1) + 1) + ereal (2 * log 2 (real s\<^sub>2 + 1) + 1) + ereal (2 * log 2 (2 * real n + 9) + 1) + 
       (ereal (real s\<^sub>1 * real s\<^sub>2) * (4 + 4 * log 2 (8 + 2 * real n))) + 
       (ereal (real s\<^sub>1 * real s\<^sub>2) * (1 + 2 * log 2 (real (length as) * (18 + 4 * real n) + 1) ))"
-      by (intro add_mono exp_goloumb_bit_count p_bit_count, auto intro: h_bit_count sketch_bit_count)
+      by (intro add_mono exp_golomb_bit_count p_bit_count, auto intro: h_bit_count sketch_bit_count)
     also have "... = ereal (f2_space_usage (n, length as, \<epsilon>, \<delta>))"
       by (simp add:distrib_left add.commute s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] Let_def)
     finally show "bit_count (encode_f2_state (s\<^sub>1, s\<^sub>2, p, y, \<lambda>i\<in>{..<s\<^sub>1} \<times> {..<s\<^sub>2}. sum_list (map (f2_hash p (y i)) as))) \<le>  
@@ -577,6 +577,9 @@ proof -
 qed
 
 end
+
+
+text \<open>Main results of this section:\<close>
 
 theorem f2_alg_correct:
   assumes "\<epsilon> \<in> {0<..<1}"
@@ -649,8 +652,10 @@ proof -
   have unit_9: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x) * real (m_of x))"
     by (intro landau_o.big_mult_1 unit_3 unit_4)
 
-  have l1: "(\<lambda>x. real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>)) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
-    by (intro landau_real_nat  landau_rat_ceil[OF unit_1]) (simp add:of_rat_divide of_rat_power)
+  have " (\<lambda>x. 6 * (1 / (real_of_rat (\<delta>_of x))\<^sup>2)) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
+    by (subst landau_o.big.cmult_in_iff, simp_all)
+  hence l1: "(\<lambda>x. real (nat \<lceil>6 / (\<delta>_of x)\<^sup>2\<rceil>)) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
+    by (intro landau_real_nat  landau_rat_ceil[OF unit_1]) (simp_all add:of_rat_divide of_rat_power)
 
   have "(\<lambda>x. - ( ln (real_of_rat (\<epsilon>_of x)))) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
     by (intro landau_o.big_mono evt) (subst ln_div, auto)

@@ -30,12 +30,12 @@ proof -
   finally show ?thesis by simp
 qed
 
-definition P\<^sub>S :: "nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool list option" where
-  "P\<^sub>S p n f = (if p > 1 \<and> f \<in> bounded_degree_polynomials (Field.mod_ring p) n then
-    ([0..<n] \<rightarrow>\<^sub>S N\<^sub>F p) (\<lambda>i \<in> {..<n}. ring.coeff (Field.mod_ring p) f i) else None)"
+definition P\<^sub>e :: "nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool list option" where
+  "P\<^sub>e p n f = (if p > 1 \<and> f \<in> bounded_degree_polynomials (Field.mod_ring p) n then
+    ([0..<n] \<rightarrow>\<^sub>e Nb\<^sub>e p) (\<lambda>i \<in> {..<n}. ring.coeff (Field.mod_ring p) f i) else None)"
 
 lemma poly_encoding:
-  "is_encoding (P\<^sub>S p n)"
+  "is_encoding (P\<^sub>e p n)"
 proof (cases "p > 1")
   case True
   interpret cring "Field.mod_ring p"
@@ -64,22 +64,22 @@ proof (cases "p > 1")
       by (subst coeff_iff_polynomial_cond) (auto simp:bounded_degree_polynomials_length) 
   qed
 
-  have "is_encoding (\<lambda>f. P\<^sub>S p n f)"
-    unfolding P\<^sub>S_def using a True
-    by (intro encoding_compose[where f="([0..<n] \<rightarrow>\<^sub>S N\<^sub>F p)"] fun_encoding fixed_encoding) 
+  have "is_encoding (\<lambda>f. P\<^sub>e p n f)"
+    unfolding P\<^sub>e_def using a True
+    by (intro encoding_compose[where f="([0..<n] \<rightarrow>\<^sub>e Nb\<^sub>e p)"] fun_encoding bounded_nat_encoding) 
      auto
   thus ?thesis by simp
 next
   case False
-  hence "is_encoding (\<lambda>f. P\<^sub>S p n f)"
-    unfolding P\<^sub>S_def using encoding_triv by simp
+  hence "is_encoding (\<lambda>f. P\<^sub>e p n f)"
+    unfolding P\<^sub>e_def using encoding_triv by simp
   then show ?thesis by simp
 qed
 
 lemma bounded_degree_polynomial_bit_count:
   assumes "p > 1"
   assumes "x \<in> bounded_degree_polynomials (Field.mod_ring p) n"
-  shows "bit_count (P\<^sub>S p n x) \<le> ereal (real n * (log 2 p + 1))"
+  shows "bit_count (P\<^sub>e p n x) \<le> ereal (real n * (log 2 p + 1))"
 proof -
   interpret cring "Field.mod_ring p"
     using mod_ring_is_cring assms by blast
@@ -94,9 +94,9 @@ proof -
   finally have b: "\<lfloor>log 2 (p-1)\<rfloor>+1 \<le> log 2 p + 1"
     by simp
 
-  have "bit_count (P\<^sub>S p n x) = (\<Sum> k \<leftarrow> [0..<n]. bit_count (N\<^sub>F p (coeff x k)))"
+  have "bit_count (P\<^sub>e p n x) = (\<Sum> k \<leftarrow> [0..<n]. bit_count (Nb\<^sub>e p (coeff x k)))"
     using assms restrict_extensional 
-    by (auto intro!:arg_cong[where f="sum_list"] simp add:P\<^sub>S_def fun_bit_count lessThan_atLeast0)
+    by (auto intro!:arg_cong[where f="sum_list"] simp add:P\<^sub>e_def fun_bit_count lessThan_atLeast0)
   also have "... = (\<Sum> k \<leftarrow> [0..<n]. ereal (floorlog 2 (p-1)))"
     using coeff_in_carrier[OF a] mod_ring_carr 
     by (subst bounded_nat_bit_count_2, auto)

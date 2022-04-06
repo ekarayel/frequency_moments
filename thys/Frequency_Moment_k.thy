@@ -53,22 +53,22 @@ fun fk_space_usage :: "(nat \<times> nat \<times> nat \<times> rat \<times> rat)
 
 definition encode_fk_state :: "fk_state \<Rightarrow> bool list option" where
   "encode_fk_state = 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>1. 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s\<^sub>2. 
-    N\<^sub>S \<times>\<^sub>S  
-    N\<^sub>S \<times>\<^sub>S  
-    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S (N\<^sub>S \<times>\<^sub>S N\<^sub>S))))"
+    N\<^sub>e \<Join>\<^sub>e (\<lambda>s\<^sub>1. 
+    N\<^sub>e \<Join>\<^sub>e (\<lambda>s\<^sub>2. 
+    N\<^sub>e \<times>\<^sub>e  
+    N\<^sub>e \<times>\<^sub>e  
+    (List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e (N\<^sub>e \<times>\<^sub>e N\<^sub>e))))"
 
 lemma "inj_on encode_fk_state (dom encode_fk_state)"
 proof -
   have "is_encoding encode_fk_state"
     by (simp add:encode_fk_state_def)
-     (intro dependent_encoding exp_goloumb_encoding fun_encoding)
+     (intro dependent_encoding exp_golomb_encoding fun_encoding)
 
   thus ?thesis by (rule encoding_imp_inj)
 qed
 
-text \<open>This is an intermediate form of non-parallel form fk_update used only in the proof.\<close>
+text \<open>This is an intermediate non-parallel form @{term "fk_update"} used only in the correctness proof.\<close>
 
 fun fk_update_2 :: "'a \<Rightarrow> (nat \<times> 'a \<times> nat) \<Rightarrow> (nat \<times> 'a \<times> nat) pmf" where
   "fk_update_2 a (m,x,l) = 
@@ -790,7 +790,7 @@ proof -
     have b0:" as \<noteq> [] \<Longrightarrow> y \<in> {0..<s\<^sub>1} \<times> {0..<s\<^sub>2} \<rightarrow>\<^sub>E M\<^sub>1"
       using b non_empty_space fin_space by (simp add:H_def M\<^sub>2_def set_prod_pmf)
 
-    have "bit_count ((N\<^sub>S \<times>\<^sub>S N\<^sub>S) (y x)) \<le> 
+    have "bit_count ((N\<^sub>e \<times>\<^sub>e N\<^sub>e) (y x)) \<le> 
       ereal (2 * log 2 (real n + 1) + 1) + ereal (2 * log 2 (real (length as) + 1) + 1)"
       (is "_ \<le> ?rhs1")
       if b1_assms: "x \<in> {0..<s\<^sub>1}\<times>{0..<s\<^sub>2}" for x
@@ -820,8 +820,8 @@ proof -
           by (simp add:M\<^sub>1_def case_prod_beta)
         then show ?thesis using count_le_length by (metis order_trans)
       qed
-      ultimately have "bit_count (N\<^sub>S (fst (y x))) + bit_count (N\<^sub>S (snd (y x))) \<le> ?rhs1"
-        using exp_goloumb_bit_count_est  by (intro add_mono, auto)
+      ultimately have "bit_count (N\<^sub>e (fst (y x))) + bit_count (N\<^sub>e (snd (y x))) \<le> ?rhs1"
+        using exp_golomb_bit_count_est  by (intro add_mono, auto)
       thus ?thesis
         by (subst dependent_bit_count_2, simp)
     qed
@@ -829,7 +829,7 @@ proof -
     moreover have "y \<in> extensional ({0..<s\<^sub>1} \<times> {0..<s\<^sub>2})"
       using b0 b PiE_iff by (cases "as = []", auto simp:H_def PiE_iff)
 
-    ultimately have "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>S N\<^sub>S \<times>\<^sub>S N\<^sub>S) y) \<le> 
+    ultimately have "bit_count ((List.product [0..<s\<^sub>1] [0..<s\<^sub>2] \<rightarrow>\<^sub>e N\<^sub>e \<times>\<^sub>e N\<^sub>e) y) \<le> 
       ereal (real s\<^sub>1 * real s\<^sub>2) * (ereal (2 * log 2 (real n + 1) + 1) +
       ereal (2 * log 2 (real (length as) + 1) + 1))"
       by (intro fun_bit_count_est[where xs="(List.product [0..<s\<^sub>1] [0..<s\<^sub>2])", simplified], auto)
@@ -841,7 +841,7 @@ proof -
       (ereal (real s\<^sub>1 * real s\<^sub>2) * (ereal (2 * log 2 (real n+1) + 1) + 
        ereal (2 * log 2 (real (length as)+1) + 1))))))"
       unfolding encode_fk_state_def dependent_bit_count
-      by (intro add_mono exp_goloumb_bit_count, auto)
+      by (intro add_mono exp_golomb_bit_count, auto)
     also have "... \<le> ?rhs" 
       by (simp add: s\<^sub>1_def[symmetric] s\<^sub>2_def[symmetric] Let_def) (simp add:ac_simps)
     finally show "bit_count (encode_fk_state (s\<^sub>1, s\<^sub>2, k, length as, y)) \<le> ?rhs"
@@ -853,6 +853,17 @@ qed
 
 end
 
+text \<open>Main results of this section:\<close>
+
+theorem fk_alg_correct:
+  assumes "k \<ge> 1"
+  assumes "\<epsilon> \<in> {0<..<1}"
+  assumes "\<delta> > 0"
+  assumes "set as \<subseteq> {..<n}"
+  defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n) \<bind> fk_result"
+  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - F k as\<bar> \<le> \<delta> * F k as) \<ge> 1 - of_rat \<epsilon>"
+  unfolding M_def using fk_alg_correct'[OF assms(1-4)] by blast
+
 theorem fk_exact_space_usage:
   assumes "k \<ge> 1"
   assumes "\<epsilon> \<in> {0<..<1}"
@@ -862,16 +873,7 @@ theorem fk_exact_space_usage:
   shows "AE \<omega> in M. bit_count (encode_fk_state \<omega>) \<le> fk_space_usage (k, n, length as, \<epsilon>, \<delta>)"
   unfolding M_def using fk_exact_space_usage'[OF assms(1-4)] by blast
 
-lemma fk_alg_correct:
-  assumes "k \<ge> 1"
-  assumes "\<epsilon> \<in> {0<..<1}"
-  assumes "\<delta> > 0"
-  assumes "set as \<subseteq> {..<n}"
-  defines "M \<equiv> fold (\<lambda>a state. state \<bind> fk_update a) as (fk_init k \<delta> \<epsilon> n) \<bind> fk_result"
-  shows "\<P>(\<omega> in measure_pmf M. \<bar>\<omega> - F k as\<bar> \<le> \<delta> * F k as) \<ge> 1 - of_rat \<epsilon>"
-  unfolding M_def using fk_alg_correct'[OF assms(1-4)] by blast
-
-lemma fk_asympotic_space_complexity:
+theorem fk_asympotic_space_complexity:
   "fk_space_usage \<in> 
   O[at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_top \<times>\<^sub>F at_right (0::rat) \<times>\<^sub>F at_right (0::rat)](\<lambda> (k, n, m, \<epsilon>, \<delta>).
   real k * real n powr (1-1/ real k) / (of_rat \<delta>)\<^sup>2 * (ln (1 / of_rat \<epsilon>)) * (ln (real n) + ln (real m)))"
@@ -901,7 +903,7 @@ proof -
     for \<delta> \<epsilon> n k m P
     apply (rule eventually_mono[where P="?prem" and Q="P"])
     apply (simp add:\<epsilon>_of_def case_prod_beta' \<delta>_of_def n_of_def k_of_def m_of_def)
-     apply (intro eventually_conj eventually_prod1'' eventually_prod2'' 
+     apply (intro eventually_conj eventually_prod1' eventually_prod2'
         sequentially_inf eventually_at_right_less inv_at_right_0_inf)
     by (auto simp add:prod_filter_eq_bot)
 

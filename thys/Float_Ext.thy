@@ -72,29 +72,18 @@ proof -
   finally show ?thesis by simp 
 qed
 
-text \<open>Definition of an encoding for floating point numbers.\<close>
-
-definition F\<^sub>S where "F\<^sub>S f = (I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)"
-
-lemma encode_float:
-  "is_encoding F\<^sub>S"
+lemma log_est: "log 2 (real n + 1) \<le> n"
 proof -
-  have a : "inj (\<lambda>x. (mantissa x, exponent x))"
-  proof (rule injI)
-    fix x y
-    assume "(mantissa x, exponent x) = (mantissa y, exponent y)"
-    hence "real_of_float x = real_of_float y"
-      by (simp add:mantissa_exponent)
-    thus "x = y"
-      by (metis real_of_float_inverse)
-  qed
-  have "is_encoding (\<lambda>f. if True then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
-    using a
-    by (intro encoding_compose[where f="(I\<^sub>S \<times>\<^sub>S I\<^sub>S)"]  dependent_encoding int_encoding, simp)
-  moreover have "F\<^sub>S = (\<lambda>f. if f \<in> UNIV then ((I\<^sub>S \<times>\<^sub>S I\<^sub>S) (mantissa f,exponent f)) else None)"
-    by (rule ext, simp add:F\<^sub>S_def)
-  ultimately show "is_encoding F\<^sub>S"
+  have "1 + real n = real (n + 1)"
     by simp
+  also have "... \<le> real (2 ^ n)"
+    by (intro of_nat_mono suc_n_le_2_pow_n)
+  also have "... = 2 powr (real n)"
+    by (simp add:powr_realpow)
+  finally have "1 + real n \<le> 2 powr (real n)"
+    by simp
+  thus ?thesis
+    by (simp add: Transcendental.log_le_iff)
 qed
 
 lemma truncate_mantissa_bound:
@@ -145,120 +134,8 @@ proof -
   thus ?thesis using q_def by blast
 qed
 
-lemma suc_n_le_2_pow_n:
-  fixes n :: nat
-  shows "n + 1 \<le> 2 ^ n"
-  by (induction n, simp, simp)
-
-lemma float_bit_count_1:
-  "bit_count (F\<^sub>S f) \<le> 6 + 2 * (log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1))" (is "?lhs \<le> ?rhs")
-proof -
-  have "?lhs = bit_count (I\<^sub>S (mantissa f)) + bit_count (I\<^sub>S (exponent f))"
-    by (simp add:F\<^sub>S_def dependent_bit_count)
-  also have "... \<le> ereal (2 * log 2 (real_of_int (\<bar>mantissa f\<bar> + 1)) + 3) + ereal (2 * log 2 (real_of_int (\<bar>exponent f\<bar> + 1)) + 3)"
-    by (intro int_bit_count_est_1 add_mono) auto
-  also have "... = ?rhs"
-    by simp
-  finally show ?thesis by simp
-qed
-
-lemma float_bit_count_2:
-  fixes m :: int
-  fixes e :: int
-  defines "f \<equiv> float_of (m * 2 powr e)"
-  shows "bit_count (F\<^sub>S f) \<le> 6 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
-proof -
-  have b:" (r + 1) * int i \<le> r * (2 ^ i - 1) + 1" if b_assms: "r \<ge> 1" for r :: int and i :: nat
-  proof (cases "i > 0")
-    case True
-    have "(r + 1) * int i = r * i + 2 * int ((i-1)+1) - i"
-      using True by (simp add:algebra_simps)
-    also have "... \<le> r * i + int (2^1) * int (2^(i-1)) - i"
-      using b_assms
-      by (intro add_mono diff_mono mult_mono of_nat_mono suc_n_le_2_pow_n, simp_all)
-    also have "... = r * i + 2^i - i"
-      using True
-      by (subst of_nat_mult[symmetric], subst power_add[symmetric], simp)
-    also have "... = r *i + 1 * (2 ^ i - int i - 1) + 1"  by simp
-    also have "... \<le> r *i + r * (2 ^ i - int i - 1) + 1"  
-      using b_assms
-      by (intro add_mono mult_mono, simp_all)
-    also have "... = r * (2 ^ i - 1) + 1"
-      by (simp add:algebra_simps)
-    finally show ?thesis by simp
-  next
-    case False
-    hence "i = 0" by simp
-    then show ?thesis by simp
-  qed
-
-  have a:"log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1) \<le> log 2 (\<bar>m\<bar>+2) + log 2 (\<bar>e\<bar>+1)"
-  proof (cases "f=0")
-    case True then show ?thesis by simp
-  next
-    case False
-    moreover have "f = Float m e" 
-      by (simp add:f_def Float.abs_eq) 
-    ultimately obtain i :: nat where m_def: "m = mantissa f * 2 ^ i" and e_def: "e = exponent f - i"
-      using denormalize_shift by blast
-
-    have mantissa_ge_1: "1 \<le> \<bar>mantissa f\<bar>"
-      using False mantissa_noteq_0 by fastforce
-
-    have "(\<bar>mantissa f\<bar> + 1) * (\<bar>exponent f\<bar> + 1) = (\<bar>mantissa f\<bar> + 1) * (\<bar>e+i\<bar>+1)"
-      by (simp add:e_def)
-    also have "...  \<le>  (\<bar>mantissa f\<bar> + 1) * ((\<bar>e\<bar>+\<bar>i\<bar>)+1)"
-      by (intro mult_mono add_mono, simp_all)
-    also have "... = (\<bar>mantissa f\<bar> + 1) * ((\<bar>e\<bar>+1)+i)"
-      by simp
-    also have "... = (\<bar>mantissa f\<bar> + 1) * (\<bar>e\<bar>+1) + (\<bar>mantissa f\<bar>+1)*i"
-      by (simp add:algebra_simps)
-    also have "... \<le>  (\<bar>mantissa f\<bar> + 1)*(\<bar>e\<bar>+1) + (\<bar>mantissa f\<bar>*  (2^i-1)+1)" 
-      by (intro add_mono b mantissa_ge_1, simp) 
-    also have "... =  (\<bar>mantissa f\<bar> + 1)*(\<bar>e\<bar>+1)+(\<bar>mantissa f\<bar>*  (2^i-1)+1)*(1)"
-      by simp
-    also have "... \<le>  (\<bar>mantissa f\<bar> + 1)*(\<bar>e\<bar>+1)+(\<bar>mantissa f\<bar>*  (2^i-1)+1)*(\<bar>e\<bar>+1)" 
-      by (intro add_mono mult_left_mono, simp_all)
-    also have "... =  ((\<bar>mantissa f\<bar> + 1)+(\<bar>mantissa f\<bar>*  (2^i-1)+1))*(\<bar>e\<bar>+1)"
-      by (simp add:algebra_simps)
-    also have "... =  (\<bar>mantissa f\<bar>*2^i+2)*(\<bar>e\<bar>+1)" 
-      by (simp add:algebra_simps)
-    also have "... =  (\<bar>m\<bar>+2)*(\<bar>e\<bar>+1)" 
-      by (simp add:m_def abs_mult)
-    finally have "(\<bar>mantissa f\<bar> + 1) * (\<bar>exponent f\<bar> + 1) \<le> (\<bar>m\<bar>+2)*(\<bar>e\<bar>+1)" by simp
-
-    hence "(\<bar>real_of_int (mantissa f)\<bar> + 1) * (\<bar>of_int (exponent f)\<bar> + 1) \<le> (\<bar>of_int m\<bar>+2)*(\<bar>of_int e\<bar>+1)" 
-      by (simp flip:of_int_abs)
-       (metis (mono_tags, opaque_lifting) numeral_One of_int_add of_int_le_iff of_int_mult of_int_numeral)
-    then show ?thesis by (simp add:log_mult[symmetric])
-  qed
-  have "bit_count (F\<^sub>S f) \<le> 6 + 2 * (log 2 (\<bar>mantissa f\<bar> + 1) + log 2 (\<bar>exponent f\<bar> + 1))"
-    using float_bit_count_1 by simp
-  also have "... \<le> 6 + 2 * (log 2 (\<bar>m\<bar> + 2) + log 2 (\<bar>e\<bar> + 1))"
-    using a by simp
-  finally show ?thesis by simp
-qed
-
-lemma float_bit_count_zero:
-  "bit_count (F\<^sub>S (float_of 0)) = 2"
-  by (simp add:F\<^sub>S_def dependent_bit_count int_bit_count zero_float.abs_eq[symmetric])
-
-lemma log_est: "log 2 (real n + 1) \<le> n"
-proof -
-  have "1 + real n = real (n + 1)"
-    by simp
-  also have "... \<le> real (2 ^ n)"
-    by (intro of_nat_mono suc_n_le_2_pow_n)
-  also have "... = 2 powr (real n)"
-    by (simp add:powr_realpow)
-  finally have "1 + real n \<le> 2 powr (real n)"
-    by simp
-  thus ?thesis
-    by (simp add: Transcendental.log_le_iff)
-qed
-
 lemma truncate_float_bit_count:
-  "bit_count (F\<^sub>S (float_of (truncate_down r x))) \<le> 10 + 4 * real r + 2*log 2 (2 + \<bar>log 2 \<bar>x\<bar>\<bar>)" 
+  "bit_count (F\<^sub>e (float_of (truncate_down r x))) \<le> 10 + 4 * real r + 2*log 2 (2 + \<bar>log 2 \<bar>x\<bar>\<bar>)" 
   (is "?lhs \<le> ?rhs")
 proof -
   define m where "m = \<lfloor>x * 2 powr (real r - real_of_int \<lfloor>log 2 \<bar>x\<bar>\<rfloor>)\<rfloor>"
@@ -293,7 +170,7 @@ proof -
     using log_est by (intro add_mono, simp_all add:add.commute)
   finally have e: "log 2 (real_of_int (abs e + 1)) \<le> r + log 2 (2 + abs (log 2 (abs x)))" by simp
 
-  have "?lhs =  bit_count (F\<^sub>S (float_of (real_of_int m * 2 powr real_of_int e)))"
+  have "?lhs =  bit_count (F\<^sub>e (float_of (real_of_int m * 2 powr real_of_int e)))"
     by (simp add:truncate_down_def round_down_def m_def[symmetric] a)
   also have "... \<le> ereal (6 + (2 * log 2 (real_of_int (\<bar>m\<bar> + 2)) + 2 * log 2 (real_of_int (\<bar>e\<bar> + 1))))"
     using float_bit_count_2 by simp

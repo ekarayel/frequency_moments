@@ -55,18 +55,18 @@ fun f0_space_usage :: "(nat \<times> rat \<times> rat) \<Rightarrow> real" where
 
 definition encode_f0_state :: "f0_state \<Rightarrow> bool list option" where
   "encode_f0_state = 
-    N\<^sub>S \<times>\<^sub>D (\<lambda>s. 
-    N\<^sub>S \<times>\<^sub>S (
-    N\<^sub>S \<times>\<^sub>D (\<lambda>p. 
-    N\<^sub>S \<times>\<^sub>S ( 
-    ([0..<s] \<rightarrow>\<^sub>S (P\<^sub>S p 2)) \<times>\<^sub>S
-    ([0..<s] \<rightarrow>\<^sub>S (set\<^sub>S F\<^sub>S))))))"
+    N\<^sub>e \<Join>\<^sub>e (\<lambda>s. 
+    N\<^sub>e \<times>\<^sub>e (
+    N\<^sub>e \<Join>\<^sub>e (\<lambda>p. 
+    N\<^sub>e \<times>\<^sub>e ( 
+    ([0..<s] \<rightarrow>\<^sub>e (P\<^sub>e p 2)) \<times>\<^sub>e
+    ([0..<s] \<rightarrow>\<^sub>e (S\<^sub>e F\<^sub>e))))))"
 
 lemma "inj_on encode_f0_state (dom encode_f0_state)"
 proof -
   have "is_encoding encode_f0_state" 
     unfolding encode_f0_state_def
-    by (intro dependent_encoding exp_goloumb_encoding poly_encoding fun_encoding set_encoding encode_float)
+    by (intro dependent_encoding exp_golomb_encoding poly_encoding fun_encoding set_encoding float_encoding)
   thus ?thesis  by (rule encoding_imp_inj)
 qed
 
@@ -1013,7 +1013,7 @@ proof -
   have log_2_4: "log 2 4 = 2" 
     by (metis log2_of_power_eq mult_2 numeral_Bit0 of_nat_numeral power2_eq_square)
 
-  have a: "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
+  have a: "bit_count (F\<^sub>e (float_of (truncate_down r y))) \<le> 
     ereal (12 + 4 * real r + 2 * log 2 (log 2 (n+13)))" if a_1:"y \<in> {..<p}" for y
   proof (cases "y \<ge> 1")
     case True
@@ -1023,7 +1023,7 @@ proof -
     have aux_2: "0 < 2 + log 2 (real p)"
       using p_ge_1 by (intro add_pos_nonneg, auto)
 
-    have "bit_count (F\<^sub>S (float_of (truncate_down r y))) \<le> 
+    have "bit_count (F\<^sub>e (float_of (truncate_down r y))) \<le> 
       ereal (10 + 4 * real r + 2 * log 2 (2 + \<bar>log 2 \<bar>real y\<bar>\<bar>))"
       by (rule truncate_float_bit_count)
     also have "... = ereal (10 + 4 * real r + 2 * log 2 (2 + (log 2 (real y))))"
@@ -1072,20 +1072,20 @@ proof -
     moreover have card_sketch: "\<And>y. y < s \<Longrightarrow> card (f0_sketch (x y)) \<le> t "
       by (simp add:f0_sketch_def card_least)
     moreover have "\<And>y z. y < s \<Longrightarrow> z \<in> f0_sketch (x y) \<Longrightarrow> 
-      bit_count (F\<^sub>S z) \<le> ereal (12 + 4 * real r + 2 * log 2 (log 2 (real n + 13)))"
+      bit_count (F\<^sub>e z) \<le> ereal (12 + 4 * real r + 2 * log 2 (log 2 (real n + 13)))"
       using a d by auto
-    ultimately have e: "\<And>y. y < s \<Longrightarrow> bit_count (set\<^sub>S F\<^sub>S (f0_sketch (x y))) 
+    ultimately have e: "\<And>y. y < s \<Longrightarrow> bit_count (S\<^sub>e F\<^sub>e (f0_sketch (x y))) 
       \<le> ereal (real t) * (ereal (12 + 4 * real r + 2 * log 2 (log 2 (real (n + 13)))) + 1) + 1"
-      using encode_float by (intro set_bit_count_est, auto)
+      using float_encoding by (intro set_bit_count_est, auto)
 
-    have f: "\<And>y. y < s \<Longrightarrow> bit_count (P\<^sub>S p 2 (x y)) \<le> ereal (real 2 * (log 2 (real p) + 1))"
+    have f: "\<And>y. y < s \<Longrightarrow> bit_count (P\<^sub>e p 2 (x y)) \<le> ereal (real 2 * (log 2 (real p) + 1))"
       using p_ge_1 b
       by (intro bounded_degree_polynomial_bit_count) (simp_all add:space_def PiE_def Pi_def)
 
     have "bit_count (encode_f0_state (s, t, p, r, x, \<lambda>i\<in>{..<s}. f0_sketch (x i))) =
-      bit_count (N\<^sub>S s) + bit_count (N\<^sub>S t) +  bit_count (N\<^sub>S p) + bit_count (N\<^sub>S r) +
-      bit_count (([0..<s] \<rightarrow>\<^sub>S P\<^sub>S p 2) x) +
-      bit_count (([0..<s] \<rightarrow>\<^sub>S set\<^sub>S F\<^sub>S) (\<lambda>i\<in>{..<s}. f0_sketch (x i)))"
+      bit_count (N\<^sub>e s) + bit_count (N\<^sub>e t) +  bit_count (N\<^sub>e p) + bit_count (N\<^sub>e r) +
+      bit_count (([0..<s] \<rightarrow>\<^sub>e P\<^sub>e p 2) x) +
+      bit_count (([0..<s] \<rightarrow>\<^sub>e S\<^sub>e F\<^sub>e) (\<lambda>i\<in>{..<s}. f0_sketch (x i)))"
       by (simp add:encode_f0_state_def dependent_bit_count lessThan_atLeast0
         s_def[symmetric] t_def[symmetric] p_def[symmetric] r_def[symmetric] ac_simps)
     also have "... \<le> ereal (2* log 2 (real s + 1) + 1) + ereal  (2* log 2 (real t + 1) + 1)
@@ -1094,7 +1094,7 @@ proof -
       + (ereal (real s) * ((ereal (real t) * 
             (ereal (12 + 4 * real r + 2 * log 2 (log 2 (real (n + 13)))) + 1) + 1)))"
       using c e f
-      by (intro add_mono exp_goloumb_bit_count fun_bit_count_est[where xs="[0..<s]", simplified])
+      by (intro add_mono exp_golomb_bit_count fun_bit_count_est[where xs="[0..<s]", simplified])
        (simp_all add:lessThan_atLeast0)
     also have "... = ereal ( 4 + 2 * log 2 (real s + 1) + 2 * log 2 (real t + 1) + 
       2 * log 2 (real p + 1) + 2 * log 2 (real r + 1) + real s * (3 + 2 * log 2 (real p) + 
@@ -1127,6 +1127,8 @@ qed
 
 end
 
+text \<open>Main results of this section:\<close>
+
 theorem f0_alg_correct:
   assumes "\<epsilon> \<in> {0<..<1}"
   assumes "\<delta> \<in> {0<..<1}"
@@ -1143,7 +1145,7 @@ theorem f0_exact_space_usage:
   shows "AE \<omega> in \<Omega>. bit_count (encode_f0_state \<omega>) \<le> f0_space_usage (n, \<epsilon>, \<delta>)"
   using f0_exact_space_usage'[OF assms(1,2,3)] unfolding \<Omega>_def by blast
 
-lemma f0_asympotic_space_complexity:
+theorem f0_asympotic_space_complexity:
   "f0_space_usage \<in> O[at_top \<times>\<^sub>F at_right 0 \<times>\<^sub>F at_right 0](\<lambda>(n, \<epsilon>, \<delta>). ln (1 / of_rat \<epsilon>) * 
   (ln (real n) + 1 / (of_rat \<delta>)\<^sup>2 * (ln (ln (real n)) + ln (1 / of_rat \<delta>))))"
   (is "_ \<in> O[?F](?rhs)")
