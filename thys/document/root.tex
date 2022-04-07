@@ -6,38 +6,11 @@
 \newcommand{\size}[1]{\lvert#1\rvert}
 \newcommand{\var}{\mathrm{Var}}
 \newcommand{\expectation}{\mathrm{E}}
-
-% further packages required for unusual symbols (see also
-% isabellesym.sty), use only when needed
-
-%\usepackage{amssymb}
-  %for \<leadsto>, \<box>, \<diamond>, \<sqsupset>, \<mho>, \<Join>,
-  %\<lhd>, \<lesssim>, \<greatersim>, \<lessapprox>, \<greaterapprox>,
-  %\<triangleq>, \<yen>, \<lozenge>
-
-%\usepackage{eurosym}
-  %for \<euro>
-
-%\usepackage[only,bigsqcap,fatsemi,interleave,sslash]{stmaryrd}
-  %for \<Sqinter>, \<Zsemi>
-
-%\usepackage{eufrak}
-  %for \<AA> ... \<ZZ>, \<aa> ... \<zz> (also included in amssymb)
-
-%\usepackage{textcomp}
-  %for \<onequarter>, \<onehalf>, \<threequarters>, \<degree>, \<cent>,
-  %\<currency>
-
-% this should be the last package used
+\usepackage{amssymb}
 \usepackage{pdfsetup}
 
-% urls in roman style, theory text in math-similar italics
 \urlstyle{rm}
 \isabellestyle{it}
-
-% for uniform font size
-%\renewcommand{\isastyle}{\isastyleminor}
-
 
 \begin{document}
 
@@ -58,14 +31,13 @@ To achieve it, the formalization also includes reusable components common to all
 
 \tableofcontents
 
-% sane default for proof documents
 \parindent 0pt\parskip 0.5ex
 
-% generated text of all theories
 \input{session}
 \appendix
 \section{Informal proof of correctness for the $F_0$ algorithm\label{sec:f0_proof}}
-This appendix contains a detailed informal proof for the new Rounding-KMV algorithm that approximates $F_0$. It follows the same reasoning as the formalized proof.
+This appendix contains a detailed informal proof for the new Rounding-KMV algorithm that approximates $F_0$
+introduced in Section~\ref{sec:f0} for reference. It follows the same reasoning as the formalized proof.
 
 Because of the amplification result about medians (see for example \cite[\textsection 2.1]{alon1999}) it is enough to show that each of the estimates the median is taken from is within the desired interval with success probability $\frac{2}{3}$.
 To verify the latter, let $a_1, \ldots, a_m$ be the stream elements, where we assume that the elements are a subset of $\{0,\ldots,n-1\}$ and $0 < \delta < 1$ be the desired relative accuracy.
@@ -73,7 +45,7 @@ Let $p$ be the smallest prime such that $p \geq \max (n,19)$ and let $h$ be a ra
 The algoritm also introduces the internal parameters $t, r$ defined by:
 \begin{align*}
     t & := \lceil 80\delta^{-2} \rceil &
-    r & := 4 \log_2 \lceil \delta^{-1} \rceil + 24
+    r & := 4 \log_2 \lceil \delta^{-1} \rceil + 23
 \end{align*}
 The estimate the algorithm obtains is $R$, defined using:
 \begin{align*}
@@ -171,8 +143,7 @@ Because $p \geq 18$ the probability that $h$ is not injective can be bounded by 
     & \leq & \frac{1}{18} + \sum_{a \neq b \in A} P\left(\lfloor h(a) \rfloor_r = \lfloor h(b) \rfloor_r \leq v \wedge h(a) \neq h(b) \right) \\
     & \leq & \frac{1}{18} + \sum_{a \neq b \in A} P\left(\size{h(a) - h(b)} \leq v 2^{-r} \wedge h(a) \leq v (1+2^{-r}) \wedge h(a) \neq h(b) \right) \\
     & \leq & \frac{1}{18} + \sum_{a \neq b \in A} \sum_{\substack{a', b' \in \{0,\ldots, p-1\} \wedge a' \neq b' \\ \size{a'-b'} \leq v 2^{-r} \wedge a' \leq v (1+2^{-r})}} P(h(a) = a') P(h(b)= b') \\
-    & \leq & \frac{1}{18} + 6 \frac{F_0^2 v^2}{p^2} 2^{-r} \leq \frac{1}{9} \textrm{.}
-%    96 t^2 2^{-r} + \frac{1}{18} & \leq & \frac{1}{9}
+    & \leq & \frac{1}{18} + \frac{5 F_0^2 v^2}{2 p^2} 2^{-r} \leq \frac{1}{9} \textrm{.}
 \end{eqnarray*}
 which shows that \autoref{eq:r_star_r} is true.\subsection{Case $F_0 < t$}
 Note that in this case $\size{H} \leq F_0 < t$ and thus $R = \size{H}$, hence the goal is to show that:
