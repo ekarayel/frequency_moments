@@ -907,30 +907,25 @@ proof -
         sequentially_inf eventually_at_right_less inv_at_right_0_inf)
     by (auto simp add:prod_filter_eq_bot)
 
-  have a1: 
+  have 1: 
     "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x))"
     "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (m_of x))"
     "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (k_of x))"
     by (intro landau_o.big_mono eventually_mono[OF evt], auto)+
 
-  have "(\<lambda>x. ln (real (n_of x) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)))"
-    by (intro landau_ln_2[where a="2"] eventually_mono[OF evt[where n="2"]] sum_in_bigo a1, auto)
-  hence a2: " (\<lambda>x. log 2 (real (n_of x) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
-    by (intro landau_sum_1 evt[where n="1" and m="1"])
-     (auto simp add:log_def)
 
   have "(\<lambda>x. ln (real (m_of x) + 1)) \<in> O[?F](\<lambda>x. ln (real (m_of x)))"
-    by (intro landau_ln_2[where a="2"] evt[where m="2"] sum_in_bigo a1, auto)
-  hence a3: " (\<lambda>x. log 2 (real (m_of x) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
+    by (intro landau_ln_2[where a="2"] evt[where m="2"] sum_in_bigo 1, auto)
+  hence 2: " (\<lambda>x. log 2 (real (m_of x) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
     by (intro landau_sum_2  eventually_mono[OF evt[where n="1" and m="1"]])
      (auto simp add:log_def)
 
-  have a4: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))" 
+  have 3: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))" 
     using order_less_le_trans[OF exp_gt_zero] ln_ge_iff
     by (intro landau_o.big_mono  evt[where \<epsilon>="exp 1"])
      (simp add: abs_ge_iff, blast)
 
-  have a5: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
+  have 4: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. 1 / (real_of_rat (\<delta>_of x))\<^sup>2)"
     using one_le_power
     by (intro landau_o.big_mono evt[where \<delta>="1"])
      (simp add:power_one_over[symmetric], blast)
@@ -940,67 +935,72 @@ proof -
     by (intro landau_o.big_mono  evt[where n="exp 1"])
      (simp add: abs_ge_iff, blast)
 
-  hence a6: "(\<lambda>x. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
+  hence 5: "(\<lambda>x. 1) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
     by (intro landau_sum_1 evt[where n="1" and m="1"], auto)
 
   have "(\<lambda>x. -ln(of_rat (\<epsilon>_of x))) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))" 
     by (intro landau_o.big_mono evt) (auto simp add:ln_div)
-  hence a7: "(\<lambda>x. real (s2_of x)) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
+  hence 6: "(\<lambda>x. real (s2_of x)) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
     unfolding s2_of_def
-    by (intro landau_nat_ceil a4, simp)
+    by (intro landau_nat_ceil 3, simp)
 
-  have a8: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x) powr (1 - 1 / real (k_of x)))"
+  have 7: "(\<lambda>_. 1) \<in> O[?F](\<lambda>x. real (n_of x) powr (1 - 1 / real (k_of x)))"
     by (intro landau_o.big_mono evt[where n="1" and k="1"])
      (auto simp add: ge_one_powr_ge_zero)
 
-  have a9: "(\<lambda>_. 1) \<in> O[?F](g1)"
-    unfolding g1_def by (intro landau_o.big_mult_1 a1 a8 a5)
+  have 8: "(\<lambda>_. 1) \<in> O[?F](g1)"
+    unfolding g1_def by (intro landau_o.big_mult_1 1 7 4)
 
   have "(\<lambda>x. 3 * (real (k_of x) * (n_of x) powr (1 - 1 / real (k_of x)) / (of_rat (\<delta>_of x))\<^sup>2))
     \<in> O[?F](g1)"
     by (subst landau_o.big.cmult_in_iff, simp, simp add:g1_def)
-  hence a10: "(\<lambda>x. real (s1_of x)) \<in> O[?F](g1)"
-    unfolding s1_of_def by (intro landau_nat_ceil a9, auto simp:ac_simps)
+  hence 9: "(\<lambda>x. real (s1_of x)) \<in> O[?F](g1)"
+    unfolding s1_of_def by (intro landau_nat_ceil 8, auto simp:ac_simps)
 
-  have a11: "(\<lambda>_. 1) \<in> O[?F](g)" 
-    unfolding g_def by (intro landau_o.big_mult_1 a9 a4 a6)
+  have 10: "(\<lambda>_. 1) \<in> O[?F](g)" 
+    unfolding g_def by (intro landau_o.big_mult_1 8 3 5)
   
   have "(\<lambda>x. real (s1_of x)) \<in> O[?F](g)"
-    unfolding g_def by (intro landau_o.big_mult_1 a6 a4 a10)
+    unfolding g_def by (intro landau_o.big_mult_1 5 3 9)
   hence "(\<lambda>x. ln (real (s1_of x) + 1)) \<in> O[?F](g)"
-    using a11 by (intro landau_ln_3 sum_in_bigo, auto)
-  hence a12: "(\<lambda>x. log 2 (real (s1_of x) + 1)) \<in> O[?F](g)"
+    using 10 by (intro landau_ln_3 sum_in_bigo, auto)
+  hence 11: "(\<lambda>x. log 2 (real (s1_of x) + 1)) \<in> O[?F](g)"
     by (simp add:log_def)
 
-  have a13: " (\<lambda>x. ln (real (s2_of x) + 1)) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
-    using evt[where \<epsilon>="2"] a7 a4
+  have 12: " (\<lambda>x. ln (real (s2_of x) + 1)) \<in> O[?F](\<lambda>x. ln (1 / real_of_rat (\<epsilon>_of x)))"
+    using evt[where \<epsilon>="2"] 6 3
     by (intro landau_ln_3 sum_in_bigo, auto)
 
-  have a14: "(\<lambda>x. log 2 (real (s2_of x) + 1)) \<in> O[?F](g)" 
+  have 13: "(\<lambda>x. log 2 (real (s2_of x) + 1)) \<in> O[?F](g)" 
     unfolding g_def 
-    by (rule landau_o.big_mult_1, rule landau_o.big_mult_1', auto simp add: a9 a6 a13 log_def)
+    by (rule landau_o.big_mult_1, rule landau_o.big_mult_1', auto simp add: 8 5 12 log_def)
 
   have "(\<lambda>x. real (k_of x)) \<in> O[?F](g1)"
-    unfolding g1_def using a8 a5
+    unfolding g1_def using 7 4
     by (intro landau_o.big_mult_1, simp_all)
   hence "(\<lambda>x. log 2 (real (k_of x) + 1)) \<in> O[?F](g1)"
-    by (simp add:log_def) (intro landau_ln_3 sum_in_bigo a9, auto)
-  hence a15: "(\<lambda>x. log 2 (real (k_of x) + 1)) \<in> O[?F](g)"
-    unfolding g_def  by (intro landau_o.big_mult_1 a4 a6)
+    by (simp add:log_def) (intro landau_ln_3 sum_in_bigo 8, auto)
+  hence 14: "(\<lambda>x. log 2 (real (k_of x) + 1)) \<in> O[?F](g)"
+    unfolding g_def  by (intro landau_o.big_mult_1 3 5)
 
-  have a16: "(\<lambda>x. log 2 (real (m_of x) + 1)) \<in> O[?F](g)"
-    unfolding g_def using a3 a9 a4
+  have 15: "(\<lambda>x. log 2 (real (m_of x) + 1)) \<in> O[?F](g)"
+    unfolding g_def using 2 8 3
     by (intro landau_o.big_mult_1', simp_all)
 
-  have a17: "(\<lambda>x. real (s1_of x) * real (s2_of x) *
+  have "(\<lambda>x. ln (real (n_of x) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)))"
+    by (intro landau_ln_2[where a="2"] eventually_mono[OF evt[where n="2"]] sum_in_bigo 1, auto)
+  hence " (\<lambda>x. log 2 (real (n_of x) + 1)) \<in> O[?F](\<lambda>x. ln (real (n_of x)) + ln (real (m_of x)))"
+    by (intro landau_sum_1 evt[where n="1" and m="1"])
+     (auto simp add:log_def)
+  hence 16: "(\<lambda>x. real (s1_of x) * real (s2_of x) *
     (2 + 2 * log 2 (real (n_of x) + 1) + 2 * log 2 (real (m_of x) + 1))) \<in> O[?F](g)" 
-    unfolding g_def using a10 a7 a6 a2 a3
+    unfolding g_def using 9 6 5 2
     by (intro landau_o.mult sum_in_bigo, auto)
 
   have "fk_space_usage = (\<lambda>x. fk_space_usage (k_of x, n_of x, m_of x, \<epsilon>_of x, \<delta>_of x))"
     by (simp add:case_prod_beta' k_of_def n_of_def \<epsilon>_of_def \<delta>_of_def m_of_def)
   also have "... \<in> O[?F](g)"
-    using a11 a12 a14 a15 a16 a17
+    using 10 11 13 14 15 16
     by (simp add:fun_cong[OF s1_of_def[symmetric]] fun_cong[OF s2_of_def[symmetric]] Let_def)
      (intro sum_in_bigo, auto)
   also have "... = O[?F](?rhs)"
