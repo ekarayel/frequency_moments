@@ -4,12 +4,6 @@
 
 Frequency moments can for example be used to determine the number of distinct elements, the skew of the rank-size distribution of the data stream and several statistical dispersion measures.
 
-The source files are in the [thys folder](thys/).
-
-The printable version of the formally verified results are available in two versions:
-* [Full document](output/document.pdf?raw=1) (including proofs)
-* [Outline document](output/outline.pdf?raw=1) (without proofs)
-
 Summary of verified algorithms:
 * Approximation of F_0 with space complexity: O( ln(1/ε) (ln n + 1/δ² (ln (1/δ) + ln ln n)))
 * Approximation of F_2 with space complexity: O( ln(1/ε) (1/δ²) (ln n + ln m))
@@ -20,7 +14,15 @@ where
 * m is the length of the stream,
 * δ is the required relative accuracy (0 < δ < 1),
 * ε is the maximum failure probability (0 < ε < 1).
- 
+
+A more up to date version of this work is available at the Archive of Formal Proofs:
+* [Formalization of Randomized Approximation Algorithms](https://www.isa-afp.org/entries/Frequency_Moments.html)
+* [Enumeration of Equivalence Relations](https://www.isa-afp.org/entries/Equivalence_Relation_Enumeration.html)
+* [Interpolation Polynomials (in HOL-Algebra)](https://www.isa-afp.org/entries/Interpolation_Polynomials_HOL_Algebra.html)
+* [Universal Hash Families](https://www.isa-afp.org/entries/Universal_Hash_Families.html)
+* [Median Method](https://www.isa-afp.org/entries/Median_Method.html)
+* [A Combinator Library for Prefix-Free Codes](https://www.isa-afp.org/entries/Prefix_Free_Code_Combinators.html)
+
 ## Verification
 
 If the following is available and set up:
